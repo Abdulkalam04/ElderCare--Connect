@@ -49,6 +49,7 @@ function NavLink({
   return (
     <Link
       to={to}
+      preload="intent"
       onClick={onClick}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
         active ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-black/5"
@@ -190,6 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={item.to}
               to={item.to}
+              preload="intent"
               onClick={onLinkClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 pathname === item.to ? "bg-secondary/10 text-secondary font-medium" : "text-muted-foreground hover:bg-black/5"
@@ -203,6 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="pt-4 mt-4 border-t border-border space-y-1">
           <Link
             to="/sos"
+            preload="intent"
             onClick={onLinkClick}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
               pathname === "/sos"
@@ -372,6 +375,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Notification Bell */}
           <Link
             to="/notifications"
+            preload="intent"
             className="relative p-2 rounded-xl hover:bg-stone-100 transition-colors shrink-0"
             aria-label="Notifications"
           >

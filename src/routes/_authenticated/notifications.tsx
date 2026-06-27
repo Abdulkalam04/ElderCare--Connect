@@ -18,6 +18,8 @@ import {
   CheckCheck,
   Trash2,
   RefreshCw,
+  Video,
+  UserCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
@@ -29,6 +31,8 @@ type NotifType =
   | "missed_medicine"
   | "sos"
   | "appointment_reminder"
+  | "caregiver_alert"
+  | "video_consult"
   | "reminder"
   | "call"
   | string;
@@ -51,6 +55,8 @@ const TYPE_TABS = [
   { key: "missed_medicine", label: "Medication" },
   { key: "sos", label: "Emergency" },
   { key: "appointment_reminder", label: "Appointments" },
+  { key: "caregiver_alert", label: "Caregiver" },
+  { key: "video_consult", label: "Video Consult" },
   { key: "reminder", label: "Reminders" },
 ] as const;
 
@@ -64,6 +70,10 @@ function getNotifIcon(type: NotifType) {
       return <Siren className="size-5" />;
     case "appointment_reminder":
       return <CalendarDays className="size-5" />;
+    case "caregiver_alert":
+      return <UserCheck className="size-5" />;
+    case "video_consult":
+      return <Video className="size-5" />;
     case "reminder":
       return <Bell className="size-5" />;
     case "call":
@@ -82,6 +92,10 @@ function getNotifColors(type: NotifType, isRead: boolean) {
       return "bg-red-100 text-red-600";
     case "appointment_reminder":
       return "bg-blue-100 text-blue-600";
+    case "caregiver_alert":
+      return "bg-emerald-100 text-emerald-600";
+    case "video_consult":
+      return "bg-indigo-100 text-indigo-600";
     case "reminder":
       return "bg-purple-100 text-purple-600";
     case "call":
@@ -99,6 +113,10 @@ function getNotifTitle(type: NotifType) {
       return "Emergency Alert";
     case "appointment_reminder":
       return "Appointment Reminder";
+    case "caregiver_alert":
+      return "Caregiver Alert";
+    case "video_consult":
+      return "Video Consult Reminder";
     case "reminder":
       return "Medication Reminder";
     case "call":
@@ -398,6 +416,8 @@ function EmptyState({ tab }: { tab: TabKey }) {
     missed_medicine: { title: "No missed medications", sub: "Great job keeping up with the medication schedule!" },
     sos: { title: "No emergency alerts", sub: "No SOS alerts have been received." },
     appointment_reminder: { title: "No appointment reminders", sub: "Upcoming appointments within 24 hours will appear here." },
+    caregiver_alert: { title: "No caregiver alerts", sub: "Upcoming caregiver booking reminders will appear here." },
+    video_consult: { title: "No video consult reminders", sub: "Upcoming telehealth video consultations will appear here." },
     reminder: { title: "No reminders", sub: "Reminders sent by family members will appear here." },
   };
 

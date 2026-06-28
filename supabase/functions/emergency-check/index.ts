@@ -55,7 +55,9 @@ serve(async () => {
       const childIds = parentToChildrenMap[parentId] || [];
 
       // ---------------------------------------------------------
-      // A. MISSED MEDICINE CHECK (Notify Parent & Child)
+      // A. MISSED MEDICINE CHECK
+      //    Parent → "You missed your medicine …"
+      //    Child  → "Your parent missed their medicine …"
       // ---------------------------------------------------------
       const { data: medicines } = await supabase
         .from("medicines")
@@ -78,32 +80,36 @@ serve(async () => {
           const [h, min] = m.schedule_time.split(":").map(Number);
           const scheduledToday = new Date();
           scheduledToday.setHours(h, min, 0, 0);
+          // Must be 5+ minutes past scheduled time
           return now.getTime() > scheduledToday.getTime() + 5 * 60 * 1000;
         });
 
         for (const med of missed) {
-          const timeLabel = med.schedule_time ? med.schedule_time.slice(0, 5) : "scheduled time";
+          const timeLabel = med.schedule_time
+            ? new Date(`1970-01-01T${med.schedule_time}`).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            : "scheduled time";
+          const dosageStr = med.dosage ? ` (${med.dosage})` : "";
 
-          // Notify Parent
+          // Parent: personal reminder
           await insertNotificationIfNotExist({
             supabase,
             recipientId: parentId,
             senderId: parentId,
             type: "missed_medicine",
-            message: `⚠️ Missed Medication: ${med.name}${med.dosage ? ` (${med.dosage})` : ""} scheduled for ${timeLabel} was missed.`,
-            metadata: { medicine_id: med.id, medicine_name: med.name },
+            message: `You missed your medicine "${med.name}"${dosageStr} scheduled for ${timeLabel}. Please take it as soon as possible if appropriate.`,
+            metadata: { medicine_id: med.id, medicine_name: med.name, scheduled_time: med.schedule_time, date: todayStr, status: "missed" },
             todayStr
           });
 
-          // Notify Each Linked Child
+          // Child: caregiver awareness
           for (const childId of childIds) {
             await insertNotificationIfNotExist({
               supabase,
               recipientId: childId,
               senderId: parentId,
               type: "missed_medicine",
-              message: `⚠️ Parent Medication Alert: ${parentName} missed taking ${med.name}${med.dosage ? ` (${med.dosage})` : ""} scheduled for ${timeLabel}.`,
-              metadata: { medicine_id: med.id, medicine_name: med.name, parent_id: parentId },
+              message: `Your parent missed the medicine "${med.name}"${dosageStr} scheduled for ${timeLabel} on ${new Date(todayStr).toLocaleDateString([], { month: "short", day: "numeric" })}.`,
+              metadata: { medicine_id: med.id, medicine_name: med.name, scheduled_time: med.schedule_time, date: todayStr, parent_id: parentId, status: "missed" },
               todayStr
             });
           }
@@ -111,7 +117,53 @@ serve(async () => {
       }
 
       // ---------------------------------------------------------
-      // B. APPOINTMENT REMINDER CHECK (Notify Parent & Child)
+      // B. MISSED APPOINTMENT CHECK (past appointments, 30-min grace)
+      //    Parent → "You missed your appointment …"
+      //    Child  → "Your parent missed their appointment …"
+      // ---------------------------------------------------------
+      const thirtyMinsAgo = new Date(now.getTime() - 30 * 60 * 1000);
+      const { data: missedAppts } = await supabase
+        .from("appointments")
+        .select("id, title, doctor_name, scheduled_at")
+        .eq("parent_id", parentId)
+        .in("status", ["pending", "confirmed", "scheduled"])
+        .lte("scheduled_at", thirtyMinsAgo.toISOString());
+
+      if (missedAppts) {
+        for (const appt of missedAppts) {
+          const apptDate = new Date(appt.scheduled_at);
+          const dateLabel = apptDate.toLocaleDateString([], { month: "short", day: "numeric" });
+          const timeLabel = apptDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          const titleStr = appt.title || "Medical Appointment";
+
+          // Parent
+          await insertNotificationIfNotExist({
+            supabase,
+            recipientId: parentId,
+            senderId: parentId,
+            type: "missed_appointment",
+            message: `You missed your appointment "${titleStr}"${appt.doctor_name ? ` with Dr. ${appt.doctor_name}` : ""} scheduled on ${dateLabel} at ${timeLabel}.`,
+            metadata: { appointment_id: appt.id, appointment_title: titleStr, scheduled_at: appt.scheduled_at, date: dateLabel, status: "missed" },
+            todayStr
+          });
+
+          // Child
+          for (const childId of childIds) {
+            await insertNotificationIfNotExist({
+              supabase,
+              recipientId: childId,
+              senderId: parentId,
+              type: "missed_appointment",
+              message: `Your parent missed the appointment "${titleStr}"${appt.doctor_name ? ` with Dr. ${appt.doctor_name}` : ""} scheduled on ${dateLabel} at ${timeLabel}.`,
+              metadata: { appointment_id: appt.id, appointment_title: titleStr, scheduled_at: appt.scheduled_at, date: dateLabel, parent_id: parentId, status: "missed" },
+              todayStr
+            });
+          }
+        }
+      }
+
+      // ---------------------------------------------------------
+      // C. UPCOMING APPOINTMENT REMINDER (within next 24 hours)
       // ---------------------------------------------------------
       const { data: appointments } = await supabase
         .from("appointments")

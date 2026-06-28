@@ -214,25 +214,49 @@ function SOSPage() {
           console.error("SOS push notification failed:", e);
         }
 
-        // Insert in-app notification for each linked child
+        // Insert in-app notification for each linked child (Emergency SOS alert)
         if (linkedChildren.length > 0) {
+          const now = new Date();
+          const timeLabel = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
           const childNotifs = linkedChildren.map((child) => ({
             parent_id: child.id,          // recipient = child
             sender_id: profile!.id,
             type: "sos",
             notification_type: "sos",
-            message: `Emergency Alert: ${profile!.full_name || "Your parent"} has requested immediate assistance.`,
+            message: `Your parent has sent an SOS alert at ${timeLabel}. Please check on them immediately.`,
             is_read: false,
             metadata: {
               alert_id: inserted.id,
               parent_name: profile!.full_name,
-              triggered_at: new Date().toISOString(),
+              triggered_at: now.toISOString(),
             },
           }));
           try {
             await supabase.from("parent_notifications").insert(childNotifs as any);
           } catch (e) {
             console.error("SOS child notification insert failed:", e);
+          }
+        }
+
+        // Insert SOS Sent confirmation for the parent themselves
+        {
+          const now = new Date();
+          const timeLabel = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          try {
+            await supabase.from("parent_notifications").insert({
+              parent_id: profile!.id,
+              sender_id: profile!.id,
+              type: "sos_sent",
+              notification_type: "sos_sent",
+              message: `Your SOS alert has been successfully sent to your child at ${timeLabel}.`,
+              is_read: false,
+              metadata: {
+                alert_id: inserted.id,
+                triggered_at: now.toISOString(),
+              },
+            } as any);
+          } catch (e) {
+            console.error("SOS sent confirmation insert failed:", e);
           }
         }
       }
@@ -279,6 +303,7 @@ function SOSPage() {
   // Resolve Alert Mutation for Parent/Child
   const resolve = useMutation({
     mutationFn: async (id: string) => {
+      // 1. Resolve the alert
       const { error } = await supabase
         .from("sos_alerts")
         .update({
@@ -288,6 +313,32 @@ function SOSPage() {
         } as any)
         .eq("id", id);
       if (error) throw error;
+
+      // 2. Find whose alert this is (to notify the parent)
+      const { data: alertRow } = await supabase
+        .from("sos_alerts")
+        .select("parent_id")
+        .eq("id", id)
+        .single();
+
+      const resolvedAt = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      if (alertRow?.parent_id) {
+        // Notify parent that their SOS has been resolved
+        try {
+          await supabase.from("parent_notifications").insert({
+            parent_id: alertRow.parent_id,
+            sender_id: profile!.id,
+            type: "sos_resolved",
+            notification_type: "sos_resolved",
+            message: `Your SOS request has been marked as resolved by your child at ${resolvedAt}.`,
+            is_read: false,
+            metadata: { alert_id: id, resolved_at: new Date().toISOString(), resolved_by: profile!.id },
+          } as any);
+        } catch (e) {
+          console.error("SOS resolved notification insert failed:", e);
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Emergency alert marked resolved.");
@@ -297,9 +348,28 @@ function SOSPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Clear Emergency History Mutation
+  const clearHistory = useMutation({
+    mutationFn: async () => {
+      if (!activeParentId) throw new Error("No active parent account selected.");
+      const { error } = await supabase
+        .from("sos_alerts")
+        .delete()
+        .eq("parent_id", activeParentId)
+        .eq("status", "resolved");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Emergency history cleared successfully.");
+      qc.invalidateQueries({ queryKey: ["sos"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to clear emergency history."),
+  });
+
   // Derived alert statuses
   const activeAlerts = alerts.filter((a) => a.status === "active" || a.status === "acknowledged");
   const resolvedAlerts = alerts.filter((a) => a.status === "resolved");
+
 
   return (
     <AppShell>
@@ -520,15 +590,45 @@ function SOSPage() {
                   }
                 : null
             }
+            parentProfile={
+              isChildView && activeParent
+                ? {
+                    name: activeParent.full_name,
+                    phone: activeParent.phone,
+                  }
+                : null
+            }
           />
         </div>
 
         {/* Parent / Child History Logs */}
         <div className="lg:col-span-12">
-          <h2 className="font-display text-2xl font-bold italic mb-4">
-            {isChildView ? `Emergency History for ${activeParent?.full_name ?? "—"}` : "My Emergency History"}
-          </h2>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h2 className="font-display text-2xl font-bold italic">
+              {isChildView ? `Emergency History for ${activeParent?.full_name ?? "—"}` : "My Emergency History"}
+            </h2>
+            {resolvedAlerts.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (
+                    confirm(
+                      "Are you sure you want to permanently clear all emergency history?"
+                    )
+                  ) {
+                    clearHistory.mutate();
+                  }
+                }}
+                disabled={clearHistory.isPending}
+                className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 hover:text-destructive shrink-0"
+              >
+                Clear History
+              </Button>
+            )}
+          </div>
           <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+
             {resolvedAlerts.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground text-sm font-medium">No previous alerts found.</div>
             ) : (

@@ -263,6 +263,18 @@ export const sendPushForAlert = createServerFn({ method: "POST" })
       .single();
     if (alertErr || !alert) throw new Error("Alert not found or not accessible");
 
+    // ── Check elder settings for push notifications ──────────────────────
+    const { data: settings } = await (supabaseAdmin as any)
+      .from("elder_settings")
+      .select("notify_push")
+      .eq("parent_id", alert.parent_id)
+      .maybeSingle();
+
+    const notifyPushEnabled = settings ? settings.notify_push : true;
+    if (!notifyPushEnabled) {
+      return { sent: 0, failed: 0, skipped: 0, recipients: 0, reason: "push_notifications_disabled_in_settings" };
+    }
+
     const { data: elder } = await supabaseAdmin
       .from("profiles")
       .select("full_name")

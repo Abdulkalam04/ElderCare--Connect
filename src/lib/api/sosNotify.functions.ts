@@ -90,6 +90,18 @@ export const notifySosAlert = createServerFn({ method: "POST" })
       .single();
     if (alertErr || !alert) throw new Error("Alert not found or not accessible");
 
+    // ── Check elder settings for email notifications ──────────────────────
+    const { data: settings } = await (context.supabase as any)
+      .from("elder_settings")
+      .select("notify_email")
+      .eq("parent_id", alert.parent_id)
+      .maybeSingle();
+
+    const notifyEmailEnabled = settings ? settings.notify_email : true;
+    if (!notifyEmailEnabled) {
+      return { sent: 0, failed: 0, recipients: 0, skipped: "email_notifications_disabled_in_settings" };
+    }
+
     // ── Elder profile ─────────────────────────────────────────────────────
     // FIX: Use context.supabase instead of supabaseAdmin so SERVICE_ROLE_KEY
     // is not required. The authenticated user can view linked profiles.

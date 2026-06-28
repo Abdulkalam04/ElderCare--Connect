@@ -163,3 +163,52 @@
 }
 .animate-spin-slow { animation: spin-slow 3s linear infinite; }
 .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* ── Accessibility: Large Text ─────────────────────────────────────────── */
+:root.large-text {
+  font-size: 118%;
+}
+
+/* ── Accessibility: High Contrast ──────────────────────────────────────── */
+:root.high-contrast {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 0%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 0%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 0%);
+  --primary: hsl(0 0% 0%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(240 100% 50%); /* High contrast pure blue */
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(0 0% 90%);
+  --muted-foreground: hsl(0 0% 0%);
+  --accent: hsl(0 0% 90%);
+  --accent-foreground: hsl(0 0% 0%);
+  --destructive: hsl(0 100% 40%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(0 0% 0%);
+  --input: hsl(0 0% 0%);
+  --ring: hsl(240 100% 50%);
+  --brand: hsl(0 0% 0%);
+  --brand-accent: hsl(240 100% 50%);
+  --sidebar: hsl(0 0% 100%);
+  --sidebar-foreground: hsl(0 0% 0%);
+  --sidebar-primary: hsl(0 0% 0%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(0 0% 90%);
+  --sidebar-accent-foreground: hsl(0 0% 0%);
+  --sidebar-border: hsl(0 0% 0%);
+  --sidebar-ring: hsl(240 100% 50%);
+}
+
+:root.high-contrast * {
+  border-color: hsl(0 0% 0%) !important;
+}
+
+:root.high-contrast a:hover,
+:root.high-contrast button:hover {
+  text-decoration: underline !important;
+  outline: 2px solid hsl(240 100% 50%) !important;
+}
+

@@ -14,7 +14,7 @@ import { sendPushForAlert } from "@/lib/api/pushNotify.functions";
 import { WellbeingCheckCard } from "@/components/WellbeingCheckCard";
 import { captureLocation, reverseGeocode } from "@/lib/geolocation";
 import { useState, useEffect, useRef } from "react";
-import { Users, Mail, Phone, Calendar as CalendarIcon } from "lucide-react";
+import { Users, Mail, Phone, Calendar as CalendarIcon, MessageSquare, MessageCircle } from "lucide-react";
 import { FileText, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -687,6 +687,145 @@ function DashboardPage() {
 
         {/* Right column */}
         <aside className="space-y-6">
+          {/* Contact Details Card */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="text-base font-bold italic tracking-tight flex items-center gap-2">
+              <Phone className="size-4 text-primary" />
+              {isChildView ? "Parent Contact Info" : "My Contact Info"}
+            </h3>
+
+            {isChildView ? (
+              // Child views parent's contact info
+              activeParent?.phone ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-foreground">{activeParent.full_name}</span>
+                    <span className="font-mono text-muted-foreground">{activeParent.phone}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <a
+                      href={`tel:${activeParent.phone.replace(/[^+\d]/g, "")}`}
+                      onClick={() => toast.info(`📞 Calling Parent (${activeParent.phone})…`)}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+                    >
+                      <Phone className="size-3.5" /> Call
+                    </a>
+                    <a
+                      href={`sms:${activeParent.phone.replace(/[^+\d]/g, "")}?body=${encodeURIComponent("Hello! Just checking in.")}`}
+                      onClick={() => toast.info(`💬 Opening SMS to Parent…`)}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      <MessageSquare className="size-3.5" /> SMS
+                    </a>
+                    <a
+                      href={`https://wa.me/${activeParent.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent("Hello! Just checking in.")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => toast.success(`🟢 Opening WhatsApp for Parent…`)}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors"
+                    >
+                      <MessageCircle className="size-3.5" /> WhatsApp
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">No phone number saved by parent.</p>
+              )
+            ) : (
+              // Parent view: shows own contact + child contacts
+              <div className="space-y-4">
+                {profile?.phone ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-muted-foreground">My Saved Number:</span>
+                      <span className="font-mono font-semibold text-foreground">{profile.phone}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <a
+                        href={`tel:${profile.phone.replace(/[^+\d]/g, "")}`}
+                        onClick={() => toast.info(`📞 Calling My Phone (${profile.phone})…`)}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+                      >
+                        <Phone className="size-3.5" /> Call
+                      </a>
+                      <a
+                        href={`sms:${profile.phone.replace(/[^+\d]/g, "")}`}
+                        onClick={() => toast.info(`💬 Opening SMS to self…`)}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                      >
+                        <MessageSquare className="size-3.5" /> SMS
+                      </a>
+                      <a
+                        href={`https://wa.me/${profile.phone.replace(/[^\d]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => toast.success(`🟢 Opening WhatsApp…`)}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors"
+                      >
+                        <MessageCircle className="size-3.5" /> WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">You haven't saved your phone number yet.</p>
+                    <Link to="/settings" className="block">
+                      <Button variant="outline" size="sm" className="w-full text-xs rounded-xl">
+                        Add phone in Settings
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+
+                {/* Child Contacts list */}
+                {linkedChildren.length > 0 && (
+                  <div className="border-t border-border pt-4 space-y-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Family Contacts ({linkedChildren.length})
+                    </h4>
+                    <div className="space-y-4">
+                      {linkedChildren.map((child: any) => (
+                        <div key={child.id} className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-semibold text-foreground">{child.full_name}</span>
+                            <span className="font-mono text-xs text-muted-foreground">{child.phone ?? "No phone"}</span>
+                          </div>
+                          {child.phone && (
+                            <div className="grid grid-cols-3 gap-2">
+                              <a
+                                href={`tel:${child.phone.replace(/[^+\d]/g, "")}`}
+                                onClick={() => toast.info(`📞 Calling ${child.full_name} (${child.phone})…`)}
+                                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+                              >
+                                <Phone className="size-3.5" /> Call
+                              </a>
+                              <a
+                                href={`sms:${child.phone.replace(/[^+\d]/g, "")}?body=${encodeURIComponent("Hi! Just checking in.")}`}
+                                onClick={() => toast.info(`💬 Opening SMS to ${child.full_name}…`)}
+                                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                              >
+                                <MessageSquare className="size-3.5" /> SMS
+                              </a>
+                              <a
+                                href={`https://wa.me/${child.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent("Hi! Just checking in.")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => toast.success(`🟢 Opening WhatsApp for ${child.full_name}…`)}
+                                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors"
+                              >
+                                <MessageCircle className="size-3.5" /> WhatsApp
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Feeling card */}
           <div className="bg-brand text-primary-foreground rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-4">

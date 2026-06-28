@@ -7,7 +7,7 @@ import { useRealtimeSosAlerts } from "@/hooks/useRealtimeSosAlerts";
 import { useNotificationEngine } from "@/hooks/useNotificationEngine";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -94,6 +94,274 @@ export function AppShell({ children }: { children: ReactNode }) {
     userId: user?.id ?? null,
     isChildView,
   });
+
+  // ── Load Elder Settings globally ────────────────────────────
+  const { data: globalElderSettings } = useQuery({
+    queryKey: ["global_elder_settings", activeParentId],
+    enabled: !!activeParentId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("elder_settings")
+        .select("*")
+        .eq("parent_id", activeParentId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as Record<string, any> | null;
+    },
+  });
+
+  useEffect(() => {
+    if (globalElderSettings) {
+      document.documentElement.classList.toggle("large-text", !!globalElderSettings.large_text);
+      document.documentElement.classList.toggle("high-contrast", !!globalElderSettings.high_contrast);
+      document.documentElement.lang = globalElderSettings.language || "en";
+    } else {
+      document.documentElement.classList.remove("large-text", "high-contrast");
+      document.documentElement.lang = "en";
+    }
+    return () => {
+      document.documentElement.classList.remove("large-text", "high-contrast");
+      document.documentElement.lang = "en";
+    };
+  }, [globalElderSettings, activeParentId]);
+
+  // ── Local Medicine Reminders Engine ──────────────────────────────
+  const { data: globalMeds } = useQuery({
+    queryKey: ["global_meds", activeParentId],
+    enabled: !!activeParentId && !!globalElderSettings?.med_reminders_enabled && profile?.role === "parent",
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("medicines")
+        .select("id, name, dosage, schedule_time")
+        .eq("parent_id", activeParentId!)
+        .eq("active", true);
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; name: string; dosage: string | null; schedule_time: string | null }>;
+    },
+  });
+
+  const todayDateStr = new Date().toISOString().split("T")[0];
+  const { data: globalTakenMeds } = useQuery({
+    queryKey: ["global_taken_meds", activeParentId, todayDateStr],
+    enabled: !!activeParentId && !!globalElderSettings?.med_reminders_enabled && profile?.role === "parent",
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("medicine_logs")
+        .select("medicine_id")
+        .eq("parent_id", activeParentId!)
+        .eq("log_date", todayDateStr);
+      return new Set((data ?? []).map((l) => l.medicine_id));
+    },
+    refetchInterval: 15_000,
+  });
+
+  const warnedMedsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (globalElderSettings?.med_reminders_enabled && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, [globalElderSettings]);
+
+  useEffect(() => {
+    if (profile?.role !== "parent" || !activeParentId || !globalElderSettings?.med_reminders_enabled || !globalMeds) return;
+
+    const checkInterval = setInterval(() => {
+      const now = new Date();
+      const todayStr = now.toISOString().split("T")[0];
+
+      globalMeds.forEach((med) => {
+        if (!med.schedule_time) return;
+        if (globalTakenMeds?.has(med.id)) return;
+
+        const [schedHours, schedMins] = med.schedule_time.split(":").map(Number);
+        const lead = globalElderSettings.med_reminder_lead_minutes || 0;
+        
+        const scheduledTime = new Date();
+        scheduledTime.setHours(schedHours, schedMins, 0, 0);
+
+        const targetTime = new Date(scheduledTime.getTime() - lead * 60 * 1000);
+        const diffMs = now.getTime() - targetTime.getTime();
+
+        const isTimeForReminder = diffMs >= 0 && diffMs < 90_000;
+        const trackingKey = `${med.id}_${todayStr}`;
+
+        if (isTimeForReminder && !warnedMedsRef.current.has(trackingKey)) {
+          warnedMedsRef.current.add(trackingKey);
+
+          if (globalElderSettings.med_voice_reminders && "speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+            let msg = `Reminder: It is time to take your medication: ${med.name}, dosage ${med.dosage || ""}.`;
+            let speechLang = "en-US";
+            if (globalElderSettings.language === "hi") {
+              msg = `ध्यान दें: दवा का समय हो गया है। कृपया ${med.name} लें, खुराक ${med.dosage || ""}.`;
+              speechLang = "hi-IN";
+            }
+            const utterance = new SpeechSynthesisUtterance(msg);
+            utterance.lang = speechLang;
+            window.speechSynthesis.speak(utterance);
+          }
+
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`💊 Medicine Reminder`, {
+              body: `Time to take ${med.name} (${med.dosage || ""})`,
+              tag: `med-${med.id}`,
+            });
+          }
+
+          const markTakenText = globalElderSettings.language === "hi" ? "दवा ले ली" : "Mark Taken";
+          const toastMsg = globalElderSettings.language === "hi"
+            ? `अनुस्मारक: ${med.name} (${med.dosage || ""}) लेने का समय`
+            : `Time to take ${med.name} (${med.dosage || ""})`;
+
+          toast.warning(toastMsg, {
+            duration: 15000,
+            action: {
+              label: markTakenText,
+              onClick: async () => {
+                try {
+                  const { error } = await supabase.from("medicine_logs").insert({
+                    medicine_id: med.id,
+                    parent_id: activeParentId,
+                    log_date: todayStr,
+                  });
+                  if (error) throw error;
+                  queryClient.invalidateQueries({ queryKey: ["global_taken_meds"] });
+                  toast.success(globalElderSettings.language === "hi" ? "सफलतापूर्वक दर्ज किया गया。" : "Marked as taken.");
+                } catch (e) {
+                  toast.error("Failed to mark taken");
+                }
+              },
+            },
+          });
+        }
+      });
+    }, 20_000);
+
+    return () => clearInterval(checkInterval);
+  }, [activeParentId, globalElderSettings, globalMeds, globalTakenMeds, profile, queryClient]);
+
+  // ── SOS Escalation Engine ─────────────────────────────────────
+  const { data: globalContacts = [] } = useQuery({
+    queryKey: ["global_emergency_contacts", profile?.id],
+    enabled: profile?.role === "parent",
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("emergency_contacts")
+        .select("id, name, phone, relationship, priority")
+        .eq("parent_id", profile!.id)
+        .order("priority", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Array<{ id: string; name: string | null; phone: string | null; relationship: string | null; priority: number }>;
+    },
+  });
+
+  const { data: parentActiveAlert } = useQuery({
+    queryKey: ["parent_active_sos", profile?.id],
+    enabled: profile?.role === "parent",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sos_alerts")
+        .select("id, created_at, status")
+        .eq("parent_id", profile!.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 5000,
+  });
+
+  const dialedContactsRef = useRef<Record<string, Set<number>>>({});
+  const [escalationTimeLeft, setEscalationTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (profile?.role !== "parent" || !parentActiveAlert || globalContacts.length === 0) {
+      setEscalationTimeLeft(null);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      const alertId = parentActiveAlert.id;
+      if (!dialedContactsRef.current[alertId]) {
+        dialedContactsRef.current[alertId] = new Set();
+      }
+
+      const leadMins = globalElderSettings?.sos_escalation_minutes || 5;
+      const escalationSeconds = leadMins * 60;
+      
+      const elapsedSeconds = Math.floor(
+        (Date.now() - new Date(parentActiveAlert.created_at).getTime()) / 1000
+      );
+
+      const currentIdx = Math.floor(elapsedSeconds / escalationSeconds);
+      const nextIdx = currentIdx + 1;
+
+      if (nextIdx < globalContacts.length) {
+        const nextThresholdSecs = nextIdx * escalationSeconds;
+        const timeLeft = nextThresholdSecs - elapsedSeconds;
+        setEscalationTimeLeft(timeLeft);
+        
+        if (timeLeft === 15) {
+          const nextContact = globalContacts[nextIdx];
+          toast.info(
+            globalElderSettings?.language === "hi"
+              ? `आपातकालीन अलर्ट 15 सेकंड में अगले संपर्क ${nextContact.name || ""} को स्थानांतरित किया जाएगा...`
+              : `⚠️ Escalating alert to next contact ${nextContact.name || ""} in 15 seconds...`
+          );
+        }
+      } else {
+        setEscalationTimeLeft(null);
+      }
+
+      if (currentIdx < globalContacts.length && !dialedContactsRef.current[alertId].has(currentIdx)) {
+        const contact = globalContacts[currentIdx];
+        const shouldDial = currentIdx > 0 || globalElderSettings?.sos_auto_call_primary;
+
+        if (shouldDial && contact.phone) {
+          dialedContactsRef.current[alertId].add(currentIdx);
+
+          if ("speechSynthesis" in window) {
+            const speakText = currentIdx === 0
+              ? `Emergency triggered. Auto dialing primary contact, ${contact.name || "Emergency Contact"}.`
+              : `Escalating alert. Dialing next contact, ${contact.name || "Emergency Contact"}.`;
+            const utterance = new SpeechSynthesisUtterance(speakText);
+            utterance.lang = globalElderSettings?.language === "hi" ? "hi-IN" : "en-US";
+            window.speechSynthesis.speak(utterance);
+          }
+
+          toast.error(`🚨 Emergency Escalation: Calling ${contact.name} (${contact.phone})`, {
+            duration: 10000,
+          });
+
+          (async () => {
+            try {
+              await (supabase.from("parent_notifications") as any).insert({
+                parent_id: profile.id,
+                sender_id: profile.id,
+                type: "sos_escalation",
+                notification_type: "sos_escalation",
+                message: `🚨 Emergency Escalation: Calling ${contact.name || "contact"} at ${contact.phone} (Priority ${contact.priority}).`,
+              });
+            } catch (err) {
+              console.error("SOS escalation notification insert failed:", err);
+            }
+          })();
+
+          setTimeout(() => {
+            window.location.href = `tel:${contact.phone!.replace(/[^+\d]/g, "")}`;
+          }, 1500);
+        }
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+      setEscalationTimeLeft(null);
+    };
+  }, [profile, parentActiveAlert, globalContacts, globalElderSettings]);
 
   const { data: activeSosAlerts = [] } = useQuery({
     queryKey: ["activeSosAlerts", caregiverParentIds],
@@ -238,6 +506,22 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
           <Link to="/sos" className="underline hover:text-red-100 ml-1.5 font-bold">
             View Details
+          </Link>
+        </div>
+      )}
+
+      {/* Parent SOS Active Alert Escalation Banner */}
+      {!isChildView && parentActiveAlert && (
+        <div className="bg-orange-600 text-white px-4 py-2.5 text-center text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 select-none z-50 relative shadow-md shrink-0">
+          <Siren className="size-4 shrink-0 animate-pulse" />
+          <span>
+            🚨 SOS Alert Active
+            {escalationTimeLeft !== null && escalationTimeLeft > 0
+              ? ` — Next contact escalation in ${Math.floor(escalationTimeLeft / 60)}m ${escalationTimeLeft % 60}s`
+              : ""}
+          </span>
+          <Link to="/sos" className="underline hover:text-orange-100 ml-1.5 font-bold">
+            Manage
           </Link>
         </div>
       )}

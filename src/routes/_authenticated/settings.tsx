@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { enablePushNotifications, disablePushNotifications, isPushSupported } from "@/lib/push";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
@@ -53,16 +54,83 @@ const DEFAULTS: Omit<Settings, "parent_id"> = {
   quiet_hours_end: null,
 };
 
+const translations = {
+  en: {
+    title: "Elder Settings",
+    subtitle: "Preferences for",
+    myPhoneTitle: "My phone number",
+    myPhoneDesc: "Your phone number is visible to linked family members and enables emergency one-tap calling.",
+    phoneLabel: "Phone number",
+    save: "Save",
+    saving: "Saving…",
+    linkParentWarning: "Link a parent account on the Family page to manage elder settings here.",
+    loadingSettings: "Loading settings…",
+    notifPrefTitle: "Notification preferences",
+    emailNotif: "Email notifications",
+    pushNotif: "Push notifications",
+    quietHoursStart: "Quiet hours start",
+    quietHoursEnd: "Quiet hours end",
+    medRemTitle: "Medication reminders",
+    enableMedRem: "Enable medication reminders",
+    voiceSpokenRem: "Voice spoken reminders",
+    remindMinutesBefore: "Remind this many minutes before dose",
+    emergEscTitle: "Emergency escalation",
+    shareLiveLoc: "Share live location with SOS alerts",
+    autoCallPrimary: "Auto-call primary contact on SOS",
+    escalateNextContact: "Escalate to next contact after (minutes)",
+    prefContactMethodTitle: "Preferred contact method",
+    phoneCall: "Phone call",
+    email: "Email",
+    pushNotifOption: "Push notification",
+    profilePrefTitle: "Profile preferences",
+    languageLabel: "Language",
+    largerText: "Larger text",
+    highContrast: "High contrast",
+    saveSettings: "Save settings",
+  },
+  hi: {
+    title: "बुजुर्ग सेटिंग्स",
+    subtitle: "के लिए प्राथमिकताएं",
+    myPhoneTitle: "मेरा फोन नंबर",
+    myPhoneDesc: "आपका फोन नंबर जुड़े हुए परिवार के सदस्यों को दिखाई देता है और आपातकालीन वन-टैप कॉलिंग सक्षम करता है।",
+    phoneLabel: "फ़ोन नंबर",
+    save: "सहेजें",
+    saving: "सहेज रहे हैं…",
+    linkParentWarning: "बुजुर्ग सेटिंग्स प्रबंधित करने के लिए फैमिली पेज पर एक पैरेंट अकाउंट लिंक करें।",
+    loadingSettings: "सेटिंग्स लोड हो रही हैं…",
+    notifPrefTitle: "अधिसूचना प्राथमिकताएं",
+    emailNotif: "ईमेल अधिसूचनाएं",
+    pushNotif: "पुश अधिसूचनाएं",
+    quietHoursStart: "शांत घंटे शुरू",
+    quietHoursEnd: "शांत घंटे समाप्त",
+    medRemTitle: "दवा अनुस्मारक (रिमाइंडर्स)",
+    enableMedRem: "दवा अनुस्मारक सक्षम करें",
+    voiceSpokenRem: "आवाज से बोले जाने वाले अनुस्मारक",
+    remindMinutesBefore: "खुराक से इतने मिनट पहले याद दिलाएं",
+    emergEscTitle: "आपातकालीन वृद्धि (Escalation)",
+    shareLiveLoc: "एसओएस अलर्ट के साथ लाइव स्थान साझा करें",
+    autoCallPrimary: "एसओएस पर प्राथमिक संपर्क को ऑटो-कॉल करें",
+    escalateNextContact: "इतने मिनट बाद अगले संपर्क को कॉल करें",
+    prefContactMethodTitle: "पसंदीदा संपर्क विधि",
+    phoneCall: "फ़ोन कॉल",
+    email: "ईमेल",
+    pushNotifOption: "पुश अधिसूचना",
+    profilePrefTitle: "प्रोफ़ाइल प्राथमिकताएं",
+    languageLabel: "भाषा",
+    largerText: "बड़ा टेक्स्ट",
+    highContrast: "उच्च कंट्रास्ट",
+    saveSettings: "सेटिंग्स सहेजें",
+  }
+} as const;
+
 function SettingsPage() {
   const { activeParentId, activeParent } = useActiveParent();
   const { data: currentUser } = useCurrentUser();
   const qc = useQueryClient();
   const [phone, setPhone] = useState("");
+  const [hasLoadedPhone, setHasLoadedPhone] = useState(false);
 
   // ── My Phone Number ──────────────────────────────────────────────────────
-  // Root cause fix: use (supabase as any) to bypass stale type definitions
-  // and also handle the case where the phone column may not yet exist on older
-  // Supabase projects that haven't run the add_phone migration.
   const { data: myProfile } = useQuery({
     queryKey: ["myProfile", currentUser?.id],
     enabled: !!currentUser?.id,
@@ -78,25 +146,30 @@ function SettingsPage() {
   });
 
   useEffect(() => {
-    if (myProfile?.phone !== undefined) setPhone(myProfile?.phone ?? "");
-  }, [myProfile]);
+    if (myProfile && !hasLoadedPhone) {
+      setPhone(myProfile.phone ?? "");
+      setHasLoadedPhone(true);
+    }
+  }, [myProfile, hasLoadedPhone]);
 
   const savePhone = useMutation({
     mutationFn: async () => {
       if (!currentUser?.id) throw new Error("Not signed in");
       const trimmed = phone.trim() || null;
-      // Validate format if provided
-      if (trimmed && trimmed.replace(/[^0-9]/g, "").length < 7) {
-        throw new Error("Please enter a valid phone number (at least 7 digits)");
+      
+      // Basic validation: at least 7 digits, digits and special chars allowed: /^\+?[0-9\s\-()]{7,20}$/
+      if (trimmed) {
+        const phoneRegex = /^\+?[0-9\s\-()]{7,30}$/;
+        if (!phoneRegex.test(trimmed) || trimmed.replace(/[^0-9]/g, "").length < 7) {
+          throw new Error("Please enter a valid phone number (at least 7 digits, spaces/dashes/parentheses allowed)");
+        }
       }
-      // Use (supabase as any) to handle the phone column which may be absent
-      // from auto-generated types if types.ts was not regenerated after migration.
+
       const { error } = await (supabase as any)
         .from("profiles")
         .update({ phone: trimmed })
         .eq("id", currentUser.id);
       if (error) {
-        // Surface the real error message for diagnosis
         throw new Error(error.message ?? "Failed to save phone number");
       }
     },
@@ -126,7 +199,15 @@ function SettingsPage() {
   });
 
   const [form, setForm] = useState<Settings | null>(null);
-  useEffect(() => { if (data) setForm(data); }, [data]);
+  useEffect(() => {
+    if (data) {
+      setForm(data);
+      // Apply accessibility settings immediately on load/reload
+      document.documentElement.classList.toggle("large-text", !!data.large_text);
+      document.documentElement.classList.toggle("high-contrast", !!data.high_contrast);
+      document.documentElement.lang = data.language || "en";
+    }
+  }, [data]);
 
   const save = useMutation({
     mutationFn: async (values: Settings) => {
@@ -137,7 +218,12 @@ function SettingsPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["elder_settings"] });
-      toast.success("Settings saved.");
+      if (form) {
+        document.documentElement.classList.toggle("large-text", !!form.large_text);
+        document.documentElement.classList.toggle("high-contrast", !!form.high_contrast);
+        document.documentElement.lang = form.language || "en";
+      }
+      toast.success(form?.language === "hi" ? "सेटिंग्स सहेजी गईं।" : "Settings saved.");
     },
     onError: (e: Error) => toast.error(e.message ?? "Failed to save settings"),
   });
@@ -146,24 +232,48 @@ function SettingsPage() {
     if (form) setForm({ ...form, [k]: v });
   };
 
+  const handlePushToggle = async (v: boolean) => {
+    set("notify_push", v);
+    if (v) {
+      if (isPushSupported()) {
+        const r = await enablePushNotifications();
+        if (r.ok) {
+          toast.success("Web Push alerts enabled on this device.");
+        } else {
+          toast.warning(`Push enabled in settings, but browser setup failed: ${r.reason || "unknown error"}. Please check permission.`);
+        }
+      } else {
+        toast.warning("Push notifications enabled in settings, but not supported in this browser.");
+      }
+    } else {
+      if (isPushSupported()) {
+        await disablePushNotifications();
+        toast.success("Web Push alerts disabled on this device.");
+      }
+    }
+  };
+
+  const lang = form?.language === "hi" ? "hi" : "en";
+  const t = translations[lang];
+
   return (
     <AppShell>
       <div className="mb-8">
-        <h1 className="font-display text-4xl font-bold italic">Elder Settings</h1>
+        <h1 className="font-display text-4xl font-bold italic">{t.title}</h1>
         <p className="text-muted-foreground mt-1">
-          Preferences for {activeParent?.full_name ?? "—"}
+          {t.subtitle} {activeParent?.full_name ?? "—"}
         </p>
       </div>
 
       <div className="space-y-8 max-w-3xl">
         {/* ── My Phone Number ─────────────────────────────────────────────── */}
-        <Section title="My phone number">
+        <Section title={t.myPhoneTitle}>
           <p className="text-sm text-muted-foreground -mt-2">
-            Your phone number is visible to linked family members and enables emergency one-tap calling and SMS.
+            {t.myPhoneDesc}
           </p>
           <div className="flex gap-3">
             <div className="flex-1">
-              <Label htmlFor="my-phone">Phone number</Label>
+              <Label htmlFor="my-phone">{t.phoneLabel}</Label>
               <Input
                 id="my-phone"
                 type="tel"
@@ -181,7 +291,7 @@ function SettingsPage() {
                 onClick={() => savePhone.mutate()}
                 className="shrink-0"
               >
-                {savePhone.isPending ? "Saving…" : "Save"}
+                {savePhone.isPending ? t.saving : t.save}
               </Button>
             </div>
           </div>
@@ -190,31 +300,29 @@ function SettingsPage() {
         {/* ── Elder Settings ───────────────────────────────────────────────── */}
         {!activeParentId ? (
           <div className="text-sm text-muted-foreground bg-stone-50 border border-border rounded-2xl p-4">
-            Link a parent account on the Family page to manage elder settings here.
+            {t.linkParentWarning}
           </div>
         ) : isLoading || !form ? (
-          <div className="text-muted-foreground">Loading settings…</div>
+          <div className="text-muted-foreground">{t.loadingSettings}</div>
         ) : (
           <form
             className="space-y-8"
             onSubmit={(e) => { e.preventDefault(); save.mutate(form!); }}
           >
             {/* Notification Preferences */}
-            <Section title="Notification preferences">
-              <ToggleRow label="Email notifications"
+            <Section title={t.notifPrefTitle}>
+              <ToggleRow label={t.emailNotif}
                 checked={form.notify_email} onChange={(v) => set("notify_email", v)} />
-              <ToggleRow label="Push notifications"
-                checked={form.notify_push} onChange={(v) => set("notify_push", v)} />
-              <ToggleRow label="SMS notifications"
-                checked={form.notify_sms} onChange={(v) => set("notify_sms", v)} />
+              <ToggleRow label={t.pushNotif}
+                checked={form.notify_push} onChange={handlePushToggle} />
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div>
-                  <Label>Quiet hours start</Label>
+                  <Label>{t.quietHoursStart}</Label>
                   <Input type="time" value={form.quiet_hours_start ?? ""}
                     onChange={(e) => set("quiet_hours_start", e.target.value || null)} />
                 </div>
                 <div>
-                  <Label>Quiet hours end</Label>
+                  <Label>{t.quietHoursEnd}</Label>
                   <Input type="time" value={form.quiet_hours_end ?? ""}
                     onChange={(e) => set("quiet_hours_end", e.target.value || null)} />
                 </div>
@@ -222,69 +330,65 @@ function SettingsPage() {
             </Section>
 
             {/* Medication Reminders */}
-            <Section title="Medication reminders">
-              <ToggleRow label="Enable medication reminders"
+            <Section title={t.medRemTitle}>
+              <ToggleRow label={t.enableMedRem}
                 checked={form.med_reminders_enabled} onChange={(v) => set("med_reminders_enabled", v)} />
-              <ToggleRow label="Voice spoken reminders"
+              <ToggleRow label={t.voiceSpokenRem}
                 checked={form.med_voice_reminders} onChange={(v) => set("med_voice_reminders", v)} />
               <div>
-                <Label>Remind this many minutes before dose</Label>
+                <Label>{t.remindMinutesBefore}</Label>
                 <Input type="number" min={0} max={120} value={form.med_reminder_lead_minutes}
                   onChange={(e) => set("med_reminder_lead_minutes", Number(e.target.value) || 0)} />
               </div>
             </Section>
 
             {/* Emergency Escalation */}
-            <Section title="Emergency escalation">
-              <ToggleRow label="Share live location with SOS alerts"
+            <Section title={t.emergEscTitle}>
+              <ToggleRow label={t.shareLiveLoc}
                 checked={form.sos_share_location} onChange={(v) => set("sos_share_location", v)} />
-              <ToggleRow label="Auto-call primary contact on SOS"
+              <ToggleRow label={t.autoCallPrimary}
                 checked={form.sos_auto_call_primary} onChange={(v) => set("sos_auto_call_primary", v)} />
               <div>
-                <Label>Escalate to next contact after (minutes)</Label>
+                <Label>{t.escalateNextContact}</Label>
                 <Input type="number" min={1} max={60} value={form.sos_escalation_minutes}
                   onChange={(e) => set("sos_escalation_minutes", Number(e.target.value) || 5)} />
               </div>
             </Section>
 
             {/* Preferred Contact Method */}
-            <Section title="Preferred contact method">
+            <Section title={t.prefContactMethodTitle}>
               <Select value={form.preferred_contact_method}
                 onValueChange={(v) => set("preferred_contact_method", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="phone">Phone call</SelectItem>
-                  <SelectItem value="sms">Text message (SMS)</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="push">Push notification</SelectItem>
+                  <SelectItem value="phone">{t.phoneCall}</SelectItem>
+                  <SelectItem value="email">{t.email}</SelectItem>
+                  <SelectItem value="push">{t.pushNotifOption}</SelectItem>
                 </SelectContent>
               </Select>
             </Section>
 
             {/* Profile Preferences */}
-            <Section title="Profile preferences">
+            <Section title={t.profilePrefTitle}>
               <div>
-                <Label>Language</Label>
+                <Label>{t.languageLabel}</Label>
                 <Select value={form.language} onValueChange={(v) => set("language", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
                     <SelectItem value="hi">हिन्दी</SelectItem>
-                    <SelectItem value="zh">中文</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <ToggleRow label="Larger text"
+              <ToggleRow label={t.largerText}
                 checked={form.large_text} onChange={(v) => set("large_text", v)} />
-              <ToggleRow label="High contrast"
+              <ToggleRow label={t.highContrast}
                 checked={form.high_contrast} onChange={(v) => set("high_contrast", v)} />
             </Section>
 
             <div className="flex justify-end">
               <Button type="submit" disabled={save.isPending}>
-                {save.isPending ? "Saving…" : "Save settings"}
+                {save.isPending ? t.saving : t.saveSettings}
               </Button>
             </div>
           </form>

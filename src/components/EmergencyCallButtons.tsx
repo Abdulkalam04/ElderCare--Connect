@@ -110,10 +110,12 @@ export function EmergencyCallButtons({
   caregivers,
   emergencyContacts,
   profileEmergency,
+  parentProfile,
 }: {
   caregivers?: EmergencyContactish[];
   emergencyContacts?: EmergencyContactish[];
   profileEmergency?: { name: string | null; phone: string | null } | null;
+  parentProfile?: { name: string | null; phone: string | null } | null;
 }) {
   type Row = {
     key: string;
@@ -124,6 +126,16 @@ export function EmergencyCallButtons({
   };
 
   const rows: Row[] = [];
+
+  if (parentProfile?.name || parentProfile?.phone) {
+    rows.push({
+      key: "parent-profile",
+      label: parentProfile.name || "Parent",
+      sub: "Parent's phone number",
+      phone: parentProfile.phone ?? null,
+      valid: isValidPhone(parentProfile.phone),
+    });
+  }
 
   if (profileEmergency?.name || profileEmergency?.phone) {
     rows.push({

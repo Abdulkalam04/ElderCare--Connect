@@ -28,6 +28,7 @@ function FamilyPage() {
   const { data: profile } = useProfile();
   const qc = useQueryClient();
   const [code, setCode] = useState("");
+  const [phone, setPhone] = useState("");
 
   const { data: linkedParents } = useLinkedParents();
   const { data: linkedChildren } = useLinkedChildren(
@@ -37,14 +38,23 @@ function FamilyPage() {
   // ── Child: link to parent ─────────────────────────────────────────────────
   const link = useMutation({
     mutationFn: async () => {
-      const trimmed = code.trim().toUpperCase();
+      const trimmedCode = code.trim().toUpperCase();
+      const trimmedPhone = phone.trim();
 
-      if (!trimmed) {
+      if (!trimmedCode) {
         throw new Error("Please enter a Family Link Code.");
       }
 
+      // Basic phone validation if entered
+      if (trimmedPhone) {
+        const phoneRegex = /^\+?[0-9\s\-()]{7,30}$/;
+        if (!phoneRegex.test(trimmedPhone) || trimmedPhone.replace(/[^0-9]/g, "").length < 7) {
+          throw new Error("Please enter a valid phone number (at least 7 digits, spaces/dashes/parentheses allowed)");
+        }
+      }
+
       // Prevent self-linking
-      const parentIdResult = await supabase.rpc("lookup_parent_by_invite_code", { _code: trimmed });
+      const parentIdResult = await supabase.rpc("lookup_parent_by_invite_code", { _code: trimmedCode });
       if (parentIdResult.error) throw new Error("Unable to complete linking. Please try again.");
 
       const parentId = parentIdResult.data;
@@ -70,6 +80,16 @@ function FamilyPage() {
         throw new Error("This child is already linked to a parent. Unlink first.");
       }
 
+      // Update child's own profile phone number in database if provided
+      if (trimmedPhone) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ phone: trimmedPhone })
+          .eq("id", user!.id);
+        if (profileError) throw new Error("Failed to save child phone number.");
+      }
+
+      // Insert link
       const { error } = await supabase
         .from("parent_child_links")
         .insert({ parent_id: parentId, child_id: user!.id });
@@ -81,7 +101,10 @@ function FamilyPage() {
     onSuccess: () => {
       toast.success("Successfully linked to family.");
       setCode("");
+      setPhone("");
       qc.invalidateQueries({ queryKey: ["linkedParents"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["myProfile"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -267,6 +290,18 @@ function FamilyPage() {
               maxLength={8}
               disabled={link.isPending}
             />
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="child-phone">Your phone number (Child)</Label>
+              <Input
+                id="child-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 555-0199"
+                className="rounded-xl h-11 text-sm"
+                disabled={link.isPending}
+              />
+            </div>
             <Button
               onClick={() => {
                 if (!code.trim()) {
@@ -276,7 +311,7 @@ function FamilyPage() {
                 link.mutate();
               }}
               disabled={link.isPending}
-              className="w-full rounded-xl h-11"
+              className="w-full rounded-xl h-11 mt-2"
             >
               <Link2 className="size-4 mr-2" />
               {link.isPending ? "Linking…" : "Link account"}

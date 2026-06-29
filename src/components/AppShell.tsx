@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EditableAvatar } from "@/components/EditableAvatar";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -528,9 +529,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-white/50 backdrop-blur-xl z-20 hidden md:flex flex-col">
-        <div className="px-8 pt-8 pb-4">
-          <div className="text-xl font-bold tracking-tight">
-            <span className="text-brand">ElderCare</span><span className="text-brand-accent">Connect</span>
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center gap-2.5">
+            <img src="/favicon.svg" alt="ElderCare Connect logo" className="size-8 rounded-lg shrink-0" />
+            <div className="text-xl font-bold tracking-tight">
+              <span className="text-brand">ElderCare</span><span className="text-brand-accent">Connect</span>
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-8 py-4">
@@ -565,6 +569,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Drawer header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
+            <img src="/favicon.svg" alt="ElderCare Connect logo" className="size-8 rounded-lg shrink-0" />
             <div className="text-lg font-bold tracking-tight">
               <span className="text-brand">ElderCare</span><span className="text-brand-accent">Connect</span>
             </div>
@@ -581,9 +586,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Profile info in drawer */}
         <div className="px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <Avatar className="size-9 ring-2 ring-white shrink-0">
-              <AvatarFallback className="bg-secondary/20 text-secondary font-semibold text-sm">{initials}</AvatarFallback>
-            </Avatar>
+            <EditableAvatar size="sm" />
             <div className="min-w-0">
               <p className="font-semibold text-sm truncate">{profile?.full_name || "User"}</p>
               <p className="text-xs text-muted-foreground font-mono uppercase truncate">
@@ -637,9 +640,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {/* Avatar + name */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <Avatar className="size-9 sm:size-10 ring-2 ring-white shrink-0">
-              <AvatarFallback className="bg-secondary/20 text-secondary font-semibold">{initials}</AvatarFallback>
-            </Avatar>
+            <EditableAvatar size="md" />
             <div className="min-w-0 hidden sm:block">
               <p className="font-display text-base sm:text-lg font-bold leading-none truncate">
                 {profile?.full_name || "Welcome"}
@@ -676,7 +677,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Select value={activeParent?.id ?? undefined} onValueChange={(v) => setSelectedParentId(v)}>
               <SelectTrigger className="hidden sm:flex h-9 rounded-full border-border bg-stone-100 text-sm font-medium gap-2 px-4 w-auto max-w-[160px]">
                 <SelectValue placeholder="Select parent" />
-                <ChevronDown className="size-3.5 opacity-50" />
               </SelectTrigger>
               <SelectContent>
                 {linkedParents.map((p) => (

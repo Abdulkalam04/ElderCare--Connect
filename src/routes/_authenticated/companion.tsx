@@ -166,7 +166,7 @@ function CompanionPage() {
   // ── Fetch ALL messages for history ────────────────────────────────────────
   const { data: allMessages } = useQuery({
     queryKey: ["aiChat", activeParentId],
-    enabled: !!activeParentId && !isChildView,
+    enabled: !!activeParentId,
     queryFn: async () => {
       const { data } = await supabase
         .from("ai_chat_messages")
@@ -354,7 +354,7 @@ function CompanionPage() {
   async function send() {
     const text = input.trim();
     const hasAttachments = attachments.length > 0;
-    if ((!text && !hasAttachments) || !activeParentId || isChildView) return;
+    if ((!text && !hasAttachments) || !activeParentId) return;
 
     // Capture & clear input + attachments synchronously for snappy UX
     const currentAttachments = attachments.map((a) => ({
@@ -446,26 +446,26 @@ function CompanionPage() {
         <div>
           <h1 className="font-display text-3xl sm:text-4xl font-bold italic">AI Companion</h1>
           <p className="text-muted-foreground mt-1">
-            A friendly chat helper for {activeParent?.full_name ?? "you"}.
+            {isChildView
+              ? `Shared family chat with ${activeParent?.full_name ?? "your parent"}'s AI Companion.`
+              : `A friendly chat helper for ${activeParent?.full_name ?? "you"}.`}
           </p>
         </div>
-        {!isChildView && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowHistory((v) => !v)}
-            className="rounded-xl gap-2 shrink-0"
-          >
-            <History className="size-4" />
-            {showHistory ? "Hide History" : "Chat History"}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowHistory((v) => !v)}
+          className="rounded-xl gap-2 shrink-0"
+        >
+          <History className="size-4" />
+          {showHistory ? "Hide History" : "Chat History"}
+        </Button>
       </div>
 
       <div className={`flex gap-4 ${showHistory ? "flex-col md:flex-row" : ""}`}>
 
         {/* ── History Sidebar ─────────────────────────────────────────── */}
-        {showHistory && !isChildView && (
+        {showHistory && (
           <aside className="w-full md:w-56 shrink-0">
             <div className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="p-3 border-b border-border">
@@ -522,66 +522,51 @@ function CompanionPage() {
         <div className={`flex-1 bg-card border border-border rounded-3xl flex flex-col overflow-hidden ${showHistory ? "h-[65vh]" : "h-[65vh]"}`}>
 
           {/* Chat header with date + Clear button */}
-          {!isChildView && (
-            <div className="border-b border-border px-4 py-2 flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {showHistory && (
-                  <button
-                    onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}
-                    className="md:hidden p-1 hover:text-foreground"
-                    title="Back to today"
-                  >
-                    <ChevronLeft className="size-4" />
-                  </button>
-                )}
-                <CalendarDays className="size-4 shrink-0" />
-                <span className="font-medium text-foreground">
-                  {isViewingToday ? "Today" : formatDateLabel(selectedDate)}
-                </span>
-                {!isViewingToday && (
-                  <button
-                    onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Back to today
-                  </button>
-                )}
-              </div>
-              {messages.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={clearChat.isPending}
-                  onClick={() => {
-                    if (confirm(`Clear ${isViewingToday ? "today's" : "this"} chat? This cannot be undone.`)) {
-                      clearChat.mutate();
-                    }
-                  }}
-                  className="text-muted-foreground hover:text-destructive gap-1.5 rounded-lg text-xs h-7 px-2"
+          <div className="border-b border-border px-4 py-2 flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {!isChildView && showHistory && (
+                <button
+                  onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}
+                  className="md:hidden p-1 hover:text-foreground"
+                  title="Back to today"
                 >
-                  <Trash2 className="size-3.5" />
-                  {clearChat.isPending ? "Clearing…" : "Clear chat"}
-                </Button>
+                  <ChevronLeft className="size-4" />
+                </button>
+              )}
+              <CalendarDays className="size-4 shrink-0" />
+              <span className="font-medium text-foreground">
+                {isViewingToday ? "Today" : formatDateLabel(selectedDate)}
+              </span>
+              {!isViewingToday && (
+                <button
+                  onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Back to today
+                </button>
               )}
             </div>
-          )}
+            {messages.length > 0 && !isChildView && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={clearChat.isPending}
+                onClick={() => {
+                  if (confirm(`Clear ${isViewingToday ? "today's" : "this"} chat? This cannot be undone.`)) {
+                    clearChat.mutate();
+                  }
+                }}
+                className="text-muted-foreground hover:text-destructive gap-1.5 rounded-lg text-xs h-7 px-2"
+              >
+                <Trash2 className="size-3.5" />
+                {clearChat.isPending ? "Clearing…" : "Clear chat"}
+              </Button>
+            )}
+          </div>
 
           {/* Messages area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {isChildView ? (
-              <div className="h-full grid place-items-center text-center text-muted-foreground p-6">
-                <div className="max-w-sm">
-                  <div className="size-16 rounded-3xl bg-secondary/10 text-secondary grid place-items-center mx-auto mb-4">
-                    <MessageCircleHeart className="size-8" />
-                  </div>
-                  <p className="font-display text-xl font-bold text-foreground">Private Chat History</p>
-                  <p className="text-sm mt-2 leading-relaxed">
-                    To protect privacy, the personal AI Companion conversation history is private and not viewable by family members or caregivers.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
+            <>
                 {messages.length === 0 && !sending && (
                   <div className="h-full grid place-items-center text-center text-muted-foreground">
                     <div>
@@ -629,12 +614,11 @@ function CompanionPage() {
                   </div>
                 )}
                 <div ref={endRef} />
-              </>
-            )}
+            </>
           </div>
 
           {/* Rate limit banner */}
-          {isRateLimited && !isChildView && (
+          {isRateLimited && (
             <div className="border-t border-amber-200 bg-amber-50 px-4 py-3 space-y-3">
               <div className="flex items-center gap-2 text-sm text-amber-800 font-medium">
                 <Clock className="size-4 shrink-0" />
@@ -664,7 +648,7 @@ function CompanionPage() {
           )}
 
           {/* Active voice call banner */}
-          {vapiStatus === "active" && !isChildView && (
+          {vapiStatus === "active" && (
             <div className="border-t border-green-200 bg-green-50 px-4 py-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm text-green-800 font-medium">
                 <span className="relative flex size-2.5">
@@ -685,9 +669,8 @@ function CompanionPage() {
             </div>
           )}
 
-          {/* Input bar — only shown when viewing today and not child */}
-          {!isChildView && (
-            <div className="border-t border-border p-3 sm:p-4 space-y-2">
+          {/* Input bar */}
+          <div className="border-t border-border p-3 sm:p-4 space-y-2">
               {/* Attachment previews */}
               {attachments.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -823,9 +806,8 @@ function CompanionPage() {
                 )}
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </AppShell>
-  );
-}
+      </AppShell>
+    );
+  }

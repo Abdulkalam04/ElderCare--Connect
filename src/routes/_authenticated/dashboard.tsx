@@ -264,8 +264,8 @@ function DashboardPage() {
       }
 
       // 2. Geolocation capture and Nominatim geocoding
-      let coords = null;
-      let addressStr = null;
+      let coords: { latitude: number; longitude: number } | null = null;
+      let addressStr: string | null = null;
       try {
         coords = await captureLocation(4000);
         if (coords) {
@@ -293,8 +293,8 @@ function DashboardPage() {
       if (error) throw error;
 
       // 4. Notifications
-      let emailResult = null;
-      let pushResult = null;
+      let emailResult: unknown = null;
+      let pushResult: unknown = null;
 
       if (inserted?.id) {
         try {
@@ -507,16 +507,8 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* Greeting Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Good morning, {activeParent?.full_name?.split(" ")[0] ?? "there"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Today is {format(new Date(), "EEEE, MMMM do")}
-          </p>
-        </div>
+      {/* View Toggle */}
+      <div className="flex flex-wrap items-center justify-end gap-4 mb-8">
         {showViewToggle && (
           <div className="flex items-center bg-card border border-border rounded-full p-1 shadow-sm">
             <button

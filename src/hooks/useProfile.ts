@@ -15,6 +15,8 @@ export type Profile = {
   address: string | null;
   email: string | null;
   phone: string | null;
+  created_at: string;
+  avatarUrl?: string | null;
 };
 
 export function useCurrentUser() {
@@ -39,7 +41,12 @@ export function useProfile() {
         .eq("id", user!.id)
         .single();
       if (error) throw error;
-      return data as Profile;
+      const profile = data as Profile;
+      const authAvatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+      return {
+        ...profile,
+        avatarUrl: profile.avatar_url || authAvatarUrl,
+      } as Profile;
     },
   });
 }
@@ -64,6 +71,7 @@ export function useLinkedParents() {
         const prof = (profiles ?? []).find((p) => p.id === link.parent_id);
         return {
           ...prof,
+          avatarUrl: prof?.avatar_url || null,
           linked_at: link.created_at,
         } as Profile & { linked_at: string };
       });
@@ -87,6 +95,7 @@ export function useLinkedChildren(parentId: string | undefined) {
         const prof = (profiles ?? []).find((p) => p.id === link.child_id);
         return {
           ...prof,
+          avatarUrl: prof?.avatar_url || null,
           linked_at: link.created_at,
         } as Profile & { linked_at: string };
       });

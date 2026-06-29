@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { useActiveParent, useCurrentUser } from "@/hooks/useProfile";
+import { useActiveParent, useCurrentUser, useProfile } from "@/hooks/useProfile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { enablePushNotifications, disablePushNotifications, isPushSupported } from "@/lib/push";
+import { EditableAvatar } from "@/components/EditableAvatar";
+import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
@@ -127,60 +129,53 @@ function SettingsPage() {
   const { activeParentId, activeParent } = useActiveParent();
   const { data: currentUser } = useCurrentUser();
   const qc = useQueryClient();
+  const { data: profile } = useProfile();
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [hasLoadedPhone, setHasLoadedPhone] = useState(false);
-
-  // ── My Phone Number ──────────────────────────────────────────────────────
-  const { data: myProfile } = useQuery({
-    queryKey: ["myProfile", currentUser?.id],
-    enabled: !!currentUser?.id,
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("profiles")
-        .select("phone")
-        .eq("id", currentUser!.id)
-        .single();
-      if (error) throw error;
-      return data as { phone: string | null } | null;
-    },
-  });
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
 
   useEffect(() => {
-    if (myProfile && !hasLoadedPhone) {
-      setPhone(myProfile.phone ?? "");
-      setHasLoadedPhone(true);
+    if (profile && !hasLoadedProfile) {
+      setFullName(profile.full_name ?? "");
+      setPhone(profile.phone ?? "");
+      setHasLoadedProfile(true);
     }
-  }, [myProfile, hasLoadedPhone]);
+  }, [profile, hasLoadedProfile]);
 
-  const savePhone = useMutation({
+  const updateProfile = useMutation({
     mutationFn: async () => {
       if (!currentUser?.id) throw new Error("Not signed in");
-      const trimmed = phone.trim() || null;
-      
-      // Basic validation: at least 7 digits, digits and special chars allowed: /^\+?[0-9\s\-()]{7,20}$/
-      if (trimmed) {
+      const nameTrimmed = fullName.trim();
+      if (!nameTrimmed) throw new Error("Full name is required");
+
+      const phoneTrimmed = phone.trim() || null;
+      if (phoneTrimmed) {
         const phoneRegex = /^\+?[0-9\s\-()]{7,30}$/;
-        if (!phoneRegex.test(trimmed) || trimmed.replace(/[^0-9]/g, "").length < 7) {
-          throw new Error("Please enter a valid phone number (at least 7 digits, spaces/dashes/parentheses allowed)");
+        if (!phoneRegex.test(phoneTrimmed) || phoneTrimmed.replace(/[^0-9]/g, "").length < 7) {
+          throw new Error("Please enter a valid phone number (at least 7 digits)");
         }
       }
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("profiles")
-        .update({ phone: trimmed })
+        .update({
+          full_name: nameTrimmed,
+          phone: phoneTrimmed,
+        })
         .eq("id", currentUser.id);
-      if (error) {
-        throw new Error(error.message ?? "Failed to save phone number");
-      }
+
+      if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["myProfile", currentUser?.id] });
       qc.invalidateQueries({ queryKey: ["profile", currentUser?.id] });
+      qc.invalidateQueries({ queryKey: ["myProfile", currentUser?.id] });
       qc.invalidateQueries({ queryKey: ["linkedChildren"] });
       qc.invalidateQueries({ queryKey: ["linkedParents"] });
-      toast.success("Phone number saved.");
+      toast.success("Your profile has been updated successfully.");
     },
-    onError: (e: Error) => toast.error(e.message || "Failed to save phone number."),
+    onError: (e: Error) => {
+      toast.error(e.message || "Failed to update profile.");
+    },
   });
 
   // ── Elder Settings ────────────────────────────────────────────────────────
@@ -266,33 +261,73 @@ function SettingsPage() {
       </div>
 
       <div className="space-y-8 max-w-3xl">
-        {/* ── My Phone Number ─────────────────────────────────────────────── */}
-        <Section title={t.myPhoneTitle}>
-          <p className="text-sm text-muted-foreground -mt-2">
-            {t.myPhoneDesc}
-          </p>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <Label htmlFor="my-phone">{t.phoneLabel}</Label>
-              <Input
-                id="my-phone"
-                type="tel"
-                placeholder="+1 555 000 0000"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                maxLength={30}
-              />
+        {/* ── Edit Profile ────────────────────────────────────────────────── */}
+        <Section title="Edit Profile">
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="flex flex-col items-center gap-2 self-center md:self-start shrink-0">
+              <EditableAvatar size="xl" />
+              <span className="text-xs text-muted-foreground font-medium">Click to upload photo</span>
             </div>
-            <div className="flex items-end">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={savePhone.isPending || !currentUser}
-                onClick={() => savePhone.mutate()}
-                className="shrink-0"
-              >
-                {savePhone.isPending ? t.saving : t.save}
-              </Button>
+            
+            <div className="flex-1 w-full space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-fullname">Full Name</Label>
+                  <Input
+                    id="profile-fullname"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Abdul Kalam"
+                    maxLength={100}
+                  />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-phone">Phone Number</Label>
+                  <Input
+                    id="profile-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1 555 000 0000"
+                    maxLength={30}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Email Address</span>
+                  <span className="text-sm font-medium text-foreground block bg-stone-50 border border-border/60 rounded-lg px-3 py-2 cursor-not-allowed select-none opacity-80">
+                    {profile?.email || currentUser?.email || "—"}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">Account Role</span>
+                  <span className="text-sm font-semibold capitalize text-foreground block bg-stone-50 border border-border/60 rounded-lg px-3 py-2 cursor-not-allowed select-none opacity-80">
+                    {profile?.role === "parent" ? "👴 Parent Account" : "👨‍👩‍👦 Family Monitor"}
+                  </span>
+                </div>
+              </div>
+
+              {profile?.created_at && (
+                <div className="text-[11px] text-muted-foreground font-mono pt-2">
+                  Member since {format(new Date(profile.created_at), "MMMM d, yyyy")}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="button"
+                  disabled={updateProfile.isPending || !currentUser}
+                  onClick={() => updateProfile.mutate()}
+                  className="rounded-xl font-semibold shadow-sm"
+                >
+                  {updateProfile.isPending ? "Saving..." : "Save Profile"}
+                </Button>
+              </div>
             </div>
           </div>
         </Section>

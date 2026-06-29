@@ -170,8 +170,8 @@ function SOSPage() {
       }
 
       // 2. Geolocation logic
-      let coords = null;
-      let addressStr = null;
+      let coords: { latitude: number; longitude: number } | null = null;
+      let addressStr: string | null = null;
       try {
         coords = await captureLocation(4000); // 4 seconds timeout
         if (coords) {
@@ -199,8 +199,8 @@ function SOSPage() {
       if (error) throw error;
 
       // 4. Dispatch Email and Push notifications via Server Functions
-      let emailResult = null;
-      let pushResult = null;
+      let emailResult: unknown = null;
+      let pushResult: unknown = null;
 
       if (inserted?.id) {
         try {

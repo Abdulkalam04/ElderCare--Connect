@@ -1,0 +1,20 @@
+project_id = "ikvydjyyjowfyqsskmyf"
+
+[functions.emergency-check]
+enabled = true
+verify_jwt = false
+import_map = "./functions/emergency-check/deno.json"
+
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/emergency-check/index.ts"
+
+# Specifies static files to be bundled with the function.
+# Example:
+# static_files = [ "./functions/emergency-check/*.html" ]
+
+[functions.care-push]
+enabled = true
+verify_jwt = false
+import_map = "./functions/care-push/deno.json"
+entrypoint = "./functions/care-push/index.ts"

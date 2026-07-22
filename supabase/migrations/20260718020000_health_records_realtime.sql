@@ -1,5 +1,5 @@
--- Enable realtime INSERT, UPDATE, and DELETE events for health records.
--- This lets the Health Records page refresh automatically across tabs/devices.
+
+
 
 ALTER TABLE public.health_records REPLICA IDENTITY FULL;
 

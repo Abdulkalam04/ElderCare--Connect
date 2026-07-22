@@ -35,8 +35,8 @@ DO UPDATE SET
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- Safe UUID parsing for path-policy checks. Malformed object names should be
--- denied instead of causing a policy-cast error.
+
+
 CREATE OR REPLACE FUNCTION public.try_parse_uuid(_value TEXT)
 RETURNS UUID
 LANGUAGE plpgsql
@@ -60,9 +60,9 @@ GRANT EXECUTE
 ON FUNCTION public.try_parse_uuid(TEXT)
 TO authenticated, service_role;
 
--- =============================================================================
--- Health-record table validation and least-privilege RLS
--- =============================================================================
+
+
+
 
 CREATE OR REPLACE FUNCTION public.validate_health_record_file()
 RETURNS TRIGGER
@@ -196,9 +196,9 @@ ON public.health_records
 FOR EACH ROW
 EXECUTE FUNCTION public.validate_health_record_file();
 
--- Remove every known historical policy before recreating the intended final
--- policy set. PostgreSQL combines permissive policies with OR, so stale write
--- policies must not remain.
+
+
+
 DROP POLICY IF EXISTS "View records" ON public.health_records;
 DROP POLICY IF EXISTS "Insert records" ON public.health_records;
 DROP POLICY IF EXISTS "Update records" ON public.health_records;
@@ -238,9 +238,9 @@ ON public.health_records
 FOR DELETE TO authenticated
 USING (parent_id = auth.uid());
 
--- =============================================================================
--- Prescription validation and least-privilege RLS
--- =============================================================================
+
+
+
 
 CREATE OR REPLACE FUNCTION public.validate_consultation_prescription()
 RETURNS TRIGGER
@@ -366,24 +366,24 @@ ON public.consultation_prescriptions
 FOR INSERT TO authenticated
 WITH CHECK (parent_id = auth.uid());
 
--- Prescription metadata and object paths are immutable. Replacement requires
--- deleting the old prescription and uploading a new file.
+
+
 CREATE POLICY "Delete prescriptions (parent only)"
 ON public.consultation_prescriptions
 FOR DELETE TO authenticated
 USING (parent_id = auth.uid());
 
--- =============================================================================
--- Storage policies
--- =============================================================================
+
+
+
 
 DROP POLICY IF EXISTS "health_records_read" ON storage.objects;
 DROP POLICY IF EXISTS "health_records_insert" ON storage.objects;
 DROP POLICY IF EXISTS "health_records_update" ON storage.objects;
 DROP POLICY IF EXISTS "health_records_delete" ON storage.objects;
 
--- A linked child can read only an object that has a visible database record.
--- Orphaned files are not readable merely because their path can be guessed.
+
+
 CREATE POLICY "health_records_read"
 ON storage.objects
 FOR SELECT TO authenticated
@@ -410,7 +410,7 @@ WITH CHECK (
   AND LOWER(REGEXP_REPLACE(name, '^.*\.', '')) IN ('pdf', 'jpg', 'png', 'webp')
 );
 
--- Objects are immutable: there is intentionally no UPDATE policy.
+
 CREATE POLICY "health_records_delete"
 ON storage.objects
 FOR DELETE TO authenticated
@@ -456,7 +456,7 @@ WITH CHECK (
   AND LOWER(REGEXP_REPLACE(name, '^.*\.', '')) IN ('pdf', 'jpg', 'png')
 );
 
--- Objects are immutable: there is intentionally no UPDATE policy.
+
 CREATE POLICY "prescriptions_delete"
 ON storage.objects
 FOR DELETE TO authenticated
@@ -465,9 +465,9 @@ USING (
   AND public.try_parse_uuid(SPLIT_PART(name, '/', 1)) = auth.uid()
 );
 
--- =============================================================================
--- Access audit log
--- =============================================================================
+
+
+
 
 CREATE TABLE IF NOT EXISTS public.medical_file_access_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -502,7 +502,7 @@ ON public.medical_file_access_logs;
 DROP POLICY IF EXISTS "Users insert own medical file audit"
 ON public.medical_file_access_logs;
 
--- Only the parent can inspect the complete access history for their documents.
+
 CREATE POLICY "Parents view medical file audit"
 ON public.medical_file_access_logs
 FOR SELECT TO authenticated

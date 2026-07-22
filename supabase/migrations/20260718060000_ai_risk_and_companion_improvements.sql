@@ -1,8 +1,8 @@
--- AI Risk Check and AI Companion safety, privacy, validation, and realtime improvements.
 
--- ---------------------------------------------------------------------------
--- AI Companion: keep conversations private to the care-recipient account.
--- ---------------------------------------------------------------------------
+
+
+
+
 ALTER TABLE public.ai_chat_messages
   ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS is_urgent BOOLEAN NOT NULL DEFAULT FALSE;
@@ -75,10 +75,10 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_parent_user_rate
 ON public.ai_chat_messages(parent_id, created_at DESC)
 WHERE role = 'user';
 
--- ---------------------------------------------------------------------------
--- Health Risk Check: enforce safe ranges for newly inserted data.
--- NOT VALID keeps the migration compatible with old rows while protecting new rows.
--- ---------------------------------------------------------------------------
+
+
+
+
 ALTER TABLE public.health_risk_assessments
   DROP CONSTRAINT IF EXISTS health_risk_score_range;
 ALTER TABLE public.health_risk_assessments
@@ -104,9 +104,9 @@ ALTER TABLE public.health_risk_assessments
 CREATE INDEX IF NOT EXISTS idx_health_risk_parent_created_desc
 ON public.health_risk_assessments(parent_id, created_at DESC);
 
--- ---------------------------------------------------------------------------
--- Realtime refresh for both pages.
--- ---------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.ai_chat_messages REPLICA IDENTITY FULL;
 ALTER TABLE public.health_risk_assessments REPLICA IDENTITY FULL;
 

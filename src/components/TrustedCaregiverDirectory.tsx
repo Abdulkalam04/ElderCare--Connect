@@ -18,7 +18,6 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,14 +38,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-
 export type TrustedCaregiverType =
   | "nurse"
   | "caretaker"
   | "physiotherapist"
   | "companion"
   | "other";
-
 export type TrustedCaregiver = {
   id: string;
   parent_id: string;
@@ -68,7 +65,6 @@ export type TrustedCaregiver = {
   created_at: string;
   updated_at: string;
 };
-
 type FormState = {
   name: string;
   caregiver_type: TrustedCaregiverType;
@@ -86,7 +82,6 @@ type FormState = {
   available_until: string;
   notes: string;
 };
-
 const WEEK_DAYS = [
   { value: 0, short: "Sun", long: "Sunday" },
   { value: 1, short: "Mon", long: "Monday" },
@@ -96,9 +91,7 @@ const WEEK_DAYS = [
   { value: 5, short: "Fri", long: "Friday" },
   { value: 6, short: "Sat", long: "Saturday" },
 ] as const;
-
 const ALL_DAYS = WEEK_DAYS.map((day) => day.value);
-
 const EMPTY_FORM: FormState = {
   name: "",
   caregiver_type: "caretaker",
@@ -116,111 +109,79 @@ const EMPTY_FORM: FormState = {
   available_until: "",
   notes: "",
 };
-
 function cleanPhone(value: string) {
   return value.trim().replace(/[^+\d]/g, "");
 }
-
 function cleanTime(value: string | null | undefined) {
   return value ? value.slice(0, 5) : "";
 }
-
 function formatTime(value: string | null) {
   if (!value) return null;
-
   const [hours, minutes] = value.slice(0, 5).split(":").map(Number);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return value;
-
   const date = new Date();
   date.setHours(hours, minutes, 0, 0);
-
   return date.toLocaleTimeString("en-IN", {
     hour: "numeric",
     minute: "2-digit",
   });
 }
-
 function formatAvailabilityDays(days: number[]) {
   const normalized = [...new Set(days)].sort((a, b) => a - b);
-
   if (normalized.length === 7) return "Every day";
   if (normalized.join(",") === "1,2,3,4,5") return "Weekdays";
   if (normalized.join(",") === "0,6") return "Weekends";
-
   return normalized
     .map((day) => WEEK_DAYS.find((item) => item.value === day)?.short)
     .filter(Boolean)
     .join(", ");
 }
-
 function validate(form: FormState) {
   if (form.name.trim().length < 2) {
     return "Enter the caregiver's name.";
   }
-
   const phone = cleanPhone(form.phone);
   if (!phone && !form.email.trim()) {
     return "Add at least a phone number or email address.";
   }
-
   if (phone && phone.replace(/\D/g, "").length < 7) {
     return "Enter a valid phone number.";
   }
-
-  if (
-    form.email.trim() &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
-  ) {
+  if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
     return "Enter a valid email address.";
   }
-
   const experience = Number(form.experience_years);
   if (!Number.isInteger(experience) || experience < 0 || experience > 60) {
     return "Experience must be a whole number between 0 and 60 years.";
   }
-
   if (form.available_days.length === 0) {
     return "Select at least one available day.";
   }
-
   const hasStart = form.available_from.trim() !== "";
   const hasEnd = form.available_until.trim() !== "";
-
   if (hasStart !== hasEnd) {
     return "Enter both availability start and end times, or leave both empty.";
   }
-
   if (hasStart && form.available_from >= form.available_until) {
     return "Availability end time must be later than the start time.";
   }
-
   const hasLatitude = form.latitude.trim() !== "";
   const hasLongitude = form.longitude.trim() !== "";
-
   if (hasLatitude !== hasLongitude) {
     return "Enter both latitude and longitude, or leave both empty.";
   }
-
   if (hasLatitude) {
     const latitude = Number(form.latitude);
     const longitude = Number(form.longitude);
-
     if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
       return "Latitude must be between -90 and 90.";
     }
-
-    if (
-      !Number.isFinite(longitude) ||
-      longitude < -180 ||
-      longitude > 180
-    ) {
+    if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
       return "Longitude must be between -180 and 180.";
     }
   }
-
   return null;
 }
-
 export function TrustedCaregiverDirectory({
   parentId,
   readOnly,
@@ -233,7 +194,6 @@ export function TrustedCaregiverDirectory({
   const [editing, setEditing] = useState<TrustedCaregiver | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [locating, setLocating] = useState(false);
-
   const { data: caregivers = [], isLoading } = useQuery({
     queryKey: ["trusted-caregivers", parentId],
     queryFn: async () => {
@@ -243,12 +203,10 @@ export function TrustedCaregiverDirectory({
         .eq("parent_id", parentId)
         .order("available", { ascending: false })
         .order("name", { ascending: true });
-
       if (error) throw error;
       return (data ?? []) as TrustedCaregiver[];
     },
   });
-
   useEffect(() => {
     const channel = supabase
       .channel(`trusted-caregivers-${parentId}`)
@@ -267,23 +225,19 @@ export function TrustedCaregiverDirectory({
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [parentId, queryClient]);
-
   const availableCount = useMemo(
     () => caregivers.filter((caregiver) => caregiver.available).length,
     [caregivers],
   );
-
   function startCreate() {
     setEditing(null);
     setForm({ ...EMPTY_FORM, available_days: [...ALL_DAYS] });
     setOpen(true);
   }
-
   function startEdit(item: TrustedCaregiver) {
     setEditing(item);
     setForm({
@@ -298,43 +252,35 @@ export function TrustedCaregiverDirectory({
       qualification: item.qualification ?? "",
       experience_years: String(item.experience_years ?? 0),
       service_area: item.service_area ?? "",
-      available_days:
-        item.available_days?.length > 0
-          ? [...item.available_days]
-          : [...ALL_DAYS],
+      available_days: item.available_days?.length > 0 ? [...item.available_days] : [...ALL_DAYS],
       available_from: cleanTime(item.available_from),
       available_until: cleanTime(item.available_until),
       notes: item.notes ?? "",
     });
     setOpen(true);
   }
-
   function closeDialog() {
     if (save.isPending) return;
     setOpen(false);
     setEditing(null);
     setForm({ ...EMPTY_FORM, available_days: [...ALL_DAYS] });
   }
-
   function toggleDay(day: number) {
     setForm((current) => {
       const selected = current.available_days.includes(day);
       const nextDays = selected
         ? current.available_days.filter((value) => value !== day)
         : [...current.available_days, day].sort((a, b) => a - b);
-
       return {
         ...current,
         available_days: nextDays,
       };
     });
   }
-
   const save = useMutation({
     mutationFn: async () => {
       const errorMessage = validate(form);
       if (errorMessage) throw new Error(errorMessage);
-
       const payload = {
         parent_id: parentId,
         name: form.name.trim(),
@@ -353,7 +299,6 @@ export function TrustedCaregiverDirectory({
         available_until: form.available_until || null,
         notes: form.notes.trim() || null,
       };
-
       const query = editing
         ? supabase
             .from("trusted_caregivers")
@@ -361,9 +306,7 @@ export function TrustedCaregiverDirectory({
             .eq("id", editing.id)
             .eq("parent_id", parentId)
         : supabase.from("trusted_caregivers").insert(payload);
-
       const { data, error } = await query.select("id").maybeSingle();
-
       if (error) throw error;
       if (!data) {
         throw new Error(
@@ -380,7 +323,6 @@ export function TrustedCaregiverDirectory({
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
@@ -390,7 +332,6 @@ export function TrustedCaregiverDirectory({
         .eq("parent_id", parentId)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) throw new Error("The caregiver profile was not deleted.");
       return id;
@@ -404,15 +345,12 @@ export function TrustedCaregiverDirectory({
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   function captureCoordinates() {
     if (!("geolocation" in navigator)) {
       toast.error("Location is not supported by this browser.");
       return;
     }
-
     setLocating(true);
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setForm((current) => ({
@@ -431,25 +369,22 @@ export function TrustedCaregiverDirectory({
       },
       {
         enableHighAccuracy: true,
-        timeout: 12_000,
-        maximumAge: 5_000,
+        timeout: 12000,
+        maximumAge: 5000,
       },
     );
   }
-
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="size-5 text-primary" />
-            <h2 className="font-display text-xl font-bold italic">
-              Trusted caregiver directory
-            </h2>
+            <h2 className="font-display text-xl font-bold italic">Trusted caregiver directory</h2>
           </div>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Save caregivers you already know, define their weekly availability,
-            and assign them to internal bookings without a paid marketplace.
+            Save caregivers you already know, define their weekly availability, and assign them to
+            internal bookings without a paid marketplace.
           </p>
           {caregivers.length > 0 && (
             <p className="mt-2 text-xs font-medium text-emerald-700">
@@ -473,15 +408,14 @@ export function TrustedCaregiverDirectory({
         </div>
       ) : caregivers.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          No caregiver profiles have been added. Add at least one profile before
-          assigning a booking.
+          No caregiver profiles have been added. Add at least one profile before assigning a
+          booking.
         </div>
       ) : (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {caregivers.map((item) => {
             const from = formatTime(item.available_from);
             const until = formatTime(item.available_until);
-
             return (
               <article key={item.id} className="rounded-2xl border border-border p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -520,9 +454,7 @@ export function TrustedCaregiverDirectory({
                     <BriefcaseBusiness className="size-4" />
                     {item.experience_years === 0
                       ? "Experience not specified"
-                      : `${item.experience_years} year${
-                          item.experience_years === 1 ? "" : "s"
-                        } experience`}
+                      : `${item.experience_years} year${item.experience_years === 1 ? "" : "s"} experience`}
                   </p>
 
                   <p className="flex items-start gap-2 text-muted-foreground">
@@ -665,9 +597,7 @@ export function TrustedCaregiverDirectory({
                 <SelectContent>
                   <SelectItem value="nurse">Nurse</SelectItem>
                   <SelectItem value="caretaker">Caretaker</SelectItem>
-                  <SelectItem value="physiotherapist">
-                    Physiotherapist
-                  </SelectItem>
+                  <SelectItem value="physiotherapist">Physiotherapist</SelectItem>
                   <SelectItem value="companion">Companion</SelectItem>
                   <SelectItem value="other">Other / Multi-service</SelectItem>
                 </SelectContent>
@@ -677,9 +607,7 @@ export function TrustedCaregiverDirectory({
             <div className="flex items-center gap-3 rounded-xl border border-border px-3 py-2">
               <Switch
                 checked={form.available}
-                onCheckedChange={(available) =>
-                  setForm((current) => ({ ...current, available }))
-                }
+                onCheckedChange={(available) => setForm((current) => ({ ...current, available }))}
               />
               <div>
                 <Label>Available for assignments and SOS</Label>
@@ -690,9 +618,7 @@ export function TrustedCaregiverDirectory({
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="trusted-caregiver-qualification">
-                Qualification or skills
-              </Label>
+              <Label htmlFor="trusted-caregiver-qualification">Qualification or skills</Label>
               <Input
                 id="trusted-caregiver-qualification"
                 value={form.qualification}
@@ -708,9 +634,7 @@ export function TrustedCaregiverDirectory({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="trusted-caregiver-experience">
-                Experience (years)
-              </Label>
+              <Label htmlFor="trusted-caregiver-experience">Experience (years)</Label>
               <Input
                 id="trusted-caregiver-experience"
                 type="number"
@@ -727,9 +651,7 @@ export function TrustedCaregiverDirectory({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="trusted-caregiver-service-area">
-                Service area
-              </Label>
+              <Label htmlFor="trusted-caregiver-service-area">Service area</Label>
               <Input
                 id="trusted-caregiver-service-area"
                 value={form.service_area}
@@ -749,7 +671,6 @@ export function TrustedCaregiverDirectory({
               <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                 {WEEK_DAYS.map((day) => {
                   const selected = form.available_days.includes(day.value);
-
                   return (
                     <button
                       key={day.value}
@@ -801,8 +722,8 @@ export function TrustedCaregiverDirectory({
             </div>
 
             <p className="text-xs text-muted-foreground sm:col-span-2">
-              Leave both times empty when the caregiver is available at any
-              time on the selected days.
+              Leave both times empty when the caregiver is available at any time on the selected
+              days.
             </p>
 
             <div className="space-y-2">
@@ -857,9 +778,7 @@ export function TrustedCaregiverDirectory({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="trusted-caregiver-latitude">
-                Latitude (optional)
-              </Label>
+              <Label htmlFor="trusted-caregiver-latitude">Latitude (optional)</Label>
               <Input
                 id="trusted-caregiver-latitude"
                 inputMode="decimal"
@@ -874,9 +793,7 @@ export function TrustedCaregiverDirectory({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="trusted-caregiver-longitude">
-                Longitude (optional)
-              </Label>
+              <Label htmlFor="trusted-caregiver-longitude">Longitude (optional)</Label>
               <Input
                 id="trusted-caregiver-longitude"
                 inputMode="decimal"
@@ -906,9 +823,8 @@ export function TrustedCaregiverDirectory({
             </Button>
 
             <p className="text-xs text-amber-700 sm:col-span-2">
-              Save current coordinates only when the caregiver is physically at
-              the intended location. The application does not secretly track
-              caregivers.
+              Save current coordinates only when the caregiver is physically at the intended
+              location. The application does not secretly track caregivers.
             </p>
 
             <div className="space-y-2 sm:col-span-2">
@@ -929,17 +845,11 @@ export function TrustedCaregiverDirectory({
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={closeDialog}
-              disabled={save.isPending}
-            >
+            <Button variant="outline" onClick={closeDialog} disabled={save.isPending}>
               Cancel
             </Button>
             <Button onClick={() => save.mutate()} disabled={save.isPending}>
-              {save.isPending && (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              )}
+              {save.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               Save caregiver
             </Button>
           </DialogFooter>

@@ -51,17 +51,14 @@ import {
   XCircle,
 } from "lucide-react";
 import { DateInput, TimeInput } from "@/components/ui/datetime-input";
-
 export const Route = createFileRoute("/_authenticated/transport")({
   ssr: false,
   component: TransportPage,
 });
-
 type TripType = "one_way" | "round_trip";
 type TransportPurpose = "hospital" | "checkup" | "emergency";
 type ProviderChoice = "auto" | "uber" | "ola" | "medical_cab";
 type DriverProvider = "Medical Cab" | "Uber" | "Ola";
-
 type TransportStatus =
   | "pending"
   | "confirmed"
@@ -70,7 +67,6 @@ type TransportStatus =
   | "arrived"
   | "completed"
   | "cancelled";
-
 type TransportBooking = {
   id: string;
   parent_id: string;
@@ -103,10 +99,14 @@ type TransportBooking = {
   created_at: string;
   updated_at: string;
 };
-
 const STATUS_CONFIG: Record<
   TransportStatus,
-  { label: string; bg: string; text: string; dot: string }
+  {
+    label: string;
+    bg: string;
+    text: string;
+    dot: string;
+  }
 > = {
   pending: {
     label: "Pending",
@@ -151,13 +151,17 @@ const STATUS_CONFIG: Record<
     dot: "bg-red-400",
   },
 };
-
-const PURPOSE_CONFIG: Record<TransportPurpose, { label: string; className: string }> = {
+const PURPOSE_CONFIG: Record<
+  TransportPurpose,
+  {
+    label: string;
+    className: string;
+  }
+> = {
   hospital: { label: "Hospital Visit", className: "bg-rose-50 text-rose-700 border-rose-200" },
   checkup: { label: "Medical Checkup", className: "bg-sky-50 text-sky-700 border-sky-200" },
   emergency: { label: "Emergency", className: "bg-red-50 text-red-700 border-red-200" },
 };
-
 const CANCELLABLE_STATUSES: TransportStatus[] = [
   "pending",
   "confirmed",
@@ -166,28 +170,23 @@ const CANCELLABLE_STATUSES: TransportStatus[] = [
 ];
 const EDITABLE_STATUSES: TransportStatus[] = ["pending", "confirmed"];
 const HISTORY_STATUSES: TransportStatus[] = ["completed", "cancelled"];
-
 function todayString() {
   return format(new Date(), "yyyy-MM-dd");
 }
-
 function combineLocalDateTime(date: string, time: string) {
   if (!date || !time) return null;
   const value = new Date(`${date}T${time.length === 5 ? `${time}:00` : time}`);
   return Number.isNaN(value.getTime()) ? null : value;
 }
-
 function bookingTimestamp(booking: TransportBooking) {
   const dateTime = combineLocalDateTime(
     booking.transport_date ?? "",
     booking.transport_time?.slice(0, 5) ?? "",
   );
   if (dateTime) return dateTime.getTime();
-
   const scheduled = new Date(booking.scheduled_at).getTime();
   return Number.isNaN(scheduled) ? 0 : scheduled;
 }
-
 function formatDisplayDate(dateStr: string | null) {
   if (!dateStr) return "—";
   try {
@@ -196,7 +195,6 @@ function formatDisplayDate(dateStr: string | null) {
     return dateStr;
   }
 }
-
 function formatDisplayTime(timeStr: string | null) {
   if (!timeStr) return "—";
   try {
@@ -208,14 +206,12 @@ function formatDisplayTime(timeStr: string | null) {
     return timeStr;
   }
 }
-
 function formatLifecycleTime(value: string | null) {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return format(date, "MMM d, yyyy · h:mm a");
 }
-
 function mapsDirectionsUrl(pickup: string, destination: string) {
   const params = new URLSearchParams({
     api: "1",
@@ -225,21 +221,18 @@ function mapsDirectionsUrl(pickup: string, destination: string) {
   });
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
-
 function providerToChoice(provider: string | null): ProviderChoice {
   if (provider === "Uber") return "uber";
   if (provider === "Ola") return "ola";
   if (provider === "Medical Cab") return "medical_cab";
   return "auto";
 }
-
 function choiceToProvider(provider: ProviderChoice) {
   if (provider === "uber") return "Uber";
   if (provider === "ola") return "Ola";
   if (provider === "medical_cab") return "Medical Cab";
   return "Auto Match";
 }
-
 function StatusBadge({ status }: { status: TransportStatus }) {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
@@ -251,22 +244,21 @@ function StatusBadge({ status }: { status: TransportStatus }) {
     </span>
   );
 }
-
 function TripTypeBadge({ tripType }: { tripType: TripType }) {
   const isRoundTrip = tripType === "round_trip";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${isRoundTrip
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${
+        isRoundTrip
           ? "border-sky-200 bg-sky-50 text-sky-700"
           : "border-stone-200 bg-stone-50 text-stone-600"
-        }`}
+      }`}
     >
       {isRoundTrip ? <ArrowLeftRight className="size-2.5" /> : <ArrowRight className="size-2.5" />}
       {isRoundTrip ? "Round-Trip" : "One-Way"}
     </span>
   );
 }
-
 function PurposeBadge({ purpose }: { purpose: TransportPurpose }) {
   const config = PURPOSE_CONFIG[purpose] ?? PURPOSE_CONFIG.checkup;
   return (
@@ -277,16 +269,13 @@ function PurposeBadge({ purpose }: { purpose: TransportPurpose }) {
     </span>
   );
 }
-
 function TransportPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const queryClient = useQueryClient();
-
   const [open, setOpen] = useState(false);
   const [editingRide, setEditingRide] = useState<TransportBooking | null>(null);
   const [assigningRide, setAssigningRide] = useState<TransportBooking | null>(null);
   const [cancellingRide, setCancellingRide] = useState<TransportBooking | null>(null);
-
   const [tripType, setTripType] = useState<TripType>("one_way");
   const [purpose, setPurpose] = useState<TransportPurpose>("checkup");
   const [provider, setProvider] = useState<ProviderChoice>("auto");
@@ -299,25 +288,21 @@ function TransportPage() {
   const [notes, setNotes] = useState("");
   const [specialAssistance, setSpecialAssistance] = useState("");
   const [isLocating, setIsLocating] = useState(false);
-
   const [driverName, setDriverName] = useState("");
   const [driverPhone, setDriverPhone] = useState("");
   const [driverVehicle, setDriverVehicle] = useState("");
   const [cancellationReason, setCancellationReason] = useState("");
   const [driverProvider, setDriverProvider] = useState<DriverProvider>("Medical Cab");
   const [lastUpdatedRideId, setLastUpdatedRideId] = useState<string | null>(null);
-
   useRealtimeTransportBookings(activeParentId, (payload: TransportRealtimePayload) => {
     const changedRide = (payload.eventType === "DELETE" ? payload.old : payload.new) as
       | TransportBooking
       | undefined;
-
     if (changedRide?.id) {
       setLastUpdatedRideId(changedRide.id);
       window.setTimeout(() => setLastUpdatedRideId(null), 1800);
     }
   });
-
   const { data: rides, isLoading } = useQuery({
     queryKey: ["transport", activeParentId],
     enabled: !!activeParentId,
@@ -327,12 +312,10 @@ function TransportPage() {
         .select("*")
         .eq("parent_id", activeParentId!)
         .order("scheduled_at", { ascending: true });
-
       if (error) throw error;
       return (data ?? []) as unknown as TransportBooking[];
     },
   });
-
   const driverIds = useMemo(
     () =>
       Array.from(
@@ -340,7 +323,6 @@ function TransportPage() {
       ),
     [rides],
   );
-
   const { data: driverProfiles } = useQuery({
     queryKey: ["driver-profiles", driverIds],
     enabled: driverIds.length > 0,
@@ -349,22 +331,18 @@ function TransportPage() {
         .from("profiles")
         .select("id, full_name")
         .in("id", driverIds);
-
       if (error) throw error;
       return data ?? [];
     },
   });
-
   const driverMap = useMemo(
     () => new Map(driverProfiles?.map((profile) => [profile.id, profile.full_name]) ?? []),
     [driverProfiles],
   );
-
   function invalidateTransport() {
     queryClient.invalidateQueries({ queryKey: ["transport"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
-
   function resetForm() {
     setTripType("one_way");
     setPurpose("checkup");
@@ -378,25 +356,21 @@ function TransportPage() {
     setNotes("");
     setSpecialAssistance("");
   }
-
   function openNew(type: TripType = "one_way") {
     if (isChildView) {
       toast.error("You do not have permission to manage transport bookings.");
       return;
     }
-
     setEditingRide(null);
     resetForm();
     setTripType(type);
     setOpen(true);
   }
-
   function openEdit(ride: TransportBooking) {
     if (isChildView) {
       toast.error("You do not have permission to manage transport bookings.");
       return;
     }
-
     setEditingRide(ride);
     setTripType(ride.trip_type ?? "one_way");
     setPurpose(ride.purpose ?? "checkup");
@@ -411,13 +385,11 @@ function TransportPage() {
     setSpecialAssistance(ride.special_assistance ?? "");
     setOpen(true);
   }
-
   function closeDialog() {
     setOpen(false);
     setEditingRide(null);
     resetForm();
   }
-
   function openDriverAssignment(ride: TransportBooking) {
     setAssigningRide(ride);
     setDriverName(ride.driver_name ?? "");
@@ -427,7 +399,6 @@ function TransportPage() {
       ride.provider === "Uber" || ride.provider === "Ola" ? ride.provider : "Medical Cab",
     );
   }
-
   function closeDriverAssignment() {
     setAssigningRide(null);
     setDriverName("");
@@ -435,21 +406,17 @@ function TransportPage() {
     setDriverVehicle("");
     setDriverProvider("Medical Cab");
   }
-
   function openCancellation(ride: TransportBooking) {
     setCancellingRide(ride);
     setCancellationReason(ride.cancellation_reason ?? "");
   }
-
   function closeCancellation() {
     setCancellingRide(null);
     setCancellationReason("");
   }
-
   function validate() {
     const cleanPickup = pickup.trim();
     const cleanDestination = destination.trim();
-
     if (!cleanPickup) {
       toast.error("Pickup address is required.");
       return false;
@@ -466,7 +433,6 @@ function TransportPage() {
       toast.error("Please select the transport date and time.");
       return false;
     }
-
     const outbound = combineLocalDateTime(transportDate, transportTime);
     if (!outbound) {
       toast.error("The selected transport date or time is invalid.");
@@ -476,13 +442,11 @@ function TransportPage() {
       toast.error("Transport must be scheduled for a future date and time.");
       return false;
     }
-
     if (tripType === "round_trip") {
       if (!returnDate || !returnTime) {
         toast.error("Please select the return date and time for a round trip.");
         return false;
       }
-
       const returnJourney = combineLocalDateTime(returnDate, returnTime);
       if (!returnJourney) {
         toast.error("The selected return date or time is invalid.");
@@ -493,23 +457,18 @@ function TransportPage() {
         return false;
       }
     }
-
     return true;
   }
-
   const bookRide = useMutation({
     mutationFn: async () => {
       if (isChildView || !activeParentId) {
         throw new Error("You do not have permission to manage transport bookings.");
       }
-
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       if (!authData.user) throw new Error("Your session has expired. Please sign in again.");
-
       const outbound = combineLocalDateTime(transportDate, transportTime);
       if (!outbound) throw new Error("Invalid transport date or time.");
-
       const { data, error } = await supabase
         .from("transport_bookings")
         .insert({
@@ -534,7 +493,6 @@ function TransportPage() {
         } as never)
         .select("id")
         .single();
-
       if (error) throw error;
       if (!data) throw new Error("The booking was not created.");
     },
@@ -547,16 +505,13 @@ function TransportPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Unable to create the booking."),
   });
-
   const editRide = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView || !activeParentId) {
         throw new Error("You do not have permission to manage transport bookings.");
       }
-
       const outbound = combineLocalDateTime(transportDate, transportTime);
       if (!outbound) throw new Error("Invalid transport date or time.");
-
       const { data, error } = await supabase
         .from("transport_bookings")
         .update({
@@ -576,7 +531,6 @@ function TransportPage() {
         .eq("id", id)
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (error) throw error;
       if (!data?.length) throw new Error("The booking was not updated or permission was denied.");
     },
@@ -587,18 +541,15 @@ function TransportPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Unable to update the booking."),
   });
-
   const cancelRide = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       if (isChildView || !activeParentId) {
         throw new Error("You do not have permission to manage transport bookings.");
       }
-
       const cleanReason = reason.trim();
       if (cleanReason.length < 3) {
         throw new Error("Please enter a cancellation reason of at least 3 characters.");
       }
-
       const { data, error } = await supabase
         .from("transport_bookings")
         .update({
@@ -609,7 +560,6 @@ function TransportPage() {
         .eq("id", id)
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (error) throw error;
       if (!data?.length) throw new Error("The booking was not cancelled or permission was denied.");
     },
@@ -620,20 +570,17 @@ function TransportPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Unable to cancel the booking."),
   });
-
   const deleteRide = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView || !activeParentId) {
         throw new Error("You do not have permission to delete transport bookings.");
       }
-
       const { data, error } = await supabase
         .from("transport_bookings")
         .delete()
         .eq("id", id)
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (error) throw error;
       if (!data?.length) throw new Error("The booking was not deleted or permission was denied.");
       return id;
@@ -648,20 +595,17 @@ function TransportPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Unable to delete the booking."),
   });
-
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TransportStatus }) => {
       if (isChildView || !activeParentId) {
         throw new Error("You do not have permission to update transport bookings.");
       }
-
       const { data, error } = await supabase
         .from("transport_bookings")
         .update({ status, next_status_at: null } as never)
         .eq("id", id)
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (error) throw error;
       if (!data?.length) throw new Error("The status was not changed or permission was denied.");
     },
@@ -671,7 +615,6 @@ function TransportPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Unable to update ride status."),
   });
-
   const assignDriver = useMutation({
     mutationFn: async () => {
       if (!assigningRide || !activeParentId || isChildView) {
@@ -681,7 +624,6 @@ function TransportPage() {
       if (driverPhone.trim().length < 7)
         throw new Error("A valid driver phone number is required.");
       if (!driverVehicle.trim()) throw new Error("Vehicle details are required.");
-
       const { data, error } = await supabase
         .from("transport_bookings")
         .update({
@@ -695,7 +637,6 @@ function TransportPage() {
         .eq("id", assigningRide.id)
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (error) throw error;
       if (!data?.length) throw new Error("The driver was not assigned or permission was denied.");
     },
@@ -706,17 +647,14 @@ function TransportPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Unable to assign the driver."),
   });
-
   function handleSubmit() {
     if (!validate()) return;
     if (editingRide) editRide.mutate(editingRide.id);
     else bookRide.mutate();
   }
-
   function handleCancel(ride: TransportBooking) {
     openCancellation(ride);
   }
-
   function handleDelete(ride: TransportBooking) {
     if (
       window.confirm(
@@ -726,7 +664,6 @@ function TransportPage() {
       deleteRide.mutate(ride.id);
     }
   }
-
   function handleWorkflow(ride: TransportBooking) {
     switch (ride.status) {
       case "pending":
@@ -748,7 +685,6 @@ function TransportPage() {
         break;
     }
   }
-
   const activeRides = useMemo(
     () =>
       [...(rides ?? [])]
@@ -756,7 +692,6 @@ function TransportPage() {
         .sort((a, b) => bookingTimestamp(a) - bookingTimestamp(b)),
     [rides],
   );
-
   const historyRides = useMemo(
     () =>
       [...(rides ?? [])]
@@ -764,16 +699,13 @@ function TransportPage() {
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
     [rides],
   );
-
   const kpiStatuses: TransportStatus[] = ["pending", "confirmed", "driver_assigned", "en_route"];
-
   const formPending = editingRide ? editRide.isPending : bookRide.isPending;
   const actionPending =
     cancelRide.isPending ||
     deleteRide.isPending ||
     updateStatus.isPending ||
     assignDriver.isPending;
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
@@ -1023,7 +955,6 @@ function TransportPage() {
                       toast.error("Geolocation is not supported by this browser.");
                       return;
                     }
-
                     setIsLocating(true);
                     navigator.geolocation.getCurrentPosition(
                       (position) => {
@@ -1041,7 +972,7 @@ function TransportPage() {
                             : "Unable to detect your location. Enter the address manually.",
                         );
                       },
-                      { enableHighAccuracy: true, timeout: 10_000 },
+                      { enableHighAccuracy: true, timeout: 10000 },
                     );
                   }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1 text-stone-400 transition-colors hover:text-emerald-600 disabled:opacity-50"
@@ -1320,7 +1251,6 @@ function TransportPage() {
     </AppShell>
   );
 }
-
 function workflowButton(status: TransportStatus) {
   switch (status) {
     case "pending":
@@ -1337,7 +1267,6 @@ function workflowButton(status: TransportStatus) {
       return null;
   }
 }
-
 function RideRow({
   ride,
   isChildView,
@@ -1368,7 +1297,6 @@ function RideRow({
     !HISTORY_STATUSES.includes(ride.status) &&
     bookingTimestamp(ride) > 0 &&
     bookingTimestamp(ride) < Date.now();
-
   const showUber = !ride.provider || ["Auto Match", "Uber"].includes(ride.provider);
   const showOla = !ride.provider || ["Auto Match", "Ola"].includes(ride.provider);
   const directionsUrl = mapsDirectionsUrl(ride.pickup_address, ride.destination);
@@ -1386,17 +1314,16 @@ function RideRow({
               : ride.status === "cancelled"
                 ? ride.cancelled_at
                 : ride.created_at;
-
   return (
     <div
-      className={`flex items-start gap-4 p-4 transition-colors hover:bg-stone-50/50 sm:gap-5 sm:p-5 ${ride.status === "en_route" || ride.status === "driver_assigned"
+      className={`flex items-start gap-4 p-4 transition-colors hover:bg-stone-50/50 sm:gap-5 sm:p-5 ${
+        ride.status === "en_route" || ride.status === "driver_assigned"
           ? "border-l-4 border-emerald-400"
           : ""
-        } ${isUpdated ? "animate-flash" : ""}`}
+      } ${isUpdated ? "animate-flash" : ""}`}
     >
       <div
-        className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${ride.trip_type === "round_trip" ? "bg-sky-50 text-sky-600" : "bg-stone-100 text-stone-600"
-          }`}
+        className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${ride.trip_type === "round_trip" ? "bg-sky-50 text-sky-600" : "bg-stone-100 text-stone-600"}`}
       >
         {ride.trip_type === "round_trip" ? (
           <ArrowLeftRight className="size-5" />
@@ -1508,9 +1435,7 @@ function RideRow({
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {showUber && (
               <a
-                href={`https://m.uber.com/ul/?action=setPickup&pickup[formatted_address]=${encodeURIComponent(
-                  ride.pickup_address,
-                )}&dropoff[formatted_address]=${encodeURIComponent(ride.destination)}`}
+                href={`https://m.uber.com/ul/?action=setPickup&pickup[formatted_address]=${encodeURIComponent(ride.pickup_address)}&dropoff[formatted_address]=${encodeURIComponent(ride.destination)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-black px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-stone-800"

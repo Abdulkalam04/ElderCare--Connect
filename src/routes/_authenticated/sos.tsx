@@ -35,12 +35,10 @@ import {
   getPushPermission,
   isPushSupported,
 } from "@/lib/push";
-
 export const Route = createFileRoute("/_authenticated/sos")({
   ssr: false,
   component: SOSPage,
 });
-
 type SOSAlert = {
   id: string;
   parent_id: string;
@@ -62,12 +60,10 @@ type SOSAlert = {
   location_accuracy: number | null;
   live_location_enabled: boolean;
 };
-
 type ActorProfile = {
   id: string;
   full_name: string | null;
 };
-
 function SOSPage() {
   const {
     activeParentId,
@@ -78,18 +74,14 @@ function SOSPage() {
   } = useActiveParent();
   const qc = useQueryClient();
   const sosActions = useSosActions({ parentId: activeParentId, actor: profile });
-
   useRealtimeSosAlerts(activeParentId ? [activeParentId] : [], {
     currentUserId: profile?.id,
     notifyOnInsert: isChildView,
   });
-
   const [pushState, setPushState] = useState("loading");
-
   useEffect(() => {
     setPushState(getPushPermission());
   }, []);
-
   async function togglePush() {
     if (pushState === "granted") {
       await disablePushNotifications();
@@ -97,14 +89,11 @@ function SOSPage() {
       toast.success("SOS push notifications disabled on this device.");
       return;
     }
-
     const result = await enablePushNotifications();
     setPushState(getPushPermission());
-
     if (result.ok) toast.success("SOS push notifications enabled on this device.");
     else toast.error(result.reason || "Could not enable SOS push notifications.");
   }
-
   const {
     data: alerts = [],
     isLoading: alertsLoading,
@@ -121,12 +110,10 @@ function SOSPage() {
         .select("*")
         .eq("parent_id", activeParentId!)
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       return (data ?? []) as SOSAlert[];
     },
   });
-
   const actorIds = useMemo(
     () =>
       [...new Set(alerts.flatMap((alert) => [alert.acknowledged_by, alert.resolved_by]))]
@@ -134,7 +121,6 @@ function SOSPage() {
         .sort(),
     [alerts],
   );
-
   const { data: actorProfiles = [] } = useQuery({
     queryKey: ["sos-actor-profiles", activeParentId, actorIds.join(",")],
     enabled: actorIds.length > 0,
@@ -143,24 +129,20 @@ function SOSPage() {
         .from("profiles")
         .select("id,full_name")
         .in("id", actorIds);
-
       if (error) throw error;
       return (data ?? []) as ActorProfile[];
     },
   });
-
   const getActorName = (id: string | null) => {
     if (!id) return "Unknown family member";
     if (id === profile?.id) return profile.full_name || "You";
     return actorProfiles.find((actor) => actor.id === id)?.full_name || "Family member";
   };
-
   const acknowledge = useMutation({
     mutationFn: async (alert: SOSAlert) => {
       if (!profile || profile.role !== "child") {
         throw new Error("Only a linked family-member account can acknowledge an SOS.");
       }
-
       const acknowledgedAt = new Date().toISOString();
       const { data, error } = await supabase
         .from("sos_alerts")
@@ -174,12 +156,10 @@ function SOSPage() {
         .eq("status", "active")
         .select("id,parent_id,status,acknowledged_at,acknowledged_by")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) {
         throw new Error("This SOS was already acknowledged, resolved, or changed elsewhere.");
       }
-
       const { error: notificationError } = await (supabase as any)
         .from("parent_notifications")
         .insert({
@@ -195,11 +175,9 @@ function SOSPage() {
             acknowledged_by: profile.id,
           },
         });
-
       if (notificationError) {
         console.error("Could not create SOS acknowledgement notification:", notificationError);
       }
-
       return data;
     },
     onSuccess: () => {
@@ -208,11 +186,9 @@ function SOSPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const resolve = useMutation({
     mutationFn: async (alert: SOSAlert) => {
       if (!profile) throw new Error("You must be signed in.");
-
       const resolvedAt = new Date().toISOString();
       const { data, error } = await supabase
         .from("sos_alerts")
@@ -227,25 +203,20 @@ function SOSPage() {
         .in("status", ["active", "acknowledged"])
         .select("id,parent_id,status,resolved_at,resolved_by")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) {
         throw new Error("This SOS was already resolved or changed elsewhere.");
       }
-
       const { data: links, error: linksError } = await supabase
         .from("parent_child_links")
         .select("child_id")
         .eq("parent_id", alert.parent_id);
-
       if (linksError) console.error("Could not load SOS notification recipients:", linksError);
-
       const recipientIds = new Set<string>([
         alert.parent_id,
         ...(links ?? []).map((link) => link.child_id),
       ]);
       recipientIds.delete(profile.id);
-
       if (recipientIds.size > 0) {
         const actorName = profile.full_name || "A family member";
         const notifications = [...recipientIds].map((recipientId) => ({
@@ -261,16 +232,13 @@ function SOSPage() {
             resolved_by: profile.id,
           },
         }));
-
         const { error: notificationError } = await (supabase as any)
           .from("parent_notifications")
           .insert(notifications);
-
         if (notificationError) {
           console.error("Could not create SOS resolved notifications:", notificationError);
         }
       }
-
       return data;
     },
     onSuccess: () => {
@@ -279,13 +247,11 @@ function SOSPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const deleteResolved = useMutation({
     mutationFn: async (alert: SOSAlert) => {
       if (!profile || profile.role !== "parent" || profile.id !== alert.parent_id) {
         throw new Error("Only the care-recipient account can delete its resolved SOS history.");
       }
-
       const { data, error } = await supabase
         .from("sos_alerts")
         .delete()
@@ -294,7 +260,6 @@ function SOSPage() {
         .eq("status", "resolved")
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) throw new Error("The SOS history item was not deleted.");
       return data.id;
@@ -308,20 +273,17 @@ function SOSPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const clearHistory = useMutation({
     mutationFn: async () => {
       if (!profile || profile.role !== "parent" || profile.id !== activeParentId) {
         throw new Error("Only the care-recipient account can clear SOS history.");
       }
-
       const { data, error } = await supabase
         .from("sos_alerts")
         .delete()
         .eq("parent_id", profile.id)
         .eq("status", "resolved")
         .select("id");
-
       if (error) throw error;
       return data?.length ?? 0;
     },
@@ -336,7 +298,6 @@ function SOSPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const activeAlerts = alerts.filter(
     (alert) => alert.status === "active" || alert.status === "acknowledged",
   );
@@ -344,7 +305,6 @@ function SOSPage() {
   const hasManualContact = sosActions.emergencyContacts.some((contact) =>
     Boolean(contact.phone || contact.email),
   );
-
   if (profileLoading) {
     return (
       <AppShell>
@@ -354,7 +314,6 @@ function SOSPage() {
       </AppShell>
     );
   }
-
   if (!activeParent || !activeParentId || !profile) {
     return (
       <AppShell>
@@ -368,7 +327,6 @@ function SOSPage() {
       </AppShell>
     );
   }
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
@@ -574,9 +532,7 @@ function SOSPage() {
                           }`}
                         >
                           <span
-                            className={`size-1.5 rounded-full ${
-                              alert.status === "active" ? "bg-red-600" : "bg-amber-500"
-                            }`}
+                            className={`size-1.5 rounded-full ${alert.status === "active" ? "bg-red-600" : "bg-amber-500"}`}
                           />
                           {alert.status}
                         </span>
@@ -868,7 +824,6 @@ function SOSPage() {
     </AppShell>
   );
 }
-
 function invalidateSosQueries(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["sos"] });
   qc.invalidateQueries({ queryKey: ["activeSosAlerts"] });

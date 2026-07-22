@@ -1,18 +1,18 @@
--- =============================================================================
--- Consolidated fixes migration — safe to run multiple times (idempotent)
--- Covers:
---   1. phone column on profiles
---   2. health-records storage bucket + correct RLS policies
---   3. elder_settings table + RLS (if not already created)
---   4. emergency_contacts table + RLS (if not already created)
--- =============================================================================
 
--- ─── 1. Phone column on profiles ─────────────────────────────────────────────
+
+
+
+
+
+
+
+
+
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS phone TEXT;
 
--- ─── 2. Health Records Storage Bucket ────────────────────────────────────────
--- Create the bucket if it doesn't exist yet
+
+
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'health-records',
@@ -26,7 +26,7 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit   = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- Storage SELECT: parent and their linked children can view
+
 DROP POLICY IF EXISTS "health_records_read" ON storage.objects;
 CREATE POLICY "health_records_read" ON storage.objects
   FOR SELECT TO authenticated
@@ -35,9 +35,9 @@ CREATE POLICY "health_records_read" ON storage.objects
     AND public.can_view_parent(((storage.foldername(name))[1])::uuid)
   );
 
--- Storage INSERT: only the parent themselves can upload to their own folder.
--- Root cause: original policy used `owner = auth.uid()` which Supabase JS v2
--- never sets (it uses owner_id). Fixed to path-based auth.uid() check only.
+
+
+
 DROP POLICY IF EXISTS "health_records_insert" ON storage.objects;
 CREATE POLICY "health_records_insert" ON storage.objects
   FOR INSERT TO authenticated
@@ -46,7 +46,7 @@ CREATE POLICY "health_records_insert" ON storage.objects
     AND ((storage.foldername(name))[1])::uuid = auth.uid()
   );
 
--- Storage UPDATE: parent only
+
 DROP POLICY IF EXISTS "health_records_update" ON storage.objects;
 CREATE POLICY "health_records_update" ON storage.objects
   FOR UPDATE TO authenticated
@@ -59,7 +59,7 @@ CREATE POLICY "health_records_update" ON storage.objects
     AND ((storage.foldername(name))[1])::uuid = auth.uid()
   );
 
--- Storage DELETE: parent only
+
 DROP POLICY IF EXISTS "health_records_delete" ON storage.objects;
 CREATE POLICY "health_records_delete" ON storage.objects
   FOR DELETE TO authenticated
@@ -68,8 +68,8 @@ CREATE POLICY "health_records_delete" ON storage.objects
     AND ((storage.foldername(name))[1])::uuid = auth.uid()
   );
 
--- ─── 3. Health Records table RLS (parent-only write) ─────────────────────────
--- Ensure category column exists
+
+
 ALTER TABLE public.health_records
   ADD COLUMN IF NOT EXISTS category TEXT
     CHECK (category IN ('blood_test', 'prescription', 'ecg'));
@@ -84,7 +84,7 @@ ALTER TABLE public.health_records
 ALTER TABLE public.health_records
   ADD COLUMN IF NOT EXISTS description TEXT;
 
--- Back-fill NULL categories
+
 UPDATE public.health_records SET category = 'blood_test' WHERE category IS NULL;
 
 DROP POLICY IF EXISTS "Insert records (parent only)" ON public.health_records;
@@ -103,7 +103,7 @@ CREATE POLICY "Update records (parent only)" ON public.health_records
   USING (parent_id = auth.uid())
   WITH CHECK (parent_id = auth.uid());
 
--- ─── 4. Emergency Contacts ───────────────────────────────────────────────────
+
 CREATE TABLE IF NOT EXISTS public.emergency_contacts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -139,7 +139,7 @@ DROP POLICY IF EXISTS "Delete emergency contact for linked parent" ON public.eme
 CREATE POLICY "Delete emergency contact for linked parent" ON public.emergency_contacts
   FOR DELETE TO authenticated USING (public.can_view_parent(parent_id));
 
--- ─── 5. Elder Settings ───────────────────────────────────────────────────────
+
 CREATE TABLE IF NOT EXISTS public.elder_settings (
   parent_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   notify_email BOOLEAN NOT NULL DEFAULT true,

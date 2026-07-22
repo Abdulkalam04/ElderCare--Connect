@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { useActiveParent } from "@/hooks/useProfile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -47,14 +48,16 @@ import {
   BellRing,
 } from "lucide-react";
 import { DateInput, TimeInput } from "@/components/ui/datetime-input";
-
+import { createMedicalFileAccessUrl } from "@/lib/api/medicalFiles.functions";
+import {
+  MEDICAL_FILE_MAX_BYTES,
+  PRESCRIPTION_ACCEPT,
+  validateMedicalFile,
+} from "@/lib/medicalFiles";
 export const Route = createFileRoute("/_authenticated/video")({
   ssr: false,
   component: VideoPage,
 });
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type ConsultStatus =
   | "scheduled"
   | "waiting"
@@ -62,7 +65,6 @@ type ConsultStatus =
   | "in_progress"
   | "completed"
   | "cancelled";
-
 type Consult = {
   id: string;
   parent_id: string;
@@ -85,7 +87,6 @@ type Consult = {
   created_at: string;
   updated_at: string;
 };
-
 type Prescription = {
   id: string;
   consultation_id: string;
@@ -97,17 +98,17 @@ type Prescription = {
   file_size: number | null;
   uploaded_at: string;
 };
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const PRESCRIPTION_BUCKET = "prescriptions";
-const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
-const ALLOWED_MIME = ["application/pdf", "image/jpeg", "image/jpg", "image/png"] as const;
-const ALLOWED_EXT = ".pdf,application/pdf,image/jpeg,image/jpg,image/png";
-
+const MAX_BYTES = MEDICAL_FILE_MAX_BYTES;
+const ALLOWED_EXT = PRESCRIPTION_ACCEPT;
 const STATUS_CONFIG: Record<
   ConsultStatus,
-  { label: string; bg: string; text: string; dot: string }
+  {
+    label: string;
+    bg: string;
+    text: string;
+    dot: string;
+  }
 > = {
   scheduled: {
     label: "Scheduled",
@@ -146,7 +147,6 @@ const STATUS_CONFIG: Record<
     dot: "bg-red-400",
   },
 };
-
 const CANCELLABLE: ConsultStatus[] = ["scheduled", "waiting", "pending"];
 const EDITABLE: ConsultStatus[] = ["scheduled", "waiting", "pending"];
 const JOINABLE: ConsultStatus[] = ["scheduled", "waiting", "pending", "in_progress"];
@@ -158,13 +158,9 @@ const REMINDER_OPTIONS = [
   { value: "120", label: "2 hours before" },
   { value: "1440", label: "1 day before" },
 ] as const;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function todayString() {
   return format(new Date(), "yyyy-MM-dd");
 }
-
 function formatDisplayDate(d: string | null) {
   if (!d) return "—";
   try {
@@ -173,7 +169,6 @@ function formatDisplayDate(d: string | null) {
     return d;
   }
 }
-
 function formatDisplayTime(t: string | null) {
   if (!t) return "—";
   try {
@@ -185,7 +180,6 @@ function formatDisplayTime(t: string | null) {
     return t;
   }
 }
-
 function generateJitsiRoom() {
   const suffix =
     typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -193,27 +187,22 @@ function generateJitsiRoom() {
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return `eldercare-${suffix}`;
 }
-
 function normalizeDoctorName(value: string) {
   return value.trim().replace(/^dr\.?\s+/i, "");
 }
-
 function displayDoctorName(value: string) {
   const clean = value.trim();
   return /^dr\.?\s+/i.test(clean) ? clean : `Dr. ${clean}`;
 }
-
 function parseLocalSchedule(date: string, time: string) {
   if (!date || !time) return null;
   const parsed = new Date(`${date}T${time}:00`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
-
 function getConsultTime(consult: Consult) {
   const parsed = new Date(consult.scheduled_at);
   return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 }
-
 function isValidHttpsUrl(value: string) {
   try {
     const url = new URL(value);
@@ -222,9 +211,6 @@ function isValidHttpsUrl(value: string) {
     return false;
   }
 }
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
 function StatusBadge({ status }: { status: ConsultStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
@@ -236,22 +222,16 @@ function StatusBadge({ status }: { status: ConsultStatus }) {
     </span>
   );
 }
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 function VideoPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const qc = useQueryClient();
-
-  // ── dialogs ──
+  const medicalFileAccess = useServerFn(createMedicalFileAccessUrl);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [editingConsult, setEditingConsult] = useState<Consult | null>(null);
   const [uploadConsult, setUploadConsult] = useState<Consult | null>(null);
   const [cancelConsultTarget, setCancelConsultTarget] = useState<Consult | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  // ── form state ──
   const [doctorName, setDoctorName] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [consultReason, setConsultReason] = useState("");
@@ -262,20 +242,14 @@ function VideoPage() {
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderMinutesBefore, setReminderMinutesBefore] = useState("60");
   const [nowMs, setNowMs] = useState(Date.now());
-
-  // ── upload state ──
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    const timer = window.setInterval(() => setNowMs(Date.now()), 30000);
     return () => window.clearInterval(timer);
   }, []);
-
-  // ─── Queries ──────────────────────────────────────────────────────────────
-
   const { data: consults, isLoading } = useQuery({
     queryKey: ["video", activeParentId],
     enabled: !!activeParentId,
@@ -289,7 +263,6 @@ function VideoPage() {
       return (data ?? []) as unknown as Consult[];
     },
   });
-
   const { data: prescriptions } = useQuery({
     queryKey: ["prescriptions", activeParentId],
     queryFn: async () => {
@@ -305,10 +278,8 @@ function VideoPage() {
     },
     enabled: !!activeParentId && (consults?.length ?? 0) > 0,
   });
-
   useEffect(() => {
     if (!activeParentId) return;
-
     const channel = supabase
       .channel(`video-consults-${activeParentId}-${Math.random().toString(36).slice(2)}`)
       .on(
@@ -336,14 +307,10 @@ function VideoPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [activeParentId, qc]);
-
-  // ─── Form helpers ──────────────────────────────────────────────────────────
-
   function resetForm() {
     setDoctorName("");
     setSpecialty("");
@@ -355,7 +322,6 @@ function VideoPage() {
     setReminderEnabled(true);
     setReminderMinutesBefore("60");
   }
-
   function openNew() {
     if (isChildView) {
       toast.error("You do not have permission to manage telehealth consultations.");
@@ -365,7 +331,6 @@ function VideoPage() {
     resetForm();
     setScheduleOpen(true);
   }
-
   function openEdit(c: Consult) {
     if (isChildView) {
       toast.error("You do not have permission to manage telehealth consultations.");
@@ -383,13 +348,11 @@ function VideoPage() {
     setReminderMinutesBefore(String(c.reminder_minutes_before ?? 60));
     setScheduleOpen(true);
   }
-
   function closeSchedule() {
     setScheduleOpen(false);
     setEditingConsult(null);
     resetForm();
   }
-
   function closeUpload() {
     setUploadConsult(null);
     setUploadFile(null);
@@ -397,9 +360,6 @@ function VideoPage() {
     setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
-
-  // ─── Validation ───────────────────────────────────────────────────────────
-
   function validateConsult(): boolean {
     if (!doctorName.trim()) {
       toast.error("Doctor name is required.");
@@ -436,18 +396,13 @@ function VideoPage() {
     }
     return true;
   }
-
-  // ─── Mutations ────────────────────────────────────────────────────────────
-
   const book = useMutation({
     mutationFn: async () => {
       if (isChildView)
         throw new Error("You do not have permission to manage telehealth consultations.");
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const scheduled = parseLocalSchedule(consultDate, consultTime);
       if (!scheduled) throw new Error("Invalid consultation date or time.");
-
       const finalMeetingUrl = meetingUrl.trim() || `https://meet.jit.si/${generateJitsiRoom()}`;
       const { data, error } = await supabase
         .from("video_consultations")
@@ -481,16 +436,13 @@ function VideoPage() {
       else toast.error("Please try again later.");
     },
   });
-
   const edit = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView)
         throw new Error("You do not have permission to manage telehealth consultations.");
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const scheduled = parseLocalSchedule(consultDate, consultTime);
       if (!scheduled) throw new Error("Invalid consultation date or time.");
-
       const finalMeetingUrl = meetingUrl.trim() || `https://meet.jit.si/${generateJitsiRoom()}`;
       const { data, error } = await supabase
         .from("video_consultations")
@@ -523,7 +475,6 @@ function VideoPage() {
       else toast.error("Please try again later.");
     },
   });
-
   const cancelConsult = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       if (isChildView)
@@ -550,26 +501,22 @@ function VideoPage() {
       else toast.error("Please try again later.");
     },
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (isChildView)
         throw new Error("You do not have permission to manage telehealth consultations.");
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const { data: files, error: fileQueryError } = await supabase
         .from("consultation_prescriptions")
         .select("file_path")
         .eq("parent_id", activeParentId);
       if (fileQueryError) throw fileQueryError;
-
       const { data, error } = await supabase
         .from("video_consultations")
         .delete()
         .eq("parent_id", activeParentId)
         .select("id");
       if (error) throw error;
-
       let cleanupFailed = false;
       const paths = (files ?? []).map((file) => file.file_path).filter(Boolean);
       if (paths.length > 0) {
@@ -578,7 +525,6 @@ function VideoPage() {
           .remove(paths);
         cleanupFailed = !!storageError;
       }
-
       return { deletedCount: data?.length ?? 0, cleanupFailed };
     },
     onSuccess: ({ deletedCount, cleanupFailed }) => {
@@ -593,13 +539,11 @@ function VideoPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const checkInConsult = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView)
         throw new Error("You do not have permission to manage telehealth consultations.");
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const { data, error } = await supabase
         .from("video_consultations")
         .update({ status: "waiting" })
@@ -607,7 +551,6 @@ function VideoPage() {
         .eq("parent_id", activeParentId)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) throw new Error("The consultation was not found or could not be checked in.");
     },
@@ -617,13 +560,11 @@ function VideoPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const completeConsult = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView)
         throw new Error("You do not have permission to manage telehealth consultations.");
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const { data, error } = await supabase
         .from("video_consultations")
         .update({ status: "completed" })
@@ -640,17 +581,14 @@ function VideoPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const deleteConsult = useMutation({
     mutationFn: async (consult: Consult) => {
       if (isChildView)
         throw new Error("You do not have permission to manage telehealth consultations.");
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const consultFiles = (prescriptions ?? []).filter(
         (prescription) => prescription.consultation_id === consult.id,
       );
-
       const { data, error } = await supabase
         .from("video_consultations")
         .delete()
@@ -660,7 +598,6 @@ function VideoPage() {
         .maybeSingle();
       if (error) throw error;
       if (!data) throw new Error("The consultation was not found or could not be deleted.");
-
       let cleanupFailed = false;
       const paths = consultFiles.map((file) => file.file_path).filter(Boolean);
       if (paths.length > 0) {
@@ -669,7 +606,6 @@ function VideoPage() {
           .remove(paths);
         cleanupFailed = !!storageError;
       }
-
       return { consultId: consult.id, cleanupFailed };
     },
     onSuccess: ({ consultId, cleanupFailed }) => {
@@ -690,12 +626,10 @@ function VideoPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const deletePrescription = useMutation({
     mutationFn: async (prescription: Prescription) => {
       if (isChildView) throw new Error("You do not have permission to manage prescriptions.");
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const { data, error } = await supabase
         .from("consultation_prescriptions")
         .delete()
@@ -705,11 +639,9 @@ function VideoPage() {
         .maybeSingle();
       if (error) throw error;
       if (!data) throw new Error("The prescription was not found or could not be deleted.");
-
       const { error: storageError } = await supabase.storage
         .from(PRESCRIPTION_BUCKET)
         .remove([prescription.file_path]);
-
       return { prescriptionId: prescription.id, cleanupFailed: !!storageError };
     },
     onSuccess: ({ prescriptionId, cleanupFailed }) => {
@@ -726,45 +658,33 @@ function VideoPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const uploadPrescription = useMutation({
     mutationFn: async () => {
       if (isChildView)
         throw new Error("You do not have permission to manage telehealth consultations.");
       if (!uploadFile) throw new Error("__validation__");
-      if (!ALLOWED_MIME.includes(uploadFile.type as (typeof ALLOWED_MIME)[number])) {
-        throw new Error("Only PDF and image files are allowed.");
-      }
-      if (uploadFile.size > MAX_BYTES) throw new Error("File exceeds the 25 MB limit.");
       if (!uploadConsult) throw new Error("No consultation selected.");
-
+      const validated = await validateMedicalFile(uploadFile, { allowWebp: false });
       setUploading(true);
       setUploadProgress(15);
-
-      const ext = uploadFile.name.split(".").pop() ?? "bin";
-      const key = `${activeParentId}/${uploadConsult.id}/${crypto.randomUUID()}.${ext}`;
-
+      const key = `${activeParentId}/${uploadConsult.id}/${crypto.randomUUID()}.${validated.extension}`;
       const { error: upErr } = await supabase.storage
         .from(PRESCRIPTION_BUCKET)
-        .upload(key, uploadFile, { contentType: uploadFile.type, upsert: false });
-      if (upErr) throw new Error("Unable to upload prescription.");
-
+        .upload(key, validated.file, { contentType: validated.mime, upsert: false });
+      if (upErr) throw new Error(upErr.message || "Unable to upload prescription.");
       setUploadProgress(70);
-
       const { error: dbErr } = await supabase.from("consultation_prescriptions").insert({
         consultation_id: uploadConsult.id,
         parent_id: activeParentId!,
         file_path: key,
-        file_type: uploadFile.type,
-        file_name: uploadFile.name,
-        file_size: uploadFile.size,
+        file_type: validated.mime,
+        file_name: validated.safeOriginalName,
+        file_size: validated.file.size,
       });
-
       if (dbErr) {
         await supabase.storage.from(PRESCRIPTION_BUCKET).remove([key]);
         throw new Error("Unable to upload prescription.");
       }
-
       setUploadProgress(100);
     },
     onSuccess: () => {
@@ -778,47 +698,35 @@ function VideoPage() {
       if (e.message !== "__validation__") toast.error(e.message);
     },
   });
-
-  // ─── File handler ──────────────────────────────────────────────────────────
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
     if (!f) {
       setUploadFile(null);
       return;
     }
-    if (!ALLOWED_MIME.includes(f.type as (typeof ALLOWED_MIME)[number])) {
-      toast.error("Only PDF and image files are allowed.");
+    try {
+      await validateMedicalFile(f, { allowWebp: false });
+      setUploadFile(f);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Invalid prescription file.");
       e.target.value = "";
-      return;
+      setUploadFile(null);
     }
-    if (f.size > MAX_BYTES) {
-      toast.error("File exceeds the 25 MB limit.");
-      e.target.value = "";
-      return;
-    }
-    setUploadFile(f);
   }
-
-  // ─── Open prescription ────────────────────────────────────────────────────
-
   async function openPrescription(p: Prescription) {
     try {
-      const { data, error } = await supabase.storage
-        .from(PRESCRIPTION_BUCKET)
-        .createSignedUrl(p.file_path, 300);
-      if (error || !data?.signedUrl) {
-        toast.error("Unable to open file");
-        return;
-      }
-      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
-    } catch {
-      toast.error("Unable to open file");
+      const result = await medicalFileAccess({
+        data: {
+          documentKind: "prescription",
+          documentId: p.id,
+          action: "view",
+        },
+      });
+      window.open(result.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to open file");
     }
   }
-
-  // ─── Join consultation ────────────────────────────────────────────────────
-
   async function handleJoin(c: Consult) {
     if (!c.meeting_url) {
       toast.error("Consultation is not available.");
@@ -832,26 +740,19 @@ function VideoPage() {
       toast.error("Consultation is not available.");
       return;
     }
-
     const scheduledMs = getConsultTime(c);
     const joinOpensAt = scheduledMs - JOIN_EARLY_MINUTES * 60 * 1000;
     if (c.status !== "in_progress" && scheduledMs > 0 && Date.now() < joinOpensAt) {
       toast.error(`Join will be available ${JOIN_EARLY_MINUTES} minutes before the consultation.`);
       return;
     }
-
-    // Open synchronously so browser popup blockers do not block the meeting.
     window.open(c.meeting_url, "_blank", "noopener,noreferrer");
-
-    // Update status after opening. The meeting should still open if the status
-    // update temporarily fails.
     if (c.status !== "in_progress" && !isChildView) {
       const { error } = await supabase
         .from("video_consultations")
         .update({ status: "in_progress" })
         .eq("id", c.id)
         .eq("parent_id", activeParentId!);
-
       if (error) {
         toast.warning("Meeting opened, but the consultation status could not be updated.");
       } else {
@@ -859,9 +760,6 @@ function VideoPage() {
       }
     }
   }
-
-  // ─── Derived ──────────────────────────────────────────────────────────────
-
   const activeConsults = useMemo(
     () =>
       (consults ?? [])
@@ -869,7 +767,6 @@ function VideoPage() {
         .sort((a, b) => getConsultTime(a) - getConsultTime(b)),
     [consults],
   );
-
   const historyConsults = useMemo(
     () =>
       (consults ?? [])
@@ -877,17 +774,11 @@ function VideoPage() {
         .sort((a, b) => getConsultTime(b) - getConsultTime(a)),
     [consults],
   );
-
   const getPrescriptions = (consultId: string) =>
     (prescriptions ?? []).filter((p) => p.consultation_id === consultId);
-
   const isPending = editingConsult ? edit.isPending : book.isPending;
-
-  // ─── Render ───────────────────────────────────────────────────────────────
-
   return (
     <AppShell>
-      {/* Header */}
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Telehealth</h1>
@@ -929,7 +820,6 @@ function VideoPage() {
         )}
       </div>
 
-      {/* Child Read-Only Notice */}
       {isChildView && (
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-sm text-amber-800">
           <ShieldAlert className="size-4 shrink-0" />
@@ -937,7 +827,6 @@ function VideoPage() {
         </div>
       )}
 
-      {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {(["scheduled", "waiting", "in_progress", "completed"] as ConsultStatus[]).map((s) => {
           const count = (consults ?? []).filter((c) => c.status === s).length;
@@ -956,9 +845,7 @@ function VideoPage() {
         })}
       </div>
 
-      {/* Consultations */}
       <div className="space-y-6">
-        {/* Active */}
         <div>
           <h2 className="font-display text-xl font-bold mb-4">Upcoming Consultations</h2>
           {isLoading ? (
@@ -1003,7 +890,7 @@ function VideoPage() {
                       completeConsult.mutate(c.id);
                     }
                   }}
-                  onDelete={() => { }}
+                  onDelete={() => {}}
                   onUploadRx={() => {
                     if (isChildView) {
                       toast.error("You do not have permission to manage telehealth consultations.");
@@ -1024,7 +911,6 @@ function VideoPage() {
           )}
         </div>
 
-        {/* History */}
         {historyConsults.length > 0 && (
           <div>
             <h2 className="font-display text-xl font-bold mb-4 text-muted-foreground">History</h2>
@@ -1038,10 +924,10 @@ function VideoPage() {
                   onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
                   prescriptions={getPrescriptions(c.id)}
                   onEdit={() => openEdit(c)}
-                  onCheckIn={() => { }}
-                  onCancel={() => { }}
+                  onCheckIn={() => {}}
+                  onCancel={() => {}}
                   onJoin={() => handleJoin(c)}
-                  onComplete={() => { }}
+                  onComplete={() => {}}
                   onDelete={() => {
                     if (isChildView) {
                       toast.error("You do not have permission to manage telehealth consultations.");
@@ -1072,7 +958,6 @@ function VideoPage() {
         )}
       </div>
 
-      {/* ── Schedule / Edit Dialog ── */}
       <Dialog
         open={scheduleOpen}
         onOpenChange={(v) => {
@@ -1088,7 +973,6 @@ function VideoPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Doctor Name */}
             <div className="space-y-1.5">
               <Label htmlFor="vc-doctor">
                 Doctor Name <span className="text-destructive">*</span>
@@ -1102,7 +986,6 @@ function VideoPage() {
               />
             </div>
 
-            {/* Specialty */}
             <div className="space-y-1.5">
               <Label htmlFor="vc-specialty">
                 Specialty <span className="text-xs text-muted-foreground">(optional)</span>
@@ -1116,7 +999,6 @@ function VideoPage() {
               />
             </div>
 
-            {/* Reason */}
             <div className="space-y-1.5">
               <Label htmlFor="vc-reason">
                 Consultation Reason <span className="text-destructive">*</span>
@@ -1130,7 +1012,6 @@ function VideoPage() {
               />
             </div>
 
-            {/* Date & Time */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="vc-date">
@@ -1157,7 +1038,6 @@ function VideoPage() {
               </div>
             </div>
 
-            {/* Meeting link */}
             <div className="space-y-1.5">
               <Label htmlFor="vc-meeting-link">
                 Meeting Link <span className="text-xs text-muted-foreground">(optional)</span>
@@ -1176,7 +1056,6 @@ function VideoPage() {
               </p>
             </div>
 
-            {/* Reminder */}
             <div className="rounded-2xl border border-border bg-stone-50/70 p-4 space-y-3">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -1214,7 +1093,6 @@ function VideoPage() {
               )}
             </div>
 
-            {/* Notes */}
             <div className="space-y-1.5">
               <Label htmlFor="vc-notes">
                 Notes <span className="text-xs text-muted-foreground">(optional)</span>
@@ -1259,7 +1137,6 @@ function VideoPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Cancel Consultation Dialog ── */}
       <Dialog
         open={!!cancelConsultTarget}
         onOpenChange={(open) => {
@@ -1336,7 +1213,6 @@ function VideoPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Upload Prescription Dialog ── */}
       <Dialog
         open={!!uploadConsult}
         onOpenChange={(v) => {
@@ -1352,14 +1228,12 @@ function VideoPage() {
 
           {uploadConsult && (
             <div className="space-y-4 py-2">
-              {/* Consult reference */}
               <div className="bg-stone-50 border border-stone-100 rounded-xl px-3 py-2 text-xs text-stone-600">
                 <span className="font-semibold">For:</span>{" "}
                 {displayDoctorName(uploadConsult.doctor_name)}
                 {uploadConsult.consultation_reason && ` · ${uploadConsult.consultation_reason}`}
               </div>
 
-              {/* File drop zone */}
               <div className="space-y-1.5">
                 <Label>
                   File <span className="text-destructive">*</span>{" "}
@@ -1391,7 +1265,6 @@ function VideoPage() {
                 </label>
               </div>
 
-              {/* Progress */}
               {uploading && (
                 <div className="space-y-1.5">
                   <Label>Uploading…</Label>
@@ -1418,9 +1291,6 @@ function VideoPage() {
     </AppShell>
   );
 }
-
-// ─── Consult Row Component ────────────────────────────────────────────────────
-
 function ConsultRow({
   consult: c,
   isChildView,
@@ -1473,22 +1343,17 @@ function ConsultRow({
     !["completed", "cancelled", "in_progress"].includes(c.status) &&
     scheduledMs > 0 &&
     nowMs > scheduledMs;
-
   return (
     <div
       className={`hover:bg-stone-50/50 transition-colors ${isActive ? "border-l-4 border-emerald-400" : ""}`}
     >
-      {/* Main row */}
       <div className="p-5 flex items-start gap-5">
-        {/* Icon */}
         <div
-          className={`size-12 rounded-2xl flex items-center justify-center shrink-0 ${isActive ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
-            }`}
+          className={`size-12 rounded-2xl flex items-center justify-center shrink-0 ${isActive ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"}`}
         >
           <Video className="size-5" />
         </div>
 
-        {/* Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-base">
@@ -1552,9 +1417,7 @@ function ConsultRow({
           )}
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col items-end gap-2 shrink-0">
-          {/* Check in */}
           {canCheckIn && (
             <Button
               size="sm"
@@ -1574,7 +1437,6 @@ function ConsultRow({
             </Button>
           )}
 
-          {/* Join */}
           {canJoin && (
             <Button
               size="sm"
@@ -1594,7 +1456,6 @@ function ConsultRow({
           )}
 
           <div className="flex items-center gap-1">
-            {/* Edit */}
             {canEdit && (
               <button
                 id={`btn-edit-${c.id}`}
@@ -1606,7 +1467,6 @@ function ConsultRow({
               </button>
             )}
 
-            {/* Cancel */}
             {canCancel && (
               <button
                 id={`btn-cancel-${c.id}`}
@@ -1618,7 +1478,6 @@ function ConsultRow({
               </button>
             )}
 
-            {/* Complete */}
             {canComplete && (
               <button
                 id={`btn-complete-${c.id}`}
@@ -1630,7 +1489,6 @@ function ConsultRow({
               </button>
             )}
 
-            {/* Delete */}
             {canDelete && (
               <button
                 id={`btn-delete-${c.id}`}
@@ -1642,7 +1500,6 @@ function ConsultRow({
               </button>
             )}
 
-            {/* Upload Rx */}
             {canUpload && (
               <button
                 id={`btn-upload-rx-${c.id}`}
@@ -1654,7 +1511,6 @@ function ConsultRow({
               </button>
             )}
 
-            {/* Expand */}
             {prescriptions.length > 0 && (
               <button
                 onClick={onToggle}
@@ -1668,7 +1524,6 @@ function ConsultRow({
         </div>
       </div>
 
-      {/* Prescriptions panel */}
       {expanded && prescriptions.length > 0 && (
         <div className="mx-5 mb-4 border border-border rounded-2xl overflow-hidden divide-y divide-border bg-stone-50/50">
           <div className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">

@@ -28,29 +28,31 @@ import {
   HeartPulse,
   Activity,
 } from "lucide-react";
-
 export const Route = createFileRoute("/_authenticated/notifications")({
   ssr: false,
   component: NotificationsPage,
 });
-
 type NotifType =
   | "missed_medicine"
   | "missed_checkin"
   | "no_app_activity"
   | "sos"
   | "sos_sent"
+  | "sos_acknowledged"
   | "sos_resolved"
   | "sos_escalation"
   | "appointment_reminder"
   | "missed_appointment"
   | "caregiver_alert"
+  | "caregiver_booking"
   | "video_consult"
   | "transport_alert"
+  | "health_risk_high"
+  | "companion_emergency"
+  | "push_test"
   | "reminder"
   | "call"
   | string;
-
 interface Notification {
   id: string;
   parent_id: string;
@@ -63,7 +65,6 @@ interface Notification {
   created_at: string;
   deleted_at: string | null;
 }
-
 const TYPE_TABS = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
@@ -73,14 +74,13 @@ const TYPE_TABS = [
   { key: "sos", label: "Emergency" },
   { key: "appointment_reminder", label: "Appointments" },
   { key: "caregiver_alert", label: "Caregiver" },
+  { key: "health_risk_high", label: "Health Risk" },
+  { key: "companion_emergency", label: "Companion Safety" },
   { key: "video_consult", label: "Video Consult" },
   { key: "transport_alert", label: "Transport" },
   { key: "reminder", label: "Reminders" },
 ] as const;
-
 type TabKey = (typeof TYPE_TABS)[number]["key"];
-
-/** Map each notification type to the route it should deep-link to */
 function getNotifRoute(type: NotifType): string {
   switch (type) {
     case "missed_medicine":
@@ -89,9 +89,11 @@ function getNotifRoute(type: NotifType): string {
     case "missed_checkin":
       return "/wellbeing";
     case "no_app_activity":
-      return "/dashboard";
+    case "companion_emergency":
+      return "/emergency-detection";
     case "sos":
     case "sos_sent":
+    case "sos_acknowledged":
     case "sos_resolved":
     case "sos_escalation":
       return "/sos";
@@ -99,16 +101,20 @@ function getNotifRoute(type: NotifType): string {
     case "missed_appointment":
       return "/appointments";
     case "caregiver_alert":
+    case "caregiver_booking":
       return "/caregivers";
     case "video_consult":
       return "/video";
     case "transport_alert":
       return "/transport";
+    case "health_risk_high":
+      return "/health-risk";
+    case "push_test":
+      return "/settings";
     default:
       return "/notifications";
   }
 }
-
 function getNotifIcon(type: NotifType) {
   switch (type) {
     case "missed_medicine":
@@ -121,6 +127,8 @@ function getNotifIcon(type: NotifType) {
       return <Siren className="size-5" />;
     case "sos_sent":
       return <SendHorizonal className="size-5" />;
+    case "sos_acknowledged":
+      return <UserCheck className="size-5" />;
     case "sos_resolved":
       return <ShieldCheck className="size-5" />;
     case "sos_escalation":
@@ -130,11 +138,18 @@ function getNotifIcon(type: NotifType) {
     case "missed_appointment":
       return <CalendarX className="size-5" />;
     case "caregiver_alert":
+    case "caregiver_booking":
       return <UserCheck className="size-5" />;
     case "video_consult":
       return <Video className="size-5" />;
     case "transport_alert":
       return <Car className="size-5" />;
+    case "health_risk_high":
+      return <HeartPulse className="size-5" />;
+    case "companion_emergency":
+      return <ShieldCheck className="size-5" />;
+    case "push_test":
+      return <Bell className="size-5" />;
     case "reminder":
       return <Bell className="size-5" />;
     case "call":
@@ -143,7 +158,6 @@ function getNotifIcon(type: NotifType) {
       return <MessageCircle className="size-5" />;
   }
 }
-
 function getNotifColors(type: NotifType, isRead: boolean) {
   if (isRead) return "bg-stone-100 text-stone-400";
   switch (type) {
@@ -158,6 +172,8 @@ function getNotifColors(type: NotifType, isRead: boolean) {
       return "bg-red-100 text-red-600";
     case "sos_sent":
       return "bg-orange-100 text-orange-600";
+    case "sos_acknowledged":
+      return "bg-blue-100 text-blue-700";
     case "sos_resolved":
       return "bg-emerald-100 text-emerald-600";
     case "appointment_reminder":
@@ -165,11 +181,18 @@ function getNotifColors(type: NotifType, isRead: boolean) {
     case "missed_appointment":
       return "bg-rose-100 text-rose-600";
     case "caregiver_alert":
+    case "caregiver_booking":
       return "bg-teal-100 text-teal-600";
     case "video_consult":
       return "bg-indigo-100 text-indigo-600";
     case "transport_alert":
       return "bg-sky-100 text-sky-700";
+    case "health_risk_high":
+      return "bg-rose-100 text-rose-700";
+    case "companion_emergency":
+      return "bg-red-100 text-red-700";
+    case "push_test":
+      return "bg-violet-100 text-violet-700";
     case "reminder":
       return "bg-purple-100 text-purple-600";
     case "call":
@@ -178,7 +201,6 @@ function getNotifColors(type: NotifType, isRead: boolean) {
       return "bg-primary/10 text-primary";
   }
 }
-
 function getNotifTitle(type: NotifType) {
   switch (type) {
     case "missed_medicine":
@@ -191,6 +213,8 @@ function getNotifTitle(type: NotifType) {
       return "Emergency SOS";
     case "sos_sent":
       return "SOS Sent";
+    case "sos_acknowledged":
+      return "SOS Acknowledged";
     case "sos_resolved":
       return "SOS Resolved";
     case "sos_escalation":
@@ -200,11 +224,18 @@ function getNotifTitle(type: NotifType) {
     case "missed_appointment":
       return "Missed Appointment";
     case "caregiver_alert":
-      return "Caregiver Alert";
+    case "caregiver_booking":
+      return "Caregiver Update";
     case "video_consult":
       return "Video Consult Reminder";
     case "transport_alert":
       return "Transport Update";
+    case "health_risk_high":
+      return "High Health-Risk Screening";
+    case "companion_emergency":
+      return "Companion Safety Warning";
+    case "push_test":
+      return "Push Test";
     case "reminder":
       return "Medication Reminder";
     case "call":
@@ -213,8 +244,6 @@ function getNotifTitle(type: NotifType) {
       return "Notification";
   }
 }
-
-/** Render structured metadata badge below the message */
 function MetaBadges({
   type,
   metadata,
@@ -223,9 +252,10 @@ function MetaBadges({
   metadata: Record<string, unknown> | null;
 }) {
   if (!metadata) return null;
-
-  const badges: { label: string; value: string }[] = [];
-
+  const badges: {
+    label: string;
+    value: string;
+  }[] = [];
   if (type === "missed_medicine" || type === "reminder") {
     if (metadata.medicine_name)
       badges.push({ label: "Medicine", value: String(metadata.medicine_name) });
@@ -237,19 +267,17 @@ function MetaBadges({
         });
         badges.push({ label: "Scheduled", value: t });
       } catch {
-        /* ignore */
+        void 0;
       }
     }
     if (metadata.date) badges.push({ label: "Date", value: String(metadata.date) });
     if (metadata.status) badges.push({ label: "Status", value: String(metadata.status) });
   }
-
   if (type === "missed_checkin") {
     if (metadata.check_date)
       badges.push({ label: "Check-in date", value: String(metadata.check_date) });
     if (metadata.severity) badges.push({ label: "Priority", value: String(metadata.severity) });
   }
-
   if (type === "no_app_activity") {
     if (metadata.last_app_activity_at) {
       try {
@@ -259,12 +287,11 @@ function MetaBadges({
           value: d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
         });
       } catch {
-        /* ignore */
+        void 0;
       }
     }
     if (metadata.severity) badges.push({ label: "Priority", value: String(metadata.severity) });
   }
-
   if (type === "appointment_reminder" || type === "missed_appointment") {
     if (metadata.appointment_title)
       badges.push({ label: "Appointment", value: String(metadata.appointment_title) });
@@ -280,14 +307,12 @@ function MetaBadges({
           value: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         });
       } catch {
-        /* ignore */
+        void 0;
       }
     }
     if (metadata.status) badges.push({ label: "Status", value: String(metadata.status) });
   }
-
   if (badges.length === 0) return null;
-
   return (
     <div className="flex flex-wrap gap-1.5 mt-2">
       {badges.map((b) => (
@@ -302,24 +327,19 @@ function MetaBadges({
     </div>
   );
 }
-
-/** Returns the tab key that a notification's type maps to for filtering */
 function getEffectiveTabKey(type: string): string {
-  if (["sos", "sos_sent", "sos_resolved", "sos_escalation"].includes(type)) return "sos";
+  if (["sos", "sos_sent", "sos_acknowledged", "sos_resolved", "sos_escalation"].includes(type))
+    return "sos";
   if (["appointment_reminder", "missed_appointment"].includes(type)) return "appointment_reminder";
+  if (["caregiver_alert", "caregiver_booking"].includes(type)) return "caregiver_alert";
   return type;
 }
-
 function NotificationsPage() {
   const { data: user } = useCurrentUser();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>("all");
-
-  // The recipient is always the current user (parent_id = current user's id)
   const recipientId = user?.id;
-
-  // ── Fetch notifications ─────────────────────────────────────────────────────
   const {
     data: notifications = [],
     isLoading,
@@ -339,8 +359,6 @@ function NotificationsPage() {
       return (data ?? []) as Notification[];
     },
   });
-
-  // ── Real-time subscription ──────────────────────────────────────────────────
   useEffect(() => {
     if (!recipientId) return;
     const channel = supabase
@@ -363,8 +381,6 @@ function NotificationsPage() {
       supabase.removeChannel(channel);
     };
   }, [recipientId, qc]);
-
-  // ── Mark single as read ────────────────────────────────────────────────────
   const markRead = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -379,8 +395,6 @@ function NotificationsPage() {
       qc.invalidateQueries({ queryKey: ["notifUnread", recipientId] });
     },
   });
-
-  // ── Mark all as read ───────────────────────────────────────────────────────
   const markAllRead = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -398,11 +412,6 @@ function NotificationsPage() {
     },
     onError: () => toast.error("Failed to mark notifications as read."),
   });
-
-  // ── Clear/delete notifications ────────────────────────────────────────────
-  // Notifications use soft deletion instead of physical DELETE.
-  // This is important because the notification engine checks old rows to avoid
-  // recreating dismissed medicine, appointment, and wellbeing notifications.
   const clearRead = useMutation({
     mutationFn: async () => {
       const deletedAt = new Date().toISOString();
@@ -423,8 +432,6 @@ function NotificationsPage() {
       toast.error(err instanceof Error ? err.message : "Failed to clear notifications.");
     },
   });
-
-  // ── Delete single notification ──────────────────────────────────────────────
   const deleteNotification = useMutation({
     mutationFn: async (id: string) => {
       const deletedAt = new Date().toISOString();
@@ -448,7 +455,6 @@ function NotificationsPage() {
       toast.error(err instanceof Error ? err.message : "Failed to delete notification.");
     },
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       const deletedAt = new Date().toISOString();
@@ -472,18 +478,13 @@ function NotificationsPage() {
       toast.error(err instanceof Error ? err.message : "Failed to clear notifications.");
     },
   });
-
-  // ── Filter by tab ──────────────────────────────────────────────────────────
   const filtered = notifications.filter((n) => {
     const effectiveType = n.notification_type ?? n.type;
     if (activeTab === "all") return true;
     if (activeTab === "unread") return !n.is_read;
     return getEffectiveTabKey(effectiveType) === activeTab;
   });
-
   const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  // ── Handle card click: mark read + navigate ──────────────────────────────
   function handleNotifClick(notif: Notification) {
     const effectiveType = notif.notification_type ?? notif.type;
     if (!notif.is_read) {
@@ -494,10 +495,8 @@ function NotificationsPage() {
       navigate({ to: route });
     }
   }
-
   return (
     <AppShell>
-      {/* Header */}
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1 className="font-display text-4xl font-bold italic flex items-center gap-3">
@@ -548,7 +547,6 @@ function NotificationsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
         {TYPE_TABS.map((tab) => {
           const count =
@@ -557,28 +555,28 @@ function NotificationsPage() {
               : tab.key === "unread"
                 ? unreadCount
                 : notifications.filter((n) => {
-                  const et = n.notification_type ?? n.type;
-                  return getEffectiveTabKey(et) === tab.key;
-                }).length;
-
+                    const et = n.notification_type ?? n.type;
+                    return getEffectiveTabKey(et) === tab.key;
+                  }).length;
           if (count === 0 && tab.key !== "all" && tab.key !== "unread") return null;
-
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${activeTab === tab.key
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                activeTab === tab.key
                   ? "bg-primary text-primary-foreground shadow"
                   : "bg-stone-100 text-muted-foreground hover:bg-stone-200"
-                }`}
+              }`}
             >
               {tab.label}
               {count > 0 && (
                 <span
-                  className={`text-xs rounded-full px-1.5 py-0.5 font-mono ${activeTab === tab.key
+                  className={`text-xs rounded-full px-1.5 py-0.5 font-mono ${
+                    activeTab === tab.key
                       ? "bg-white/20 text-white"
                       : "bg-stone-200 text-muted-foreground"
-                    }`}
+                  }`}
                 >
                   {count}
                 </span>
@@ -588,7 +586,6 @@ function NotificationsPage() {
         })}
       </div>
 
-      {/* Notification List */}
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -611,7 +608,6 @@ function NotificationsPage() {
             const effectiveType = notif.notification_type ?? notif.type;
             const destRoute = getNotifRoute(effectiveType);
             const isNavigable = destRoute !== "/notifications";
-
             return (
               <div
                 key={notif.id}
@@ -619,27 +615,22 @@ function NotificationsPage() {
                 tabIndex={0}
                 onClick={() => handleNotifClick(notif)}
                 onKeyDown={(e) => e.key === "Enter" && handleNotifClick(notif)}
-                className={`group relative bg-card border rounded-2xl p-5 flex items-start gap-4 transition-all cursor-pointer hover:shadow-md active:scale-[0.99] ${notif.is_read
+                className={`group relative bg-card border rounded-2xl p-5 flex items-start gap-4 transition-all cursor-pointer hover:shadow-md active:scale-[0.99] ${
+                  notif.is_read
                     ? "border-border opacity-70"
                     : "border-primary/20 shadow-sm ring-1 ring-primary/5"
-                  }`}
+                }`}
               >
-                {/* Unread dot */}
                 {!notif.is_read && (
                   <div className="absolute top-4 right-4 size-2.5 rounded-full bg-primary animate-pulse" />
                 )}
 
-                {/* Icon */}
                 <div
-                  className={`size-11 rounded-xl grid place-items-center shrink-0 ${getNotifColors(
-                    effectiveType,
-                    notif.is_read,
-                  )}`}
+                  className={`size-11 rounded-xl grid place-items-center shrink-0 ${getNotifColors(effectiveType, notif.is_read)}`}
                 >
                   {getNotifIcon(effectiveType)}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <p
@@ -659,7 +650,6 @@ function NotificationsPage() {
                     {notif.message}
                   </p>
 
-                  {/* Structured metadata badges */}
                   <MetaBadges type={effectiveType} metadata={notif.metadata} />
 
                   <p className="text-xs text-muted-foreground mt-2 font-mono">
@@ -671,15 +661,15 @@ function NotificationsPage() {
                 {isNavigable && (
                   <div className="flex items-center gap-2 shrink-0 self-center z-10">
                     <ChevronRight
-                      className={`size-4 transition-colors ${notif.is_read
+                      className={`size-4 transition-colors ${
+                        notif.is_read
                           ? "text-stone-300"
                           : "text-muted-foreground group-hover:text-primary"
-                        }`}
+                      }`}
                     />
                   </div>
                 )}
 
-                {/* Individual delete button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -699,9 +689,14 @@ function NotificationsPage() {
     </AppShell>
   );
 }
-
 function EmptyState({ tab }: { tab: TabKey }) {
-  const messages: Record<TabKey, { title: string; sub: string }> = {
+  const messages: Record<
+    TabKey,
+    {
+      title: string;
+      sub: string;
+    }
+  > = {
     all: {
       title: "No notifications yet",
       sub: "You'll see notifications for medications, appointments, and emergencies here.",
@@ -725,8 +720,16 @@ function EmptyState({ tab }: { tab: TabKey }) {
       sub: "Upcoming appointments within 24 hours will appear here.",
     },
     caregiver_alert: {
-      title: "No caregiver alerts",
-      sub: "Upcoming caregiver booking reminders will appear here.",
+      title: "No caregiver updates",
+      sub: "Caregiver booking and assignment updates will appear here.",
+    },
+    health_risk_high: {
+      title: "No high-risk alerts",
+      sub: "High or urgent health-risk screening results will appear here.",
+    },
+    companion_emergency: {
+      title: "No Companion safety alerts",
+      sub: "Private generic safety warnings will appear here when enabled.",
     },
     video_consult: {
       title: "No video consult reminders",
@@ -738,9 +741,7 @@ function EmptyState({ tab }: { tab: TabKey }) {
     },
     reminder: { title: "No reminders", sub: "Reminders sent by family members will appear here." },
   };
-
   const { title, sub } = messages[tab] ?? messages["all"];
-
   return (
     <div className="bg-card border border-border rounded-3xl p-16 text-center">
       <div className="size-16 rounded-2xl bg-stone-100 mx-auto grid place-items-center mb-5">

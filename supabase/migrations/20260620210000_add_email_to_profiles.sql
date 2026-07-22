@@ -1,7 +1,7 @@
--- Add email column to profiles
+
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
 
--- Update trigger function to store email on signup
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -20,7 +20,7 @@ BEGIN
 END;
 $$;
 
--- Backfill existing profiles with email from auth.users
+
 UPDATE public.profiles p
 SET email = u.email
 FROM auth.users u

@@ -45,31 +45,26 @@ import {
   Upload,
 } from "lucide-react";
 import { DateInput } from "@/components/ui/datetime-input";
-import { createMedicalFileAccessUrl } from "@/integrations/supabase/medicalFiles.functions";
+import { createMedicalFileAccessUrl } from "@/lib/api/medicalFiles.functions";
 import {
   HEALTH_RECORD_ACCEPT,
   MEDICAL_FILE_MAX_BYTES,
   safeMedicalFilename,
   validateMedicalFile,
-} from "@/lib/api/medicalFiles";
-
+} from "@/lib/medicalFiles";
 export const Route = createFileRoute("/_authenticated/records")({
   ssr: false,
   component: RecordsPage,
 });
-
 const BUCKET = "health-records";
-
 function formatFileSize(bytes: number | null): string | null {
   if (bytes == null) return null;
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
-
 type Category = "all" | "blood_test" | "prescription" | "ecg";
 type RecordCategory = Exclude<Category, "all">;
-
 const categoryMeta: Record<
   RecordCategory,
   {
@@ -102,7 +97,6 @@ const categoryMeta: Record<
     border: "border-purple-200",
   },
 };
-
 type RecordRow = {
   id: string;
   parent_id: string;
@@ -120,7 +114,6 @@ type RecordRow = {
   uploaded_by: string | null;
   created_at: string;
 };
-
 type UploadForm = {
   title: string;
   category: RecordCategory | "";
@@ -129,7 +122,6 @@ type UploadForm = {
   notes: string;
   file: File | null;
 };
-
 function emptyForm(): UploadForm {
   return {
     title: "",
@@ -140,7 +132,6 @@ function emptyForm(): UploadForm {
     file: null,
   };
 }
-
 function sortRecords(rows: RecordRow[]): RecordRow[] {
   return [...rows].sort((a, b) => {
     const dateComparison = b.record_date.localeCompare(a.record_date);
@@ -148,13 +139,11 @@ function sortRecords(rows: RecordRow[]): RecordRow[] {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 }
-
 function RecordsPage() {
   const { data: user } = useCurrentUser();
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const qc = useQueryClient();
   const medicalFileAccess = useServerFn(createMedicalFileAccessUrl);
-
   const [open, setOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [search, setSearch] = useState("");
@@ -162,7 +151,6 @@ function RecordsPage() {
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState<UploadForm>(() => emptyForm());
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const recordsQuery = useQuery({
     queryKey: ["records", activeParentId],
     enabled: !!activeParentId,
@@ -175,17 +163,13 @@ function RecordsPage() {
         .eq("parent_id", activeParentId!)
         .order("record_date", { ascending: false })
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       return (data ?? []) as RecordRow[];
     },
   });
-
   const records = useMemo(() => recordsQuery.data ?? [], [recordsQuery.data]);
-
   useEffect(() => {
     if (!activeParentId) return;
-
     const channel = supabase
       .channel(`health-records-${activeParentId}-${crypto.randomUUID()}`)
       .on(
@@ -202,22 +186,17 @@ function RecordsPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [activeParentId, qc]);
-
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-
     return records.filter((record) => {
       if (activeCategory !== "all" && record.category !== activeCategory) {
         return false;
       }
-
       if (!term) return true;
-
       return [
         record.title,
         record.doctor_name,
@@ -229,7 +208,6 @@ function RecordsPage() {
         .some((value) => value!.toLowerCase().includes(term));
     });
   }, [activeCategory, records, search]);
-
   const counts = useMemo(
     () =>
       records.reduce<Record<RecordCategory, number>>(
@@ -241,14 +219,12 @@ function RecordsPage() {
       ),
     [records],
   );
-
   function resetForm() {
     setForm(emptyForm());
     setProgress(0);
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
-
   function validateUpload(): string | null {
     if (!form.category) return "Please select a category.";
     if (!form.record_date) return "Please select the record date.";
@@ -257,11 +233,9 @@ function RecordsPage() {
     }
     if (!form.file) return "Please choose a file to upload.";
     if (form.file.size === 0) return "The selected file is empty.";
-
     if (form.file.size > MEDICAL_FILE_MAX_BYTES) return "File exceeds the 25 MB limit.";
     return null;
   }
-
   const upload = useMutation({
     mutationFn: async () => {
       if (isChildView) {
@@ -270,27 +244,21 @@ function RecordsPage() {
       if (!activeParentId || !user) {
         throw new Error("Session error. Please refresh and try again.");
       }
-
       const validationError = validateUpload();
       if (validationError) throw new Error(validationError);
-
       const file = form.file!;
       const validated = await validateMedicalFile(file, { allowWebp: true });
       const key = `${activeParentId}/${crypto.randomUUID()}.${validated.extension}`;
-
       setUploading(true);
       setProgress(15);
-
       const { error: uploadError } = await supabase.storage.from(BUCKET).upload(key, file, {
         contentType: validated.mime,
         upsert: false,
         cacheControl: "0",
       });
-
       if (uploadError) {
         const message = uploadError.message || String(uploadError);
         const lowered = message.toLowerCase();
-
         if (lowered.includes("bucket") || lowered.includes("not found")) {
           throw new Error(
             "The health-records storage bucket was not found. Apply the Supabase storage migrations first.",
@@ -305,9 +273,7 @@ function RecordsPage() {
         }
         throw new Error(`Storage upload failed: ${message}`);
       }
-
       setProgress(70);
-
       const title = safeMedicalFilename(
         form.title.trim() || validated.safeOriginalName.replace(/\.[^.]+$/, ""),
         "health-record",
@@ -329,12 +295,10 @@ function RecordsPage() {
         })
         .select("*")
         .single();
-
       if (databaseError) {
         await supabase.storage.from(BUCKET).remove([key]);
         throw new Error(`Database save failed: ${databaseError.message}`);
       }
-
       setProgress(100);
       return data as RecordRow;
     },
@@ -343,7 +307,6 @@ function RecordsPage() {
         sortRecords([newRecord, ...current.filter((row) => row.id !== newRecord.id)]),
       );
       void qc.invalidateQueries({ queryKey: ["recentReports", activeParentId] });
-
       toast.success("Health record uploaded successfully.");
       setOpen(false);
       resetForm();
@@ -354,16 +317,12 @@ function RecordsPage() {
       toast.error(error.message);
     },
   });
-
   const remove = useMutation({
     mutationFn: async (record: RecordRow) => {
       if (isChildView) {
         throw new Error("You do not have permission to modify health records.");
       }
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
-      // Delete the database row first. This avoids leaving a visible record whose
-      // private file was already removed when an RLS policy blocks the DB delete.
       const { data: deletedRow, error: databaseError } = await supabase
         .from("health_records")
         .delete()
@@ -371,14 +330,12 @@ function RecordsPage() {
         .eq("parent_id", activeParentId)
         .select("id")
         .maybeSingle();
-
       if (databaseError) throw new Error(databaseError.message);
       if (!deletedRow) {
         throw new Error(
           "The record was not deleted. It may already be removed or blocked by permissions.",
         );
       }
-
       let storageWarning: string | null = null;
       if (record.file_path) {
         const { error: storageError } = await supabase.storage
@@ -386,7 +343,6 @@ function RecordsPage() {
           .remove([record.file_path]);
         if (storageError) storageWarning = storageError.message;
       }
-
       return { id: record.id, storageWarning };
     },
     onSuccess: ({ id, storageWarning }) => {
@@ -394,7 +350,6 @@ function RecordsPage() {
         current.filter((record) => record.id !== id),
       );
       void qc.invalidateQueries({ queryKey: ["recentReports", activeParentId] });
-
       if (storageWarning) {
         toast.warning("Record deleted, but its stored file could not be cleaned up.");
       } else {
@@ -403,39 +358,32 @@ function RecordsPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (isChildView) {
         throw new Error("You do not have permission to modify health records.");
       }
       if (!activeParentId) throw new Error("No active parent profile selected.");
-
       const { data: existing, error: fetchError } = await supabase
         .from("health_records")
         .select("id, file_path")
         .eq("parent_id", activeParentId);
-
       if (fetchError) throw new Error(fetchError.message);
       if (!existing || existing.length === 0) {
         return { deletedCount: 0, storageCleanupFailed: false };
       }
-
       const { data: deleted, error: databaseError } = await supabase
         .from("health_records")
         .delete()
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (databaseError) throw new Error(databaseError.message);
       if (!deleted || deleted.length === 0) {
         throw new Error("No records were deleted. Please check your database permissions.");
       }
-
       const filePaths = existing
         .map((record) => record.file_path)
         .filter((path): path is string => Boolean(path));
-
       let storageCleanupFailed = false;
       for (let index = 0; index < filePaths.length; index += 100) {
         const { error: storageError } = await supabase.storage
@@ -443,7 +391,6 @@ function RecordsPage() {
           .remove(filePaths.slice(index, index + 100));
         if (storageError) storageCleanupFailed = true;
       }
-
       return {
         deletedCount: deleted.length,
         storageCleanupFailed,
@@ -452,7 +399,6 @@ function RecordsPage() {
     onSuccess: ({ deletedCount, storageCleanupFailed }) => {
       qc.setQueryData<RecordRow[]>(["records", activeParentId], []);
       void qc.invalidateQueries({ queryKey: ["recentReports", activeParentId] });
-
       if (storageCleanupFailed) {
         toast.warning(
           `${deletedCount} record${deletedCount === 1 ? "" : "s"} deleted, but some stored files could not be cleaned up.`,
@@ -467,14 +413,12 @@ function RecordsPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   async function createFileUrl(record: RecordRow, download = false): Promise<string> {
     if (!record.file_path) {
       throw new Error(
         "This is a legacy record without a private storage file. Re-upload the document to open it securely.",
       );
     }
-
     const result = await medicalFileAccess({
       data: {
         documentKind: "health_record",
@@ -482,21 +426,17 @@ function RecordsPage() {
         action: download ? "download" : "view",
       },
     });
-
     return result.signedUrl;
   }
-
   async function previewFile(record: RecordRow) {
     const previewWindow = window.open("about:blank", "_blank");
     if (!previewWindow) {
       toast.error("The browser blocked the preview window. Allow popups and try again.");
       return;
     }
-
     previewWindow.document.title = "Opening health record…";
     previewWindow.document.body.innerHTML =
       '<p style="font-family:system-ui;padding:24px">Opening health record…</p>';
-
     try {
       const url = await createFileUrl(record);
       previewWindow.opener = null;
@@ -506,7 +446,6 @@ function RecordsPage() {
       toast.error(error instanceof Error ? error.message : "Unable to open file.");
     }
   }
-
   async function downloadFile(record: RecordRow) {
     try {
       const url = await createFileUrl(record, true);
@@ -521,16 +460,13 @@ function RecordsPage() {
       toast.error(error instanceof Error ? error.message : "Unable to download file.");
     }
   }
-
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     const file = input.files?.[0] ?? null;
-
     if (!file) {
       setForm((current) => ({ ...current, file: null }));
       return;
     }
-
     try {
       const validated = await validateMedicalFile(file, { allowWebp: true });
       setForm((current) => ({
@@ -544,14 +480,16 @@ function RecordsPage() {
       toast.error(error instanceof Error ? error.message : "The selected file is not valid.");
     }
   }
-
-  const tabs: { value: Category; label: string; count: number }[] = [
+  const tabs: {
+    value: Category;
+    label: string;
+    count: number;
+  }[] = [
     { value: "all", label: "All", count: records.length },
     { value: "blood_test", label: "Blood Test", count: counts.blood_test },
     { value: "prescription", label: "Prescription", count: counts.prescription },
     { value: "ecg", label: "ECG", count: counts.ecg },
   ];
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -871,16 +809,13 @@ function RecordsPage() {
               const Icon = meta?.Icon ?? FileText;
               const isDeleting = remove.isPending && remove.variables?.id === record.id;
               const sizeLabel = formatFileSize(record.file_size);
-
               return (
                 <div
                   key={record.id}
                   className="group flex items-start gap-4 p-4 transition-colors hover:bg-stone-50/60 sm:p-6"
                 >
                   <div
-                    className={`grid size-10 shrink-0 place-items-center rounded-2xl sm:size-12 ${
-                      meta ? `${meta.bg} ${meta.text}` : "bg-stone-100 text-stone-600"
-                    }`}
+                    className={`grid size-10 shrink-0 place-items-center rounded-2xl sm:size-12 ${meta ? `${meta.bg} ${meta.text}` : "bg-stone-100 text-stone-600"}`}
                   >
                     {isImage ? (
                       <ImageIcon className="size-4 sm:size-5" />

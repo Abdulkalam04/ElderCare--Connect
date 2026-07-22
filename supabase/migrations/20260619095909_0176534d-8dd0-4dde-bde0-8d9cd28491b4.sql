@@ -1,8 +1,8 @@
 
--- Extensions
+
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- Extend sos_alerts with type + dedup key (additive, defaults preserve existing rows)
+
 ALTER TABLE public.sos_alerts
   ADD COLUMN IF NOT EXISTS alert_type text NOT NULL DEFAULT 'manual',
   ADD COLUMN IF NOT EXISTS dedup_key text;
@@ -11,8 +11,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS sos_alerts_dedup_key_uidx
   ON public.sos_alerts (dedup_key)
   WHERE dedup_key IS NOT NULL;
 
--- Detector: scans medicines/medicine_logs and wellbeing_checks, inserts alerts.
--- SECURITY DEFINER so pg_cron (no auth context) can write through RLS.
+
+
 CREATE OR REPLACE FUNCTION public.detect_care_issues()
 RETURNS TABLE(missed_medicine_alerts int, no_checkin_alerts int)
 LANGUAGE plpgsql
@@ -92,7 +92,7 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
--- Schedule: every 15 minutes. Unschedule prior version (idempotent) then schedule.
+
 DO $$
 BEGIN
   PERFORM cron.unschedule('detect-care-issues');

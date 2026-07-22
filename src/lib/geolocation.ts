@@ -1,5 +1,7 @@
-export type Coords = { latitude: number; longitude: number } | null;
-
+export type Coords = {
+  latitude: number;
+  longitude: number;
+} | null;
 export async function captureLocation(timeoutMs = 6000): Promise<Coords> {
   if (typeof navigator === "undefined" || !navigator.geolocation) return null;
   return new Promise((resolve) => {
@@ -19,16 +21,18 @@ export async function captureLocation(timeoutMs = 6000): Promise<Coords> {
         clearTimeout(t);
         finish(null);
       },
-      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 60_000 },
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 60000 },
     );
   });
 }
-
 export function mapsLink(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
-
-export async function reverseGeocode(lat: number, lng: number, timeoutMs = 3000): Promise<string | null> {
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+  timeoutMs = 3000,
+): Promise<string | null> {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -37,7 +41,7 @@ export async function reverseGeocode(lat: number, lng: number, timeoutMs = 3000)
       {
         headers: { "User-Agent": "ElderCare-SOS-Alert" },
         signal: controller.signal,
-      }
+      },
     );
     clearTimeout(t);
     if (res.ok) {

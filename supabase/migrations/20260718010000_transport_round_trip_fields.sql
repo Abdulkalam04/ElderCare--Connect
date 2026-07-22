@@ -1,4 +1,4 @@
--- Add proper return scheduling for round-trip medical transport bookings.
+
 
 ALTER TABLE public.transport_bookings
   ADD COLUMN IF NOT EXISTS return_date DATE,

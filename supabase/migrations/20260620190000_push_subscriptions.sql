@@ -1,7 +1,7 @@
--- =====================================================
--- Web Push subscriptions (referenced by src/lib/api/pushNotify.functions.ts)
--- Missing in earlier migrations — push notifications cannot work without it.
--- =====================================================
+
+
+
+
 
 CREATE TABLE IF NOT EXISTS public.push_subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

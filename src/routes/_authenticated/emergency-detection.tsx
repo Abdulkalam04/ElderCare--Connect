@@ -19,7 +19,6 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
 import { AppShell } from "@/components/AppShell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -36,17 +35,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActiveParent } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-
 export const Route = createFileRoute("/_authenticated/emergency-detection")({
   ssr: false,
   component: EmergencyDetectionPage,
 });
-
 type AlertType = "missed_medicine" | "missed_checkin" | "no_app_activity";
 type AlertStatus = "active" | "acknowledged" | "resolved";
 type AlertSeverity = "info" | "warning" | "high";
 type FilterKey = "open" | "all" | "resolved";
-
 type CareAlert = {
   id: string;
   parent_id: string;
@@ -66,7 +62,6 @@ type CareAlert = {
   created_at: string;
   updated_at: string;
 };
-
 type DetectionSettings = {
   emergency_detection_enabled: boolean;
   detect_missed_medicine: boolean;
@@ -75,9 +70,7 @@ type DetectionSettings = {
   wellbeing_checkin_cutoff: string;
   no_app_activity_hours: number;
 };
-
 const EMPTY_ALERTS: CareAlert[] = [];
-
 const DEFAULT_SETTINGS: DetectionSettings = {
   emergency_detection_enabled: true,
   detect_missed_medicine: true,
@@ -86,7 +79,6 @@ const DEFAULT_SETTINGS: DetectionSettings = {
   wellbeing_checkin_cutoff: "20:00",
   no_app_activity_hours: 24,
 };
-
 function normalizeSettings(value: Record<string, unknown> | null): DetectionSettings {
   return {
     emergency_detection_enabled: value?.emergency_detection_enabled !== false,
@@ -102,18 +94,16 @@ function normalizeSettings(value: Record<string, unknown> | null): DetectionSett
       : DEFAULT_SETTINGS.no_app_activity_hours,
   };
 }
-
 function EmergencyDetectionPage() {
   const { activeParent, activeParentId, isChildView, isLoading } = useActiveParent();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>("open");
   const [resolvingAlert, setResolvingAlert] = useState<CareAlert | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
-
   const alertsQuery = useQuery({
     queryKey: ["care-alerts", activeParentId],
     enabled: Boolean(activeParentId),
-    refetchInterval: 60_000,
+    refetchInterval: 60000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("care_alerts")
@@ -121,12 +111,10 @@ function EmergencyDetectionPage() {
         .eq("parent_id", activeParentId!)
         .order("detected_at", { ascending: false })
         .limit(200);
-
       if (error) throw error;
       return (data ?? []) as CareAlert[];
     },
   });
-
   const settingsQuery = useQuery({
     queryKey: ["emergency-detection-settings", activeParentId],
     enabled: Boolean(activeParentId),
@@ -138,15 +126,12 @@ function EmergencyDetectionPage() {
         )
         .eq("parent_id", activeParentId!)
         .maybeSingle();
-
       if (error) throw error;
       return normalizeSettings((data ?? null) as Record<string, unknown> | null);
     },
   });
-
   useEffect(() => {
     if (!activeParentId) return;
-
     const channel = supabase
       .channel(`care-alerts-${activeParentId}`)
       .on(
@@ -162,20 +147,16 @@ function EmergencyDetectionPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [activeParentId, queryClient]);
-
   const runDetection = useMutation({
     mutationFn: async () => {
       if (!activeParentId) throw new Error("No care-recipient account is selected.");
-
       const { data, error } = await supabase.rpc("detect_care_issues_for_parent", {
         _parent_id: activeParentId,
       });
-
       if (error) throw error;
       return (
         data?.[0] ?? {
@@ -191,10 +172,8 @@ function EmergencyDetectionPage() {
         queryClient.invalidateQueries({ queryKey: ["notifications"] }),
         queryClient.invalidateQueries({ queryKey: ["notifUnread"] }),
       ]);
-
       const total =
         result.missed_medicine_alerts + result.no_checkin_alerts + result.no_activity_alerts;
-
       if (total === 0) {
         toast.success("Detection completed. No new care alerts were found.");
       } else {
@@ -203,7 +182,6 @@ function EmergencyDetectionPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Emergency detection failed."),
   });
-
   const updateStatus = useMutation({
     mutationFn: async ({
       alertId,
@@ -219,7 +197,6 @@ function EmergencyDetectionPage() {
         _status: status,
         _resolution_note: note?.trim() || null,
       });
-
       if (error) throw error;
     },
     onSuccess: async (_, variables) => {
@@ -232,17 +209,14 @@ function EmergencyDetectionPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Could not update the alert."),
   });
-
   const alerts = alertsQuery.data ?? EMPTY_ALERTS;
   const openAlerts = alerts.filter((alert) => alert.status !== "resolved");
   const resolvedAlerts = alerts.filter((alert) => alert.status === "resolved");
-
   const visibleAlerts = useMemo(() => {
     if (filter === "open") return openAlerts;
     if (filter === "resolved") return resolvedAlerts;
     return alerts;
   }, [alerts, filter, openAlerts, resolvedAlerts]);
-
   const counts = useMemo(
     () => ({
       high: openAlerts.filter((alert) => alert.severity === "high").length,
@@ -252,9 +226,7 @@ function EmergencyDetectionPage() {
     }),
     [openAlerts],
   );
-
   const settings = settingsQuery.data ?? DEFAULT_SETTINGS;
-
   if (isLoading) {
     return (
       <AppShell>
@@ -264,7 +236,6 @@ function EmergencyDetectionPage() {
       </AppShell>
     );
   }
-
   if (!activeParentId) {
     return (
       <AppShell>
@@ -278,7 +249,6 @@ function EmergencyDetectionPage() {
       </AppShell>
     );
   }
-
   return (
     <AppShell>
       <div className="space-y-6">
@@ -387,10 +357,11 @@ function EmergencyDetectionPage() {
                   key={key}
                   type="button"
                   onClick={() => setFilter(key)}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filter === key
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    filter === key
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
-                    }`}
+                  }`}
                 >
                   {label}
                 </button>
@@ -501,7 +472,6 @@ function EmergencyDetectionPage() {
     </AppShell>
   );
 }
-
 function CareAlertRow({
   alert,
   isPending,
@@ -515,7 +485,6 @@ function CareAlertRow({
 }) {
   const config = getAlertConfig(alert.alert_type);
   const recommendedAction = asString(alert.metadata.recommended_action);
-
   return (
     <article className="p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -582,10 +551,11 @@ function CareAlertRow({
     </article>
   );
 }
-
 function AlertMetadata({ alert }: { alert: CareAlert }) {
-  const badges: Array<{ label: string; value: string }> = [];
-
+  const badges: Array<{
+    label: string;
+    value: string;
+  }> = [];
   if (alert.alert_type === "missed_medicine") {
     const medicineName = asString(alert.metadata.medicine_name);
     const scheduleTime = asString(alert.metadata.schedule_time);
@@ -594,14 +564,12 @@ function AlertMetadata({ alert }: { alert: CareAlert }) {
     if (scheduleTime) badges.push({ label: "Due", value: formatTime(scheduleTime) });
     if (checkDate) badges.push({ label: "Date", value: checkDate });
   }
-
   if (alert.alert_type === "missed_checkin") {
     const checkDate = asString(alert.metadata.check_date);
     const cutoff = asString(alert.metadata.cutoff_time);
     if (checkDate) badges.push({ label: "Date", value: checkDate });
     if (cutoff) badges.push({ label: "Cutoff", value: formatTime(cutoff) });
   }
-
   if (alert.alert_type === "no_app_activity") {
     const lastSignal = asString(alert.metadata.last_signal_at);
     const threshold = Number(alert.metadata.threshold_hours);
@@ -613,9 +581,7 @@ function AlertMetadata({ alert }: { alert: CareAlert }) {
     }
     if (Number.isFinite(threshold)) badges.push({ label: "Threshold", value: `${threshold}h` });
   }
-
   if (badges.length === 0) return null;
-
   return (
     <div className="mt-3 flex flex-wrap gap-1.5">
       {badges.map((badge) => (
@@ -630,7 +596,6 @@ function AlertMetadata({ alert }: { alert: CareAlert }) {
     </div>
   );
 }
-
 function SummaryCard({
   icon,
   label,
@@ -650,7 +615,6 @@ function SummaryCard({
     pink: "bg-pink-50 text-pink-700 border-pink-100",
     slate: "bg-slate-50 text-slate-700 border-slate-200",
   }[tone];
-
   return (
     <div className="rounded-2xl border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -664,19 +628,15 @@ function SummaryCard({
     </div>
   );
 }
-
 function StatusBadge({ status }: { status: AlertStatus }) {
   if (status === "resolved") {
     return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Resolved</Badge>;
   }
-
   if (status === "acknowledged") {
     return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Acknowledged</Badge>;
   }
-
   return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Active</Badge>;
 }
-
 function getAlertConfig(type: AlertType) {
   switch (type) {
     case "missed_medicine":
@@ -696,16 +656,13 @@ function getAlertConfig(type: AlertType) {
       };
   }
 }
-
 function asString(value: unknown) {
   return typeof value === "string" && value.trim() ? value : null;
 }
-
 function formatTime(value: string) {
   const clean = value.slice(0, 5);
   const [hours, minutes] = clean.split(":").map(Number);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return clean;
-
   return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",

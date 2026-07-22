@@ -1,7 +1,6 @@
 import { Check, Copy, Mail, MessageSquare, Phone, PhoneOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
 export type EmergencyContactish = {
   id: string;
   name: string | null;
@@ -9,29 +8,23 @@ export type EmergencyContactish = {
   email?: string | null;
   relation?: string | null;
 };
-
 function isValidPhone(phone: string | null | undefined): phone is string {
   if (!phone) return false;
   const digitCount = phone.replace(/[^0-9]/g, "").length;
   return digitCount >= 7 && digitCount <= 15;
 }
-
 function isValidEmail(email: string | null | undefined): email is string {
   if (!email) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
-
 function cleanPhone(phone: string): string {
   const trimmed = phone.trim();
   const digits = trimmed.replace(/\D/g, "");
   return `${trimmed.startsWith("+") ? "+" : ""}${digits}`;
 }
-
 function waNumber(phone: string): string {
-  // wa.me expects digits only and works best when the country code is included.
   return phone.replace(/[^\d]/g, "");
 }
-
 function ActionRow({
   row,
   emergencySubjectName,
@@ -52,19 +45,16 @@ function ActionRow({
   const hasEmail = Boolean(email);
   const tel = phone ? cleanPhone(phone) : "";
   const wa = phone ? waNumber(phone) : "";
-
   const handleCall = () => {
     if (!phone) return;
     toast.info(`Dialing ${row.label} (${phone})…`);
     window.location.href = `tel:${tel}`;
   };
-
   const handleSms = () => {
     if (!phone) return;
     toast.info(`Opening SMS to ${row.label}…`);
     window.location.href = `sms:${tel}?body=${encodeURIComponent(message)}`;
   };
-
   const handleWhatsapp = () => {
     if (!phone) return;
     toast.success(`Opening WhatsApp for ${row.label}…`);
@@ -74,16 +64,13 @@ function ActionRow({
       "noopener,noreferrer",
     );
   };
-
   const handleEmail = () => {
     if (!email) return;
     const subject = `Emergency assistance needed for ${emergencySubjectName}`;
     window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
   };
-
   const handleCopy = async () => {
     if (!phone) return;
-
     try {
       await navigator.clipboard.writeText(phone);
       setCopied(true);
@@ -93,9 +80,7 @@ function ActionRow({
       toast.error("Could not copy the phone number");
     }
   };
-
   const contactDetails = [phone, email].filter(Boolean).join(" · ");
-
   return (
     <div className="flex flex-col gap-3 p-4 transition-colors hover:bg-accent/30 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -170,7 +155,6 @@ function ActionRow({
     </div>
   );
 }
-
 export function EmergencyCallButtons({
   caregivers,
   emergencyContacts,
@@ -180,8 +164,16 @@ export function EmergencyCallButtons({
 }: {
   caregivers?: EmergencyContactish[];
   emergencyContacts?: EmergencyContactish[];
-  profileEmergency?: { name: string | null; phone: string | null; email?: string | null } | null;
-  parentProfile?: { name: string | null; phone: string | null; email?: string | null } | null;
+  profileEmergency?: {
+    name: string | null;
+    phone: string | null;
+    email?: string | null;
+  } | null;
+  parentProfile?: {
+    name: string | null;
+    phone: string | null;
+    email?: string | null;
+  } | null;
   emergencySubjectName?: string;
 }) {
   type Row = {
@@ -192,9 +184,7 @@ export function EmergencyCallButtons({
     email: string | null;
     hasAction: boolean;
   };
-
   const rows: Row[] = [];
-
   if (parentProfile?.name || parentProfile?.phone || parentProfile?.email) {
     rows.push({
       key: "parent-profile",
@@ -205,7 +195,6 @@ export function EmergencyCallButtons({
       hasAction: isValidPhone(parentProfile.phone) || isValidEmail(parentProfile.email),
     });
   }
-
   if (profileEmergency?.name || profileEmergency?.phone || profileEmergency?.email) {
     rows.push({
       key: "profile-emergency",
@@ -216,7 +205,6 @@ export function EmergencyCallButtons({
       hasAction: isValidPhone(profileEmergency.phone) || isValidEmail(profileEmergency.email),
     });
   }
-
   for (const contact of caregivers ?? []) {
     rows.push({
       key: `caregiver-${contact.id}`,
@@ -227,7 +215,6 @@ export function EmergencyCallButtons({
       hasAction: isValidPhone(contact.phone) || isValidEmail(contact.email),
     });
   }
-
   for (const contact of emergencyContacts ?? []) {
     rows.push({
       key: `ec-${contact.id}`,
@@ -238,9 +225,7 @@ export function EmergencyCallButtons({
       hasAction: isValidPhone(contact.phone) || isValidEmail(contact.email),
     });
   }
-
   const hasAnyAction = rows.some((row) => row.hasAction);
-
   return (
     <div className="space-y-2">
       <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">

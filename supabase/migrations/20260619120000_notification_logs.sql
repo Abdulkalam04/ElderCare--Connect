@@ -1,4 +1,4 @@
--- Notification delivery log for SOS email alerts
+
 CREATE TABLE IF NOT EXISTS public.notification_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   alert_id UUID REFERENCES public.sos_alerts(id) ON DELETE CASCADE,

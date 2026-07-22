@@ -1,7 +1,7 @@
--- SOS reliability improvements:
--- - allow the care-recipient account to delete only resolved SOS history
--- - ensure realtime receives full rows for updates/deletes
--- - add indexes used by active/history queries
+
+
+
+
 
 DROP POLICY IF EXISTS "Delete own resolved sos history" ON public.sos_alerts;
 CREATE POLICY "Delete own resolved sos history"

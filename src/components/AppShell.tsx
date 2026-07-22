@@ -47,9 +47,11 @@ import { EditableAvatar } from "@/components/EditableAvatar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-
-type NavItem = { to: string; label: string; icon: ReactNode };
-
+type NavItem = {
+  to: string;
+  label: string;
+  icon: ReactNode;
+};
 type AppointmentAlarmRow = {
   id: string;
   title: string;
@@ -63,7 +65,6 @@ type AppointmentAlarmRow = {
   reminder_enabled: boolean;
   status: string;
 };
-
 const navItems: NavItem[] = [
   {
     to: "/dashboard",
@@ -103,7 +104,6 @@ const navItems: NavItem[] = [
   },
   { to: "/settings", label: "Settings", icon: <Settings className="size-4" strokeWidth={1.75} /> },
 ];
-
 const aiItems: NavItem[] = [
   {
     to: "/emergency-detection",
@@ -121,8 +121,6 @@ const aiItems: NavItem[] = [
     icon: <HeartHandshake className="size-4" strokeWidth={1.75} />,
   },
 ];
-
-// ── Shared nav link component ──────────────────────────────────────────────
 function NavLink({
   to,
   label,
@@ -141,32 +139,27 @@ function NavLink({
       to={to}
       preload="intent"
       onClick={onClick}
-      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors duration-300 ease-in-out ${active
+      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors duration-300 ease-in-out ${
+        active
           ? "text-brand-accent font-semibold"
           : "text-muted-foreground hover:text-foreground hover:bg-black/5"
-        }`}
+      }`}
     >
-      {/* Buttery smooth background gradient transition via opacity */}
       <span
-        className={`absolute inset-0 rounded-lg bg-gradient-to-r from-blue-50/80 to-indigo-50/40 transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"
-          }`}
+        className={`absolute inset-0 rounded-lg bg-gradient-to-r from-blue-50/80 to-indigo-50/40 transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"}`}
         style={{ pointerEvents: "none" }}
       />
 
-      {/* Smooth sliding left active bar indicator */}
       <span
-        className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-brand-accent transition-all duration-300 ease-in-out origin-center ${active ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
-          }`}
+        className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-brand-accent transition-all duration-300 ease-in-out origin-center ${active ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"}`}
       />
 
-      {/* Icon with smooth drop-shadow glow transition */}
       <span
         className="relative size-4 flex items-center justify-center shrink-0 leading-none"
         aria-hidden="true"
       >
         <span
-          className={`absolute inset-0 rounded-full bg-brand-accent/20 blur-[3px] transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"
-            }`}
+          className={`absolute inset-0 rounded-full bg-brand-accent/20 blur-[3px] transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"}`}
         />
         <span
           className="relative z-10 transition-all duration-300 ease-in-out"
@@ -180,7 +173,6 @@ function NavLink({
     </Link>
   );
 }
-
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -189,15 +181,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     useActiveParent();
   const { data: user } = useCurrentUser();
   const [drawerOpen, setDrawerOpen] = useState(false);
-
   useAppActivityHeartbeat({ userId: user?.id, role: profile?.role });
-
-  // Close drawer on route change
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
-
-  // Prevent body scroll when drawer is open
   useEffect(() => {
     if (drawerOpen) {
       document.body.style.overflow = "hidden";
@@ -208,19 +195,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       document.body.style.overflow = "";
     };
   }, [drawerOpen]);
-
-  // Global realtime SOS listener for caregivers across all linked parents
   const caregiverParentIds = profile?.role === "child" ? linkedParents.map((p) => p.id) : [];
   useRealtimeSosAlerts(caregiverParentIds);
-
-  // Global notification engine — auto-generates missed medicine + appointment reminder notifications
   useNotificationEngine({
     parentId: activeParentId ?? null,
     userId: user?.id ?? null,
     isChildView,
   });
-
-  // ── Load Elder Settings globally ────────────────────────────
   const { data: globalElderSettings } = useQuery({
     queryKey: ["global_elder_settings", activeParentId],
     enabled: !!activeParentId,
@@ -233,14 +214,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       if (error) throw error;
       return data as Record<string, any> | null;
     },
-    staleTime: 30_000,
+    staleTime: 30000,
     refetchOnWindowFocus: true,
   });
-
-  // Keep accessibility and alarm preferences synchronized across tabs/devices.
   useEffect(() => {
     if (!activeParentId) return;
-
     const settingsChannel = supabase
       .channel(`global-elder-settings-${activeParentId}`)
       .on(
@@ -261,12 +239,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(settingsChannel);
     };
   }, [activeParentId, queryClient]);
-
   useEffect(() => {
     if (globalElderSettings) {
       document.documentElement.classList.toggle("large-text", !!globalElderSettings.large_text);
@@ -284,10 +260,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       document.documentElement.lang = "en";
     };
   }, [globalElderSettings, activeParentId]);
-
-  // ── Global Medicine Alarm Engine ─────────────────────────────────────────
   const todayDateStr = format(new Date(), "yyyy-MM-dd");
-
   const { data: globalMeds } = useQuery({
     queryKey: ["global_meds", activeParentId],
     enabled:
@@ -311,7 +284,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       }>;
     },
   });
-
   const { data: globalTakenMeds, refetch: refetchTaken } = useQuery({
     queryKey: ["global_taken_meds", activeParentId, todayDateStr],
     enabled:
@@ -326,28 +298,20 @@ export function AppShell({ children }: { children: ReactNode }) {
         .eq("log_date", todayDateStr);
       return new Set((data ?? []).map((l) => l.medicine_id));
     },
-    refetchInterval: 15_000,
+    refetchInterval: 15000,
   });
-
-  // Alarm modal state
   const [alarmMed, setAlarmMed] = useState<any | null>(null);
   const firedAlarms = useRef<Set<string>>(new Set());
   const alarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // AppShell is mounted again on every page, so alarm state stored only in a ref
-  // is lost during navigation. Persist snoozes per parent/day in localStorage.
   const alarmStorageKey = activeParentId
     ? `eldercare:medicine-snoozes:${activeParentId}:${todayDateStr}`
     : null;
-
   type SnoozedMedicine = {
     until: number;
     alarmKey: string;
   };
-
   const readSnoozedMeds = useCallback((): Record<string, SnoozedMedicine> => {
     if (!alarmStorageKey || typeof window === "undefined") return {};
-
     try {
       const stored = window.localStorage.getItem(alarmStorageKey);
       return stored ? JSON.parse(stored) : {};
@@ -355,11 +319,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       return {};
     }
   }, [alarmStorageKey]);
-
   const writeSnoozedMeds = useCallback(
     (snoozes: Record<string, SnoozedMedicine>) => {
       if (!alarmStorageKey || typeof window === "undefined") return;
-
       if (Object.keys(snoozes).length === 0) {
         window.localStorage.removeItem(alarmStorageKey);
       } else {
@@ -368,8 +330,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     },
     [alarmStorageKey],
   );
-
-  // Mark taken mutation (used by alarm modal)
   const globalMarkTaken = useMutation({
     mutationFn: async (medId: string) => {
       const { error } = await supabase.from("medicine_logs").insert({
@@ -387,7 +347,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     },
     onError: () => toast.error("Failed to mark taken"),
   });
-
   function playAlarmBeep() {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -408,10 +367,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       beep(now + 0.22, 880, 0.18);
       beep(now + 0.44, 1100, 0.28);
     } catch {
-      /* AudioContext unavailable */
+      void 0;
     }
   }
-
   function speakMedicineReminder(medicine: { name: string; dosage?: string | null }) {
     if (
       globalElderSettings?.med_voice_reminders !== true ||
@@ -420,7 +378,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     ) {
       return;
     }
-
     window.speechSynthesis.cancel();
     const message =
       globalElderSettings?.language === "hi"
@@ -430,7 +387,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     utterance.lang = globalElderSettings?.language === "hi" ? "hi-IN" : "en-US";
     window.speechSynthesis.speak(utterance);
   }
-
   const checkAlarms = useCallback(() => {
     if (
       profile?.role !== "parent" ||
@@ -439,45 +395,32 @@ export function AppShell({ children }: { children: ReactNode }) {
       !globalTakenMeds
     )
       return;
-
     const now = new Date();
     const nowMs = now.getTime();
     const hhmm = format(now, "HH:mm");
     const snoozes = readSnoozedMeds();
-
-    // First, ring alarms whose five-minute snooze has completed.
     for (const med of globalMeds) {
       const snooze = snoozes[med.id];
       if (!snooze || nowMs < snooze.until) continue;
-
       delete snoozes[med.id];
       writeSnoozedMeds(snoozes);
-
       if (globalTakenMeds.has(med.id)) continue;
-
       const snoozeAlarmKey = `${snooze.alarmKey}__snoozed__${snooze.until}`;
       if (firedAlarms.current.has(snoozeAlarmKey)) continue;
-
       firedAlarms.current.add(snoozeAlarmKey);
       setAlarmMed(med);
       playAlarmBeep();
       speakMedicineReminder(med);
       return;
     }
-
-    // Then check alarms scheduled for the current minute.
     for (const med of globalMeds) {
       if (!med.schedule_time || globalTakenMeds.has(med.id)) continue;
-
       const medHHMM = med.schedule_time.slice(0, 5);
       if (medHHMM !== hhmm) continue;
-
       const alarmKey = `${med.id}__${todayDateStr}__${hhmm}`;
       if (firedAlarms.current.has(alarmKey)) continue;
-
       const snooze = snoozes[med.id];
       if (snooze && nowMs < snooze.until) continue;
-
       firedAlarms.current.add(alarmKey);
       setAlarmMed(med);
       playAlarmBeep();
@@ -495,16 +438,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     todayDateStr,
     writeSnoozedMeds,
   ]);
-
   useEffect(() => {
     if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current);
     checkAlarms();
-    alarmIntervalRef.current = setInterval(checkAlarms, 30_000);
+    alarmIntervalRef.current = setInterval(checkAlarms, 30000);
     return () => {
       if (alarmIntervalRef.current) clearInterval(alarmIntervalRef.current);
     };
   }, [checkAlarms]);
-
   useEffect(() => {
     if (globalElderSettings?.med_reminders_enabled !== false) return;
     setAlarmMed(null);
@@ -512,10 +453,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       window.speechSynthesis.cancel();
     }
   }, [globalElderSettings?.med_reminders_enabled]);
-
   function handleAlarmSnooze() {
     if (!alarmMed) return;
-
     const snoozeUntil = new Date(Date.now() + 5 * 60 * 1000);
     const snoozes = readSnoozedMeds();
     snoozes[alarmMed.id] = {
@@ -523,29 +462,21 @@ export function AppShell({ children }: { children: ReactNode }) {
       alarmKey: `${alarmMed.id}__${todayDateStr}__${alarmMed.schedule_time?.slice(0, 5) ?? "manual"}`,
     };
     writeSnoozedMeds(snoozes);
-
     toast.info(
       `Snoozed — ${alarmMed.name} alarm will ring again at ${format(snoozeUntil, "HH:mm")}.`,
     );
     setAlarmMed(null);
   }
-
   function handleAlarmTaken() {
     if (!alarmMed) return;
-
     const snoozes = readSnoozedMeds();
     if (snoozes[alarmMed.id]) {
       delete snoozes[alarmMed.id];
       writeSnoozedMeds(snoozes);
     }
-
     globalMarkTaken.mutate(alarmMed.id);
     setAlarmMed(null);
   }
-
-  // ── Global Appointment Alarm Engine ─────────────────────────────────────
-  // Only appointments with reminder_enabled=true are loaded, so the checkbox
-  // controls both the appointment alarm and the exact-time notification.
   const { data: globalAppointments = [] } = useQuery({
     queryKey: ["global_appointment_alarms", activeParentId],
     enabled:
@@ -561,31 +492,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         .eq("parent_id", activeParentId!)
         .eq("reminder_enabled", true)
         .in("status", ["pending", "confirmed", "scheduled"]);
-
       if (error) throw error;
       return (data ?? []) as AppointmentAlarmRow[];
     },
-    refetchInterval: 15_000,
+    refetchInterval: 15000,
     refetchOnWindowFocus: true,
   });
-
   const [alarmAppointment, setAlarmAppointment] = useState<AppointmentAlarmRow | null>(null);
   const appointmentAlarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   type AppointmentAlarmState = {
     scheduledAt: string;
     lastRungAt?: number;
     snoozedUntil?: number;
     dismissedAt?: number;
   };
-
   const appointmentAlarmStorageKey = activeParentId
     ? `eldercare:appointment-alarm-state:${activeParentId}`
     : null;
-
   const readAppointmentAlarmState = useCallback((): Record<string, AppointmentAlarmState> => {
     if (!appointmentAlarmStorageKey || typeof window === "undefined") return {};
-
     try {
       const stored = window.localStorage.getItem(appointmentAlarmStorageKey);
       return stored ? JSON.parse(stored) : {};
@@ -593,11 +518,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       return {};
     }
   }, [appointmentAlarmStorageKey]);
-
   const writeAppointmentAlarmState = useCallback(
     (state: Record<string, AppointmentAlarmState>) => {
       if (!appointmentAlarmStorageKey || typeof window === "undefined") return;
-
       if (Object.keys(state).length === 0) {
         window.localStorage.removeItem(appointmentAlarmStorageKey);
       } else {
@@ -606,29 +529,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     },
     [appointmentAlarmStorageKey],
   );
-
   const publishAppointmentNotification = useCallback(
     async (appointment: AppointmentAlarmRow, alarmKey: string) => {
       if (!activeParentId || !user?.id) return;
-
       try {
-        // Keep one exact-time notification for each appointment schedule.
         const { data: existing } = await (supabase.from("parent_notifications") as any)
           .select("id, metadata")
           .eq("parent_id", activeParentId)
           .eq("notification_type", "appointment_reminder")
           .limit(200);
-
         const alreadyCreated = (existing ?? []).some(
           (notification: { metadata?: Record<string, unknown> | null }) =>
             notification.metadata?.appointment_alarm_key === alarmKey,
         );
-
         if (!alreadyCreated) {
           const scheduledDate = new Date(appointment.scheduled_at);
           const timeLabel = format(scheduledDate, "hh:mm a");
           const dateLabel = format(scheduledDate, "MMM d, yyyy");
-
           await (supabase.from("parent_notifications") as any).insert({
             parent_id: activeParentId,
             sender_id: user.id,
@@ -644,34 +561,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               title: appointment.title,
             },
           });
-
           queryClient.invalidateQueries({ queryKey: ["notifUnread"] });
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
         }
       } catch (error) {
         console.error("Unable to create appointment notification", error);
       }
-
-      // Native browser notification is additional. The in-app alarm still works
-      // when the browser permission is denied or unavailable.
-      if (
-        globalElderSettings?.notify_push !== false &&
-        typeof window !== "undefined" &&
-        "Notification" in window
-      ) {
-        if (window.Notification.permission === "granted") {
-          new window.Notification(`Appointment: ${appointment.title}`, {
-            body: `It is time for your appointment with ${appointment.doctor_name}.${appointment.location ? ` Location: ${appointment.location}` : ""
-              }`,
-            icon: "/favicon.svg",
-            tag: alarmKey,
-          });
-        }
-      }
     },
     [activeParentId, globalElderSettings?.notify_push, queryClient, user?.id],
   );
-
   const checkAppointmentAlarms = useCallback(() => {
     if (
       profile?.role !== "parent" ||
@@ -683,12 +581,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     ) {
       return;
     }
-
     const nowMs = Date.now();
     const alarmState = readAppointmentAlarmState();
     let stateChanged = false;
-
-    // Remove old state so localStorage does not grow forever.
     for (const [key, value] of Object.entries(alarmState)) {
       const scheduledMs = new Date(value.scheduledAt).getTime();
       if (!Number.isFinite(scheduledMs) || scheduledMs < nowMs - 7 * 24 * 60 * 60 * 1000) {
@@ -696,26 +591,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         stateChanged = true;
       }
     }
-
     const sortedAppointments = [...globalAppointments].sort(
       (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
     );
-
     for (const appointment of sortedAppointments) {
       if (!appointment.reminder_enabled) continue;
-
       const scheduledMs = new Date(appointment.scheduled_at).getTime();
       if (!Number.isFinite(scheduledMs)) continue;
-
       const alarmKey = `${appointment.id}__${appointment.scheduled_at}`;
       const stored = alarmState[alarmKey];
-
       if (stored?.dismissedAt) continue;
-
-      // A snoozed alarm rings again as soon as the full five minutes finishes.
       if (stored?.snoozedUntil) {
         if (nowMs < stored.snoozedUntil) continue;
-
         alarmState[alarmKey] = {
           scheduledAt: appointment.scheduled_at,
           lastRungAt: nowMs,
@@ -726,12 +613,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         void publishAppointmentNotification(appointment, alarmKey);
         return;
       }
-
-      // Trigger at the selected appointment date/time. A 30-minute grace window
-      // handles browser timer throttling or the app being reopened shortly after.
       const isDue = scheduledMs <= nowMs && nowMs - scheduledMs <= 30 * 60 * 1000;
       if (!isDue || stored?.lastRungAt) continue;
-
       alarmState[alarmKey] = {
         scheduledAt: appointment.scheduled_at,
         lastRungAt: nowMs,
@@ -742,7 +625,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       void publishAppointmentNotification(appointment, alarmKey);
       return;
     }
-
     if (stateChanged) writeAppointmentAlarmState(alarmState);
   }, [
     activeParentId,
@@ -755,58 +637,44 @@ export function AppShell({ children }: { children: ReactNode }) {
     readAppointmentAlarmState,
     writeAppointmentAlarmState,
   ]);
-
   useEffect(() => {
     if (appointmentAlarmIntervalRef.current) {
       clearInterval(appointmentAlarmIntervalRef.current);
     }
-
     checkAppointmentAlarms();
-    appointmentAlarmIntervalRef.current = setInterval(checkAppointmentAlarms, 15_000);
-
+    appointmentAlarmIntervalRef.current = setInterval(checkAppointmentAlarms, 15000);
     return () => {
       if (appointmentAlarmIntervalRef.current) {
         clearInterval(appointmentAlarmIntervalRef.current);
       }
     };
   }, [checkAppointmentAlarms]);
-
   useEffect(() => {
     if (globalElderSettings?.appointment_reminders_enabled !== false) return;
     setAlarmAppointment(null);
   }, [globalElderSettings?.appointment_reminders_enabled]);
-
-  // Repeat the sound while the appointment alarm is visible.
   useEffect(() => {
     if (!alarmAppointment) return;
-
-    const repeatingAlarm = setInterval(playAlarmBeep, 8_000);
+    const repeatingAlarm = setInterval(playAlarmBeep, 8000);
     return () => clearInterval(repeatingAlarm);
   }, [alarmAppointment?.id]);
-
   function handleAppointmentSnooze() {
     if (!alarmAppointment) return;
-
     const alarmKey = `${alarmAppointment.id}__${alarmAppointment.scheduled_at}`;
     const alarmState = readAppointmentAlarmState();
     const snoozeUntil = Date.now() + 5 * 60 * 1000;
-
     alarmState[alarmKey] = {
       scheduledAt: alarmAppointment.scheduled_at,
       snoozedUntil: snoozeUntil,
     };
     writeAppointmentAlarmState(alarmState);
-
     toast.info(`Appointment alarm snoozed until ${format(new Date(snoozeUntil), "hh:mm a")}.`);
     setAlarmAppointment(null);
   }
-
   function handleAppointmentDismiss() {
     if (!alarmAppointment) return;
-
     const alarmKey = `${alarmAppointment.id}__${alarmAppointment.scheduled_at}`;
     const alarmState = readAppointmentAlarmState();
-
     alarmState[alarmKey] = {
       scheduledAt: alarmAppointment.scheduled_at,
       dismissedAt: Date.now(),
@@ -814,7 +682,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     writeAppointmentAlarmState(alarmState);
     setAlarmAppointment(null);
   }
-
   const periodColors: Record<string, string> = {
     morning: "bg-amber-50 text-amber-700",
     noon: "bg-blue-50 text-blue-700",
@@ -827,8 +694,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     evening: "🌆",
     night: "🌙",
   };
-
-  // ── SOS Escalation Engine ─────────────────────────────────────
   const { data: globalContacts = [] } = useQuery({
     queryKey: ["global_emergency_contacts", profile?.id],
     enabled: profile?.role === "parent",
@@ -848,7 +713,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       }>;
     },
   });
-
   const { data: parentActiveAlert } = useQuery({
     queryKey: ["parent_active_sos", profile?.id],
     enabled: profile?.role === "parent",
@@ -866,7 +730,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     },
     refetchInterval: 5000,
   });
-
   const liveSosLocationState = useSosLiveLocation({
     alertId: parentActiveAlert?.id,
     parentId: profile?.role === "parent" ? profile.id : null,
@@ -876,9 +739,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       Boolean(parentActiveAlert) &&
       globalElderSettings?.sos_share_location !== false,
   });
-
   const [escalationTimeLeft, setEscalationTimeLeft] = useState<number | null>(null);
-
   useEffect(() => {
     if (
       profile?.role !== "parent" ||
@@ -889,7 +750,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       setEscalationTimeLeft(null);
       return;
     }
-
     const updateReminder = () => {
       const intervalMinutes = globalElderSettings?.sos_escalation_minutes || 5;
       const intervalSeconds = Math.max(60, intervalMinutes * 60);
@@ -898,15 +758,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         Math.floor((Date.now() - new Date(parentActiveAlert.created_at).getTime()) / 1000),
       );
       const nextStep = Math.floor(elapsedSeconds / intervalSeconds) + 1;
-
       if (nextStep >= globalContacts.length) {
         setEscalationTimeLeft(null);
         return;
       }
-
       const remaining = nextStep * intervalSeconds - elapsedSeconds;
       setEscalationTimeLeft(Math.max(0, remaining));
-
       if (remaining === 15 && typeof window !== "undefined") {
         const reminderKey = `eldercare:sos-contact-reminder:${parentActiveAlert.id}:${nextStep}`;
         if (!window.localStorage.getItem(reminderKey)) {
@@ -921,7 +778,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         }
       }
     };
-
     updateReminder();
     const timer = window.setInterval(updateReminder, 1000);
     return () => {
@@ -929,7 +785,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       setEscalationTimeLeft(null);
     };
   }, [profile?.role, parentActiveAlert, globalContacts, globalElderSettings]);
-
   const { data: activeSosAlerts = [] } = useQuery({
     queryKey: ["activeSosAlerts", caregiverParentIds],
     enabled: isChildView && caregiverParentIds.length > 0,
@@ -944,8 +799,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       return data;
     },
   });
-
-  // Unread notification count for bell badge
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["notifUnread", user?.id],
     enabled: !!user?.id,
@@ -958,10 +811,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       if (error) return 0;
       return count ?? 0;
     },
-    refetchInterval: 30_000,
+    refetchInterval: 30000,
   });
-
-  // Realtime subscription to update unread count live
   useEffect(() => {
     if (!user?.id) return;
     const channel = supabase
@@ -974,67 +825,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           table: "parent_notifications",
           filter: `parent_id=eq.${user.id}`,
         },
-        (payload) => {
-          queryClient.invalidateQueries({ queryKey: ["notifUnread", user.id] });
-          queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
-
-          const notification = payload.new as {
-            notification_type?: string | null;
-            message?: string | null;
-            is_read?: boolean;
-            deleted_at?: string | null;
-          };
-          const allowedTypes = new Set([
-            "missed_medicine",
-            "missed_checkin",
-            "no_app_activity",
-            "appointment_reminder",
-            "video_consult",
-            "sos_acknowledged",
-            "sos_resolved",
-          ]);
-
-          if (
-            notification &&
-            !notification.is_read &&
-            !notification.deleted_at &&
-            notification.notification_type &&
-            allowedTypes.has(notification.notification_type) &&
-            globalElderSettings?.notify_push !== false &&
-            typeof window !== "undefined" &&
-            "Notification" in window &&
-            window.Notification.permission === "granted"
-          ) {
-            const titleMap: Record<string, string> = {
-              missed_medicine: "Missed medicine alert",
-              missed_checkin: "Wellbeing check-in alert",
-              no_app_activity: "No ElderCare app activity",
-              appointment_reminder: "Appointment reminder",
-              video_consult: "Video consultation",
-              sos_acknowledged: "SOS acknowledged",
-              sos_resolved: "SOS resolved",
-            };
-            new window.Notification(
-              titleMap[notification.notification_type] || "ElderCare notification",
-              {
-                body: notification.message || "A new ElderCare notification is available.",
-                icon: "/favicon.svg",
-                tag: `${notification.notification_type}-${Date.now()}`,
-              },
-            );
-          }
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["notifUnread", user.id] });
+          void queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
         },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, queryClient, globalElderSettings?.notify_push]);
-
+  }, [user?.id, queryClient]);
   const getParentName = (parentId: string) => {
     return linkedParents.find((p) => p.id === parentId)?.full_name ?? "Parent";
   };
-
   async function signOut() {
     toast.info("👋 Signing out…");
     try {
@@ -1047,15 +850,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       toast.error(e instanceof Error ? e.message : "Failed to sign out");
     }
   }
-
   const initials = (profile?.full_name || "?")
     .split(" ")
     .map((n) => n[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
-
-  // Shared nav content (used in both sidebar and drawer)
   const NavContent = ({ onLinkClick }: { onLinkClick?: () => void }) => (
     <>
       <nav className="space-y-1">
@@ -1089,8 +889,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             to="/sos"
             preload="intent"
             onClick={onLinkClick}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${pathname === "/sos" ? "bg-red-100 text-red-700" : "text-red-600 hover:bg-red-50"
-              }`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${pathname === "/sos" ? "bg-red-100 text-red-700" : "text-red-600 hover:bg-red-50"}`}
           >
             <span
               className="size-4 flex items-center justify-center shrink-0 leading-none animate-pulse"
@@ -1104,10 +903,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </nav>
     </>
   );
-
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* ── Global Medicine Alarm Modal ───────────────────────────────────── */}
       <style>{`
         @keyframes alarmWobble { from { transform: rotate(-8deg) scale(1); } to { transform: rotate(8deg) scale(1.08); } }
         @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
@@ -1124,7 +921,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
-          {/* Gradient header */}
           <div
             className="relative flex flex-col items-center justify-center pt-10 pb-8 px-6 text-white"
             style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 60%, #2563eb 100%)" }}
@@ -1160,7 +956,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </p>
           </div>
 
-          {/* Medicine info */}
           <div className="px-6 py-5">
             {alarmMed && (
               <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center gap-4 mb-6">
@@ -1217,7 +1012,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </DialogContent>
       </Dialog>
 
-      {/* ── Global Appointment Alarm Modal ────────────────────────────────── */}
       <Dialog
         open={!!alarmAppointment}
         onOpenChange={(open) => {
@@ -1313,7 +1107,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </DialogContent>
       </Dialog>
 
-      {/* Top Critical SOS Alert Bar */}
       {isChildView && activeSosAlerts.length > 0 && (
         <div className="bg-red-600 text-white px-4 py-2.5 text-center text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 select-none z-50 animate-pulse relative shadow-md shrink-0">
           <Siren className="size-4 shrink-0 animate-bounce" />
@@ -1332,7 +1125,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Parent SOS Active Alert Escalation Banner */}
       {!isChildView && parentActiveAlert && (
         <div className="bg-orange-600 text-white px-4 py-2.5 text-center text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 select-none z-50 relative shadow-md shrink-0">
           <Siren className="size-4 shrink-0 animate-pulse" />
@@ -1348,7 +1140,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-white/50 backdrop-blur-xl z-20 hidden md:flex flex-col">
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-2.5">
@@ -1376,7 +1167,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* ── Mobile Drawer Overlay ────────────────────────────────────────── */}
       {drawerOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
@@ -1385,13 +1175,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* ── Mobile Slide-Out Drawer ──────────────────────────────────────── */}
       <aside
-        className={`fixed left-0 top-0 bottom-0 w-72 max-w-[85vw] border-r border-border bg-white z-50 md:hidden flex flex-col transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed left-0 top-0 bottom-0 w-72 max-w-[85vw] border-r border-border bg-white z-50 md:hidden flex flex-col transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}
         aria-label="Mobile navigation"
       >
-        {/* Drawer header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
             <img
@@ -1413,7 +1200,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {/* Profile info in drawer */}
         <div className="px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <EditableAvatar size="sm" />
@@ -1445,12 +1231,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
 
-        {/* Nav links */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <NavContent onLinkClick={() => setDrawerOpen(false)} />
         </div>
 
-        {/* Sign out */}
         <div className="p-4 border-t border-border">
           <button
             onClick={signOut}
@@ -1461,10 +1245,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* ── Main Content ─────────────────────────────────────────────────── */}
       <main className="md:pl-64 flex flex-col flex-1">
         <header className="h-16 sm:h-20 border-b border-border flex items-center gap-3 px-4 sm:px-6 md:px-10 bg-background/70 sticky top-0 backdrop-blur-md z-10">
-          {/* Hamburger — mobile only */}
           <button
             onClick={() => setDrawerOpen(true)}
             className="md:hidden p-2 -ml-1 rounded-lg text-muted-foreground hover:bg-stone-100 transition-colors shrink-0"
@@ -1473,7 +1255,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Menu className="size-5" />
           </button>
 
-          {/* Avatar + name */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <EditableAvatar size="md" />
             <div className="min-w-0 hidden sm:block">
@@ -1486,13 +1267,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                   : "Active now · Home"}
               </span>
             </div>
-            {/* Name visible on very small screens */}
+
             <p className="font-display text-base font-bold leading-none truncate sm:hidden">
               {profile?.full_name?.split(" ")[0] || "Welcome"}
             </p>
           </div>
 
-          {/* Notification Bell */}
           <Link
             to="/notifications"
             preload="intent"
@@ -1507,7 +1287,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </Link>
 
-          {/* Parent switcher — desktop only to avoid cramping mobile header */}
           {isChildView && linkedParents.length > 0 && (
             <Select
               value={activeParent?.id ?? undefined}

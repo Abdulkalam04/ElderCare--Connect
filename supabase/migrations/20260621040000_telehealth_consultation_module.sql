@@ -1,18 +1,18 @@
--- ============================================================
--- Telehealth Consultation Module — schema upgrade
--- ============================================================
 
--- 1. Extend booking_status for consultation-specific values
+
+
+
+
 ALTER TYPE public.booking_status ADD VALUE IF NOT EXISTS 'scheduled'   BEFORE 'pending';
 ALTER TYPE public.booking_status ADD VALUE IF NOT EXISTS 'waiting'     AFTER 'scheduled';
 
--- 2. Add new columns to video_consultations
+
 ALTER TABLE public.video_consultations
   ADD COLUMN IF NOT EXISTS consultation_reason TEXT,
   ADD COLUMN IF NOT EXISTS consultation_date   DATE,
   ADD COLUMN IF NOT EXISTS consultation_time   TIME;
 
--- 3. Backfill consultation_date / consultation_time from scheduled_at
+
 UPDATE public.video_consultations
   SET consultation_date = scheduled_at::date
   WHERE consultation_date IS NULL;
@@ -21,7 +21,7 @@ UPDATE public.video_consultations
   SET consultation_time = scheduled_at::time
   WHERE consultation_time IS NULL;
 
--- 4. Create prescriptions table (linked to a consultation)
+
 CREATE TABLE IF NOT EXISTS public.consultation_prescriptions (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   consultation_id  UUID NOT NULL REFERENCES public.video_consultations(id) ON DELETE CASCADE,
@@ -39,7 +39,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.consultation_prescriptions TO aut
 GRANT ALL ON public.consultation_prescriptions TO service_role;
 ALTER TABLE public.consultation_prescriptions ENABLE ROW LEVEL SECURITY;
 
--- Prescription RLS: view = parent + linked child; write = parent only
+
 CREATE POLICY "View prescriptions (parent+child)" ON public.consultation_prescriptions
   FOR SELECT TO authenticated
   USING (public.can_view_parent(parent_id));
@@ -52,7 +52,7 @@ CREATE POLICY "Delete prescriptions (parent only)" ON public.consultation_prescr
   FOR DELETE TO authenticated
   USING (parent_id = auth.uid());
 
--- 5. Tighten RLS on video_consultations (parent-only mutations)
+
 DROP POLICY IF EXISTS "Create video" ON public.video_consultations;
 CREATE POLICY "Create video (parent only)" ON public.video_consultations
   FOR INSERT TO authenticated
@@ -69,13 +69,13 @@ CREATE POLICY "Delete video (parent only)" ON public.video_consultations
   FOR DELETE TO authenticated
   USING (parent_id = auth.uid());
 
--- SELECT unchanged
+
 DROP POLICY IF EXISTS "View video" ON public.video_consultations;
 CREATE POLICY "View video (parent+child)" ON public.video_consultations
   FOR SELECT TO authenticated
   USING (public.can_view_parent(parent_id));
 
--- 6. Private storage bucket for prescription files (reuse health-records bucket path pattern)
+
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'prescriptions',
@@ -89,7 +89,7 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit     = EXCLUDED.file_size_limit,
   allowed_mime_types  = EXCLUDED.allowed_mime_types;
 
--- Storage RLS for prescriptions bucket
+
 DROP POLICY IF EXISTS "prescriptions_read" ON storage.objects;
 CREATE POLICY "prescriptions_read" ON storage.objects
   FOR SELECT TO authenticated
@@ -114,7 +114,7 @@ CREATE POLICY "prescriptions_delete" ON storage.objects
     AND public.can_view_parent(((storage.foldername(name))[1])::uuid)
   );
 
--- 7. Enable realtime on both tables
+
 DO $$
 BEGIN
   IF NOT EXISTS (

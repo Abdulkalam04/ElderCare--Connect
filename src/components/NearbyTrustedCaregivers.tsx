@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { TrustedCaregiver } from "@/components/TrustedCaregiverDirectory";
 import { mapsLink } from "@/lib/geolocation";
-
 function distanceKm(latitudeA: number, longitudeA: number, latitudeB: number, longitudeB: number) {
   const earthRadiusKm = 6371;
   const toRadians = (value: number) => (value * Math.PI) / 180;
@@ -17,11 +16,9 @@ function distanceKm(latitudeA: number, longitudeA: number, latitudeB: number, lo
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
   return 2 * earthRadiusKm * Math.asin(Math.sqrt(h));
 }
-
 function cleanPhone(value: string | null) {
   return value?.replace(/[^+\d]/g, "") ?? "";
 }
-
 export function NearbyTrustedCaregivers({
   parentId,
   subjectName,
@@ -46,7 +43,6 @@ export function NearbyTrustedCaregivers({
       return (data ?? []) as TrustedCaregiver[];
     },
   });
-
   const sorted = useMemo(() => {
     return caregivers
       .map((caregiver) => ({
@@ -67,12 +63,8 @@ export function NearbyTrustedCaregivers({
         return left.distance - right.distance;
       });
   }, [caregivers, latitude, longitude]);
-
   const locationUrl = latitude != null && longitude != null ? mapsLink(latitude, longitude) : null;
-  const message = `Emergency assistance is needed for ${subjectName}.${
-    locationUrl ? ` Current location: ${locationUrl}` : ""
-  }`;
-
+  const message = `Emergency assistance is needed for ${subjectName}.${locationUrl ? ` Current location: ${locationUrl}` : ""}`;
   async function share(caregiver: TrustedCaregiver) {
     try {
       if (navigator.share) {
@@ -90,9 +82,7 @@ export function NearbyTrustedCaregivers({
       toast.error("The emergency message could not be shared.");
     }
   }
-
   if (sorted.length === 0) return null;
-
   return (
     <section className="rounded-3xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm sm:p-6">
       <div className="flex items-start gap-3">

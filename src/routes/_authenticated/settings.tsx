@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-
 import { AppShell } from "@/components/AppShell";
 import { EditableAvatar } from "@/components/EditableAvatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -54,20 +53,27 @@ import {
   getPushPermission,
   isPushSupported,
 } from "@/lib/push";
-
 export const Route = createFileRoute("/_authenticated/settings")({
   ssr: false,
   component: SettingsPage,
 });
-
 type ContactMethod = "phone" | "email" | "push";
 type AppLanguage = "en" | "hi";
-
 type ElderSettings = {
   parent_id: string;
   notify_email: boolean;
   notify_push: boolean;
   notify_sms: boolean;
+  push_sos_enabled: boolean;
+  push_medicine_enabled: boolean;
+  push_wellbeing_enabled: boolean;
+  push_appointments_enabled: boolean;
+  push_caregiver_enabled: boolean;
+  push_transport_enabled: boolean;
+  push_video_enabled: boolean;
+  push_emergency_detection_enabled: boolean;
+  push_health_risk_enabled: boolean;
+  push_companion_safety_enabled: boolean;
   med_reminders_enabled: boolean;
   med_reminder_lead_minutes: number;
   med_voice_reminders: boolean;
@@ -79,6 +85,7 @@ type ElderSettings = {
   detect_no_app_activity: boolean;
   wellbeing_checkin_cutoff: string;
   no_app_activity_hours: number;
+  health_risk_alerts_enabled: boolean;
   sos_escalation_minutes: number;
   sos_auto_call_primary: boolean;
   sos_share_location: boolean;
@@ -88,8 +95,9 @@ type ElderSettings = {
   high_contrast: boolean;
   quiet_hours_start: string | null;
   quiet_hours_end: string | null;
+  companion_auto_read_responses: boolean;
+  companion_emergency_escalation_enabled: boolean;
 };
-
 type ProfileForm = {
   fullName: string;
   phone: string;
@@ -99,11 +107,20 @@ type ProfileForm = {
   emergencyContactName: string;
   emergencyContactPhone: string;
 };
-
 const DEFAULT_VALUES: Omit<ElderSettings, "parent_id"> = {
   notify_email: true,
   notify_push: true,
   notify_sms: false,
+  push_sos_enabled: true,
+  push_medicine_enabled: true,
+  push_wellbeing_enabled: true,
+  push_appointments_enabled: true,
+  push_caregiver_enabled: true,
+  push_transport_enabled: true,
+  push_video_enabled: true,
+  push_emergency_detection_enabled: true,
+  push_health_risk_enabled: true,
+  push_companion_safety_enabled: true,
   med_reminders_enabled: true,
   med_reminder_lead_minutes: 10,
   med_voice_reminders: false,
@@ -115,6 +132,7 @@ const DEFAULT_VALUES: Omit<ElderSettings, "parent_id"> = {
   detect_no_app_activity: true,
   wellbeing_checkin_cutoff: "20:00",
   no_app_activity_hours: 24,
+  health_risk_alerts_enabled: true,
   sos_escalation_minutes: 5,
   sos_auto_call_primary: false,
   sos_share_location: true,
@@ -124,8 +142,9 @@ const DEFAULT_VALUES: Omit<ElderSettings, "parent_id"> = {
   high_contrast: false,
   quiet_hours_start: null,
   quiet_hours_end: null,
+  companion_auto_read_responses: false,
+  companion_emergency_escalation_enabled: false,
 };
-
 const emptyProfileForm: ProfileForm = {
   fullName: "",
   phone: "",
@@ -135,18 +154,26 @@ const emptyProfileForm: ProfileForm = {
   emergencyContactName: "",
   emergencyContactPhone: "",
 };
-
 function normalizeTime(value: unknown): string | null {
   if (typeof value !== "string" || value.length < 5) return null;
   return value.slice(0, 5);
 }
-
 function normalizeSettings(value: Record<string, unknown> | null, parentId: string): ElderSettings {
   return {
     parent_id: parentId,
     notify_email: value?.notify_email !== false,
     notify_push: value?.notify_push !== false,
     notify_sms: value?.notify_sms === true,
+    push_sos_enabled: value?.push_sos_enabled !== false,
+    push_medicine_enabled: value?.push_medicine_enabled !== false,
+    push_wellbeing_enabled: value?.push_wellbeing_enabled !== false,
+    push_appointments_enabled: value?.push_appointments_enabled !== false,
+    push_caregiver_enabled: value?.push_caregiver_enabled !== false,
+    push_transport_enabled: value?.push_transport_enabled !== false,
+    push_video_enabled: value?.push_video_enabled !== false,
+    push_emergency_detection_enabled: value?.push_emergency_detection_enabled !== false,
+    push_health_risk_enabled: value?.push_health_risk_enabled !== false,
+    push_companion_safety_enabled: value?.push_companion_safety_enabled !== false,
     med_reminders_enabled: value?.med_reminders_enabled !== false,
     med_reminder_lead_minutes: Number.isFinite(Number(value?.med_reminder_lead_minutes))
       ? Math.min(120, Math.max(0, Number(value?.med_reminder_lead_minutes)))
@@ -163,6 +190,7 @@ function normalizeSettings(value: Record<string, unknown> | null, parentId: stri
     no_app_activity_hours: Number.isFinite(Number(value?.no_app_activity_hours))
       ? Math.min(168, Math.max(6, Number(value?.no_app_activity_hours)))
       : DEFAULT_VALUES.no_app_activity_hours,
+    health_risk_alerts_enabled: value?.health_risk_alerts_enabled !== false,
     sos_escalation_minutes: Number.isFinite(Number(value?.sos_escalation_minutes))
       ? Math.min(60, Math.max(1, Number(value?.sos_escalation_minutes)))
       : DEFAULT_VALUES.sos_escalation_minutes,
@@ -178,21 +206,19 @@ function normalizeSettings(value: Record<string, unknown> | null, parentId: stri
     high_contrast: value?.high_contrast === true,
     quiet_hours_start: normalizeTime(value?.quiet_hours_start),
     quiet_hours_end: normalizeTime(value?.quiet_hours_end),
+    companion_auto_read_responses: value?.companion_auto_read_responses === true,
+    companion_emergency_escalation_enabled: value?.companion_emergency_escalation_enabled === true,
   };
 }
-
 function validatePhone(value: string, label: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
-
   const digits = trimmed.replace(/\D/g, "");
   if (!/^\+?[0-9\s()-]{7,30}$/.test(trimmed) || digits.length < 7 || digits.length > 15) {
     throw new Error(`${label} must contain between 7 and 15 digits.`);
   }
-
   return trimmed;
 }
-
 function applyAccessibility(
   settings: Pick<ElderSettings, "large_text" | "high_contrast" | "language">,
 ) {
@@ -200,21 +226,19 @@ function applyAccessibility(
   document.documentElement.classList.toggle("high-contrast", settings.high_contrast);
   document.documentElement.lang = settings.language;
 }
-
 function SettingsPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const { data: currentUser } = useCurrentUser();
   const { data: profile } = useProfile();
   const qc = useQueryClient();
-
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [form, setForm] = useState<ElderSettings | null>(null);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">(
     "unsupported",
   );
+  const [testingPush, setTestingPush] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   useEffect(() => {
     if (!profile) return;
     setProfileForm({
@@ -227,11 +251,9 @@ function SettingsPage() {
       emergencyContactPhone: profile.emergency_contact_phone ?? "",
     });
   }, [profile]);
-
   useEffect(() => {
     setPushPermission(getPushPermission());
   }, []);
-
   const settingsQuery = useQuery({
     queryKey: ["elder_settings", activeParentId],
     enabled: !!activeParentId,
@@ -241,23 +263,19 @@ function SettingsPage() {
         .select("*")
         .eq("parent_id", activeParentId!)
         .maybeSingle();
-
       if (error) throw new Error(error.message ?? "Failed to load settings.");
       return normalizeSettings((data ?? null) as Record<string, unknown> | null, activeParentId!);
     },
-    staleTime: 30_000,
+    staleTime: 30000,
     refetchOnWindowFocus: true,
   });
-
   useEffect(() => {
     if (!settingsQuery.data) return;
     setForm(settingsQuery.data);
     applyAccessibility(settingsQuery.data);
   }, [settingsQuery.data]);
-
   useEffect(() => {
     if (!activeParentId) return;
-
     const channel = supabase
       .channel(`elder-settings-${activeParentId}`)
       .on(
@@ -274,17 +292,14 @@ function SettingsPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [activeParentId, qc]);
-
   const settingsDirty = useMemo(() => {
     if (!form || !settingsQuery.data) return false;
     return JSON.stringify(form) !== JSON.stringify(settingsQuery.data);
   }, [form, settingsQuery.data]);
-
   const profileDirty = useMemo(() => {
     if (!profile) return false;
     return (
@@ -297,38 +312,31 @@ function SettingsPage() {
       profileForm.emergencyContactPhone.trim() !== (profile.emergency_contact_phone ?? "")
     );
   }, [profile, profileForm]);
-
   useEffect(() => {
     const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
       if (!settingsDirty && !profileDirty) return;
       event.preventDefault();
       event.returnValue = "";
     };
-
     window.addEventListener("beforeunload", warnBeforeLeaving);
     return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
   }, [profileDirty, settingsDirty]);
-
   const updateProfile = useMutation({
     mutationFn: async () => {
       if (!currentUser?.id) throw new Error("You are not signed in.");
-
       const fullName = profileForm.fullName.trim();
       if (fullName.length < 2) throw new Error("Full name must contain at least 2 characters.");
-
       const phone = validatePhone(profileForm.phone, "Phone number");
       const emergencyPhone = validatePhone(
         profileForm.emergencyContactPhone,
         "Fallback emergency phone number",
       );
-
       if (profileForm.dateOfBirth) {
         const selectedDate = new Date(`${profileForm.dateOfBirth}T00:00:00`);
         if (!Number.isFinite(selectedDate.getTime()) || selectedDate > new Date()) {
           throw new Error("Date of birth cannot be in the future.");
         }
       }
-
       if (profile?.role === "parent") {
         const hasFallbackName = !!profileForm.emergencyContactName.trim();
         const hasFallbackPhone = !!emergencyPhone;
@@ -338,12 +346,10 @@ function SettingsPage() {
           );
         }
       }
-
       const payload: TablesUpdate<"profiles"> = {
         full_name: fullName,
         phone,
       };
-
       if (profile?.role === "parent") {
         payload.date_of_birth = profileForm.dateOfBirth || null;
         payload.address = profileForm.address.trim() || null;
@@ -351,14 +357,12 @@ function SettingsPage() {
         payload.emergency_contact_name = profileForm.emergencyContactName.trim() || null;
         payload.emergency_contact_phone = emergencyPhone;
       }
-
       const { data, error } = await supabase
         .from("profiles")
         .update(payload)
         .eq("id", currentUser.id)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data)
         throw new Error("Your profile could not be updated. Check your account permissions.");
@@ -374,11 +378,9 @@ function SettingsPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Failed to update profile."),
   });
-
   const saveSettings = useMutation({
     mutationFn: async (values: ElderSettings) => {
       if (!activeParentId) throw new Error("No care-recipient account is selected.");
-
       if (values.med_reminder_lead_minutes < 0 || values.med_reminder_lead_minutes > 120) {
         throw new Error("Missed-dose grace period must be between 0 and 120 minutes.");
       }
@@ -391,7 +393,6 @@ function SettingsPage() {
       if (values.sos_escalation_minutes < 1 || values.sos_escalation_minutes > 60) {
         throw new Error("SOS escalation time must be between 1 and 60 minutes.");
       }
-
       const hasQuietStart = !!values.quiet_hours_start;
       const hasQuietEnd = !!values.quiet_hours_end;
       if (hasQuietStart !== hasQuietEnd) {
@@ -404,7 +405,6 @@ function SettingsPage() {
       ) {
         throw new Error("Quiet-hours start and end times must be different.");
       }
-
       if (values.preferred_contact_method === "email" && !values.notify_email) {
         throw new Error(
           "Enable email notifications before selecting Email as the preferred method.",
@@ -413,19 +413,16 @@ function SettingsPage() {
       if (values.preferred_contact_method === "push" && !values.notify_push) {
         throw new Error("Enable push notifications before selecting Push as the preferred method.");
       }
-
       const payload: ElderSettings = {
         ...values,
         parent_id: activeParentId,
         notify_sms: false,
       };
-
       const { data, error } = await supabase
         .from("elder_settings")
         .upsert(payload, { onConflict: "parent_id" })
         .select("*")
         .single();
-
       if (error) throw new Error(error.message ?? "Failed to save settings.");
       return normalizeSettings(data as Record<string, unknown>, activeParentId);
     },
@@ -439,12 +436,12 @@ function SettingsPage() {
         qc.invalidateQueries({ queryKey: ["global_elder_settings", activeParentId] }),
         qc.invalidateQueries({ queryKey: ["global_meds", activeParentId] }),
         qc.invalidateQueries({ queryKey: ["global_appointment_alarms", activeParentId] }),
+        qc.invalidateQueries({ queryKey: ["companion-settings", activeParentId] }),
       ]);
       toast.success(saved.language === "hi" ? "सेटिंग्स सहेजी गईं।" : "Settings saved.");
     },
     onError: (error: Error) => toast.error(error.message || "Failed to save settings."),
   });
-
   const changePassword = useMutation({
     mutationFn: async () => {
       if (newPassword.length < 8) {
@@ -454,7 +451,6 @@ function SettingsPage() {
         throw new Error("Use at least one uppercase letter, one lowercase letter, and one number.");
       }
       if (newPassword !== confirmPassword) throw new Error("The passwords do not match.");
-
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
     },
@@ -465,7 +461,6 @@ function SettingsPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Failed to change password."),
   });
-
   const setSetting = <K extends keyof ElderSettings>(key: K, value: ElderSettings[K]) => {
     setForm((current) => {
       if (!current) return current;
@@ -476,7 +471,6 @@ function SettingsPage() {
       return next;
     });
   };
-
   const handlePushToggle = async (enabled: boolean) => {
     if (!enabled) {
       setSetting("notify_push", false);
@@ -488,46 +482,50 @@ function SettingsPage() {
       toast.success("Push notifications disabled on this device.");
       return;
     }
-
     if (!isPushSupported()) {
       setSetting("notify_push", false);
       setPushPermission("unsupported");
       toast.error("Push notifications are not supported in this browser.");
       return;
     }
-
     const result = await enablePushNotifications();
     setPushPermission(getPushPermission());
-
     if (!result.ok) {
       setSetting("notify_push", false);
       toast.error(result.reason || "Push notification setup failed.");
       return;
     }
-
     setSetting("notify_push", true);
     toast.success(
       "Push notifications enabled on this device. Save settings to keep this preference.",
     );
   };
-
-  const testBrowserNotification = () => {
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      toast.error("Browser notifications are not supported.");
+  const testBrowserNotification = async () => {
+    if (!isPushSupported()) {
+      toast.error("Web Push is not supported in this browser.");
       return;
     }
     if (Notification.permission !== "granted") {
       toast.error("Enable browser notification permission first.");
       return;
     }
-
-    new Notification("ElderCare Connect test", {
-      body: "Browser notifications are working on this device.",
-      icon: "/favicon.svg",
-      tag: "eldercare-settings-test",
-    });
+    if (!form?.notify_push) {
+      toast.error("Enable the Push notifications setting first.");
+      return;
+    }
+    setTestingPush(true);
+    try {
+      const { error } = await supabase.rpc("create_push_test_notification");
+      if (error) throw error;
+      toast.success(
+        "Real push test queued. It uses the database, Edge Function, VAPID, and service worker.",
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to queue the push test.");
+    } finally {
+      setTestingPush(false);
+    }
   };
-
   const resetSettings = () => {
     if (!activeParentId) return;
     const defaults: ElderSettings = { parent_id: activeParentId, ...DEFAULT_VALUES };
@@ -535,10 +533,8 @@ function SettingsPage() {
     applyAccessibility(defaults);
     toast.info("Default values loaded. Click Save Settings to apply them.");
   };
-
   const quietHoursEnabled = !!form?.quiet_hours_start && !!form?.quiet_hours_end;
   const selectedPersonName = activeParent?.full_name || "the selected care recipient";
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -775,11 +771,95 @@ function SettingsPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={pushPermission !== "granted"}
-                  onClick={testBrowserNotification}
+                  disabled={pushPermission !== "granted" || testingPush}
+                  onClick={() => void testBrowserNotification()}
                 >
-                  <Smartphone className="mr-2 size-4" /> Test notification
+                  {testingPush ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Smartphone className="mr-2 size-4" />
+                  )}
+                  Send real push test
                 </Button>
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <div>
+                  <p className="text-sm font-semibold">Push categories</p>
+                  <p className="text-xs text-muted-foreground">
+                    The master Push notifications switch must also be enabled.
+                  </p>
+                </div>
+                <ToggleRow
+                  label="SOS alerts"
+                  description="Emergency SOS and SOS status updates."
+                  checked={form.push_sos_enabled}
+                  onChange={(value) => setSetting("push_sos_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Medicine alerts"
+                  description="Missed-dose notifications."
+                  checked={form.push_medicine_enabled}
+                  onChange={(value) => setSetting("push_medicine_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Wellbeing alerts"
+                  description="Missing daily check-in notifications."
+                  checked={form.push_wellbeing_enabled}
+                  onChange={(value) => setSetting("push_wellbeing_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Appointment reminders"
+                  description="Doctor appointment reminders generated by the server."
+                  checked={form.push_appointments_enabled}
+                  onChange={(value) => setSetting("push_appointments_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Caregiver updates"
+                  description="Booking confirmation, assignment, and status changes."
+                  checked={form.push_caregiver_enabled}
+                  onChange={(value) => setSetting("push_caregiver_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Transport updates"
+                  description="Driver assignment and ride status changes."
+                  checked={form.push_transport_enabled}
+                  onChange={(value) => setSetting("push_transport_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Video consultation updates"
+                  description="Consultation reminders and status changes."
+                  checked={form.push_video_enabled}
+                  onChange={(value) => setSetting("push_video_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="AI emergency-detection alerts"
+                  description="Missed care and no-app-activity detection."
+                  checked={form.push_emergency_detection_enabled}
+                  onChange={(value) => setSetting("push_emergency_detection_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Health-risk alerts"
+                  description="High or urgent screening results."
+                  checked={form.push_health_risk_enabled}
+                  onChange={(value) => setSetting("push_health_risk_enabled", value)}
+                  disabled={!form.notify_push}
+                />
+                <ToggleRow
+                  label="Companion safety alerts"
+                  description="Generic private safety warnings sent to linked family."
+                  checked={form.push_companion_safety_enabled}
+                  onChange={(value) => setSetting("push_companion_safety_enabled", value)}
+                  disabled={!form.notify_push}
+                />
               </div>
 
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -954,9 +1034,38 @@ function SettingsPage() {
                   }
                 />
               </Field>
+              <ToggleRow
+                label="Alert family after a high health-risk screening"
+                description="Creates an in-app and push alert only for high or urgent results."
+                checked={form.health_risk_alerts_enabled}
+                onChange={(value) => setSetting("health_risk_alerts_enabled", value)}
+              />
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
                 Detection alerts automatically resolve when a missed medicine is marked taken, the
                 daily wellbeing check is submitted, or ElderCare app activity resumes.
+              </div>
+            </Section>
+
+            <Section
+              icon={<MessageSquareWarning className="size-5" />}
+              title="AI Companion privacy and voice"
+              description="Control spoken replies and optional private safety escalation for the care recipient."
+            >
+              <ToggleRow
+                label="Automatically read Companion replies aloud"
+                description="Uses the browser’s free speech-synthesis feature. No paid voice service is required."
+                checked={form.companion_auto_read_responses}
+                onChange={(value) => setSetting("companion_auto_read_responses", value)}
+              />
+              <ToggleRow
+                label="Alert linked family for urgent Companion messages"
+                description="When enabled, linked children receive only a generic emergency warning. The private message and chat history are never shared."
+                checked={form.companion_emergency_escalation_enabled}
+                onChange={(value) => setSetting("companion_emergency_escalation_enabled", value)}
+              />
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                Emergency phrase detection always shows SOS guidance to the care recipient. Family
+                escalation is optional and is disabled by default.
               </div>
             </Section>
 
@@ -1132,7 +1241,6 @@ function SettingsPage() {
     </AppShell>
   );
 }
-
 function Section({
   title,
   description,
@@ -1157,7 +1265,6 @@ function Section({
     </section>
   );
 }
-
 function Field({
   label,
   htmlFor,
@@ -1179,7 +1286,6 @@ function Field({
     </div>
   );
 }
-
 function ReadOnlyValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
@@ -1192,7 +1298,6 @@ function ReadOnlyValue({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
 function ToggleRow({
   label,
   description,

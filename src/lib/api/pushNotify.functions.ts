@@ -1,21 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-/**
- * Web Push (VAPID) over Web Crypto — works in Cloudflare Workers and Node.
- * No SMS providers, no paid services. Requires VAPID keys in env.
- *
- * Required env:
- *   VAPID_PUBLIC_KEY   (base64url, also exposed to client as VITE_VAPID_PUBLIC_KEY)
- *   VAPID_PRIVATE_KEY  (base64url)
- *   VAPID_SUBJECT      (mailto:you@example.com)
- *
- * Generate locally with:
- *   npx web-push generate-vapid-keys
- */
-
-// ---------- crypto helpers ----------
 function b64urlToBytes(s: string): Uint8Array {
   s = s.replace(/-/g, "+").replace(/_/g, "/");
   while (s.length % 4) s += "=";
@@ -40,8 +25,6 @@ function concatBytes(...parts: Uint8Array[]): Uint8Array {
   }
   return out;
 }
-
-// Convert raw P-256 public key (65 bytes uncompressed) to JWK
 function rawP256PubToJwk(raw: Uint8Array): JsonWebKey {
   if (raw.length !== 65 || raw[0] !== 0x04) throw new Error("Invalid P-256 raw public key");
   return {
@@ -52,7 +35,6 @@ function rawP256PubToJwk(raw: Uint8Array): JsonWebKey {
     ext: true,
   };
 }
-
 async function importVapidPrivateKey(privB64url: string, pubB64url: string) {
   const d = privB64url;
   const pub = b64urlToBytes(pubB64url);
@@ -65,12 +47,10 @@ async function importVapidPrivateKey(privB64url: string, pubB64url: string) {
     "sign",
   ]);
 }
-
 async function signVapidJwt(audience: string): Promise<string> {
   const pub = process.env.VAPID_PUBLIC_KEY!;
   const priv = process.env.VAPID_PRIVATE_KEY!;
   const sub = process.env.VAPID_SUBJECT || "mailto:admin@eldercare.local";
-
   const header = { typ: "JWT", alg: "ES256" };
   const payload = {
     aud: audience,
@@ -87,8 +67,6 @@ async function signVapidJwt(audience: string): Promise<string> {
   );
   return `${unsigned}.${bytesToB64url(sig)}`;
 }
-
-// ---------- aes128gcm payload encryption (RFC 8291) ----------
 async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length: number) {
   const baseKey = await crypto.subtle.importKey(
     "raw",
@@ -104,19 +82,18 @@ async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length:
   );
   return new Uint8Array(bits);
 }
-
 async function encryptPayloadAes128Gcm(
   payload: Uint8Array,
   recipientPubRaw: Uint8Array,
   recipientAuth: Uint8Array,
-): Promise<{ body: Uint8Array; appServerPubRaw: Uint8Array }> {
-  // Generate ephemeral ECDH key pair
+): Promise<{
+  body: Uint8Array;
+  appServerPubRaw: Uint8Array;
+}> {
   const ephemeral = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, [
     "deriveBits",
   ]);
   const appServerPubRaw = new Uint8Array(await crypto.subtle.exportKey("raw", ephemeral.publicKey));
-
-  // Import recipient public key for ECDH
   const recipientPubKey = await crypto.subtle.importKey(
     "raw",
     recipientPubRaw as BufferSource,
@@ -124,31 +101,22 @@ async function encryptPayloadAes128Gcm(
     true,
     [],
   );
-
-  // Shared secret
   const ecdhSecretBits = await crypto.subtle.deriveBits(
     { name: "ECDH", public: recipientPubKey },
     ephemeral.privateKey,
     256,
   );
   const ecdhSecret = new Uint8Array(ecdhSecretBits);
-
-  // PRK_key = HKDF-Expand(HKDF-Extract(auth, ecdh_secret), key_info, 32)
   const keyInfo = concatBytes(
     new TextEncoder().encode("WebPush: info\0"),
     recipientPubRaw,
     appServerPubRaw,
   );
   const ikm2 = await hkdf(recipientAuth, ecdhSecret, keyInfo, 32);
-
-  // Salt and CEK / nonce
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const cek = await hkdf(salt, ikm2, new TextEncoder().encode("Content-Encoding: aes128gcm\0"), 16);
   const nonce = await hkdf(salt, ikm2, new TextEncoder().encode("Content-Encoding: nonce\0"), 12);
-
-  // Plaintext = payload || 0x02 (last record delimiter)
   const plaintext = concatBytes(payload, new Uint8Array([0x02]));
-
   const aesKey = await crypto.subtle.importKey(
     "raw",
     cek as BufferSource,
@@ -163,8 +131,6 @@ async function encryptPayloadAes128Gcm(
       plaintext as BufferSource,
     ),
   );
-
-  // aes128gcm header: salt(16) || rs(4 big-endian) || idlen(1) || keyid(idlen)
   const rs = 4096;
   const header = new Uint8Array(16 + 4 + 1 + appServerPubRaw.length);
   header.set(salt, 0);
@@ -172,23 +138,26 @@ async function encryptPayloadAes128Gcm(
   dv.setUint32(16, rs, false);
   header[20] = appServerPubRaw.length;
   header.set(appServerPubRaw, 21);
-
   return { body: concatBytes(header, ciphertext), appServerPubRaw };
 }
-
 async function sendWebPush(
-  sub: { endpoint: string; p256dh: string; auth: string },
+  sub: {
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+  },
   payloadObj: Record<string, unknown>,
-): Promise<{ status: number; body?: string }> {
+): Promise<{
+  status: number;
+  body?: string;
+}> {
   const url = new URL(sub.endpoint);
   const aud = `${url.protocol}//${url.host}`;
   const jwt = await signVapidJwt(aud);
-
   const recipientPubRaw = b64urlToBytes(sub.p256dh);
   const recipientAuth = b64urlToBytes(sub.auth);
   const payload = new TextEncoder().encode(JSON.stringify(payloadObj));
   const { body } = await encryptPayloadAes128Gcm(payload, recipientPubRaw, recipientAuth);
-
   const res = await fetch(sub.endpoint, {
     method: "POST",
     headers: {
@@ -200,16 +169,12 @@ async function sendWebPush(
     },
     body: body as BodyInit,
   });
-
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     return { status: res.status, body: text.slice(0, 300) };
   }
   return { status: res.status };
 }
-
-// ---------- server functions ----------
-
 export const savePushSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -235,7 +200,6 @@ export const savePushSubscription = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
 export const deletePushSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(z.object({ endpoint: z.string().url() }))
@@ -248,7 +212,6 @@ export const deletePushSubscription = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
 export const sendPushForAlert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -261,25 +224,19 @@ export const sendPushForAlert = createServerFn({ method: "POST" })
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
       return { sent: 0, failed: 0, skipped: 0, recipients: 0, reason: "vapid_not_configured" };
     }
-
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const logs = (supabaseAdmin as any).from("notification_logs");
-
-    // Verify caller can see this alert (RLS) then read with admin to skip RLS for logging
     const { data: alert, error: alertErr } = await context.supabase
       .from("sos_alerts")
       .select("id, parent_id, message, created_at, latitude, longitude")
       .eq("id", data.alertId)
       .single();
     if (alertErr || !alert) throw new Error("Alert not found or not accessible");
-
-    // ── Check elder settings for push notifications ──────────────────────
     const { data: settings } = await (supabaseAdmin as any)
       .from("elder_settings")
       .select("notify_push,push_sos_enabled")
       .eq("parent_id", alert.parent_id)
       .maybeSingle();
-
     const notifyPushEnabled = settings ? settings.notify_push !== false : true;
     const sosPushEnabled = settings ? settings.push_sos_enabled !== false : true;
     if (!notifyPushEnabled || !sosPushEnabled) {
@@ -293,31 +250,24 @@ export const sendPushForAlert = createServerFn({ method: "POST" })
           : "sos_push_notifications_disabled_in_settings",
       };
     }
-
     const { data: elder } = await supabaseAdmin
       .from("profiles")
       .select("full_name")
       .eq("id", alert.parent_id)
       .single();
     const elderName = elder?.full_name || "Your family member";
-
-    // Linked caregivers (children of this parent)
     const { data: links } = await supabaseAdmin
       .from("parent_child_links")
       .select("child_id")
       .eq("parent_id", alert.parent_id);
     const childIds = (links ?? []).map((l: { child_id: string }) => l.child_id);
-
     if (childIds.length === 0) {
       return { sent: 0, failed: 0, skipped: 0, recipients: 0 };
     }
-
-    // Fetch all push subscriptions for those caregivers
     const { data: subs } = await (supabaseAdmin as any)
       .from("push_subscriptions")
       .select("id, user_id, endpoint, p256dh, auth")
       .in("user_id", childIds);
-
     const subscriptions = (subs ?? []) as Array<{
       id: string;
       user_id: string;
@@ -325,11 +275,9 @@ export const sendPushForAlert = createServerFn({ method: "POST" })
       p256dh: string;
       auth: string;
     }>;
-
     if (subscriptions.length === 0) {
       return { sent: 0, failed: 0, skipped: childIds.length, recipients: 0 };
     }
-
     const mapsUrl =
       alert.latitude != null && alert.longitude != null
         ? `https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`
@@ -343,12 +291,9 @@ export const sendPushForAlert = createServerFn({ method: "POST" })
       mapsUrl,
       alertType: data.alertType,
     };
-
     let sent = 0;
     let failed = 0;
     const skipped = 0;
-
-    // Independent per-subscription delivery — failures don't affect others
     const results = await Promise.allSettled(
       subscriptions.map(async (s) => {
         try {
@@ -363,7 +308,6 @@ export const sendPushForAlert = createServerFn({ method: "POST" })
             });
             return { ok: true };
           }
-          // 404/410 → stale subscription; remove it
           if (r.status === 404 || r.status === 410) {
             await (supabaseAdmin as any).from("push_subscriptions").delete().eq("id", s.id);
           }
@@ -389,12 +333,10 @@ export const sendPushForAlert = createServerFn({ method: "POST" })
         }
       }),
     );
-
     for (const r of results) {
       if (r.status === "fulfilled" && r.value.ok) sent++;
       else failed++;
     }
-
     return {
       sent,
       failed,

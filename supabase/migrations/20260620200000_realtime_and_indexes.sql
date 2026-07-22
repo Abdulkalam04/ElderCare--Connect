@@ -1,10 +1,10 @@
--- =====================================================
--- Enable realtime on sos_alerts + add missing hot-path indexes.
--- Without REPLICA IDENTITY FULL and the supabase_realtime publication,
--- caregivers never receive realtime INSERT events.
--- =====================================================
 
--- Realtime: sos_alerts INSERTs reach subscribed caregivers
+
+
+
+
+
+
 ALTER TABLE public.sos_alerts REPLICA IDENTITY FULL;
 DO $$
 BEGIN
@@ -20,7 +20,7 @@ EXCEPTION WHEN undefined_object THEN
   NULL;
 END $$;
 
--- Hot-path indexes
+
 CREATE INDEX IF NOT EXISTS idx_parent_child_links_parent
   ON public.parent_child_links(parent_id);
 CREATE INDEX IF NOT EXISTS idx_parent_child_links_child

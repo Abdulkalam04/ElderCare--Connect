@@ -1,8 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- -----------------------------------------------------------------------------
--- Detection preferences
--- -----------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.elder_settings
   ADD COLUMN IF NOT EXISTS emergency_detection_enabled BOOLEAN NOT NULL DEFAULT true,
   ADD COLUMN IF NOT EXISTS detect_missed_medicine BOOLEAN NOT NULL DEFAULT true,
@@ -29,9 +29,9 @@ BEGIN
 END
 $$;
 
--- -----------------------------------------------------------------------------
--- Durable care-alert records
--- -----------------------------------------------------------------------------
+
+
+
 CREATE TABLE IF NOT EXISTS public.care_alerts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -102,10 +102,10 @@ EXCEPTION
 END
 $$;
 
--- -----------------------------------------------------------------------------
--- Safely acknowledge or resolve an alert.
--- Direct UPDATE access is intentionally not granted to authenticated users.
--- -----------------------------------------------------------------------------
+
+
+
+
 CREATE OR REPLACE FUNCTION public.set_care_alert_status(
   _alert_id UUID,
   _status TEXT,
@@ -174,10 +174,10 @@ GRANT EXECUTE
 ON FUNCTION public.set_care_alert_status(UUID, TEXT, TEXT)
 TO authenticated, service_role;
 
--- -----------------------------------------------------------------------------
--- Insert one alert and notify the parent plus every linked child.
--- Returns 1 only when a new durable alert was created.
--- -----------------------------------------------------------------------------
+
+
+
+
 CREATE OR REPLACE FUNCTION public.create_detected_care_alert(
   _parent_id UUID,
   _alert_type TEXT,
@@ -246,9 +246,9 @@ GRANT EXECUTE
 ON FUNCTION public.create_detected_care_alert(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB)
 TO postgres, service_role;
 
--- -----------------------------------------------------------------------------
--- Internal detector for one parent or every parent.
--- -----------------------------------------------------------------------------
+
+
+
 CREATE OR REPLACE FUNCTION public.run_care_issue_detection(
   _parent_id UUID DEFAULT NULL
 )
@@ -421,7 +421,7 @@ GRANT EXECUTE
 ON FUNCTION public.run_care_issue_detection(UUID)
 TO postgres, service_role;
 
--- Scheduled global detector retained under the existing public function name.
+
 DROP FUNCTION IF EXISTS public.detect_care_issues();
 CREATE FUNCTION public.detect_care_issues()
 RETURNS TABLE (
@@ -439,7 +439,7 @@ $$;
 REVOKE ALL ON FUNCTION public.detect_care_issues() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.detect_care_issues() TO postgres, service_role;
 
--- Authenticated users may manually run checks only for a parent they can view.
+
 CREATE OR REPLACE FUNCTION public.detect_care_issues_for_parent(
   _parent_id UUID
 )
@@ -475,9 +475,9 @@ GRANT EXECUTE
 ON FUNCTION public.detect_care_issues_for_parent(UUID)
 TO authenticated, service_role;
 
--- -----------------------------------------------------------------------------
--- Automatically resolve alerts when the condition clears.
--- -----------------------------------------------------------------------------
+
+
+
 CREATE OR REPLACE FUNCTION public.resolve_medicine_care_alert()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -562,10 +562,10 @@ AFTER UPDATE OF last_app_activity_at ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.resolve_activity_care_alert();
 
--- -----------------------------------------------------------------------------
--- Queue background web push for every detector category.
--- This replaces the missed-medicine-only trigger from the previous migration.
--- -----------------------------------------------------------------------------
+
+
+
+
 DROP TRIGGER IF EXISTS queue_missed_medicine_web_push_trigger
 ON public.parent_notifications;
 
@@ -666,9 +666,9 @@ AFTER INSERT ON public.parent_notifications
 FOR EACH ROW
 EXECUTE FUNCTION public.queue_care_detection_web_push();
 
--- -----------------------------------------------------------------------------
--- Recreate the 15-minute schedule.
--- -----------------------------------------------------------------------------
+
+
+
 DO $$
 BEGIN
   PERFORM cron.unschedule('detect-care-issues');
@@ -684,5 +684,5 @@ SELECT cron.schedule(
   $$SELECT public.detect_care_issues();$$
 );
 
--- Run once after deployment so existing problems become visible immediately.
+
 SELECT * FROM public.detect_care_issues();

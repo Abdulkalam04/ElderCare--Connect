@@ -34,16 +34,16 @@ ALTER TABLE public.ai_chat_messages
 CREATE INDEX IF NOT EXISTS idx_ai_chat_parent_intent_created
   ON public.ai_chat_messages(parent_id, intent, created_at DESC);
 
--- -----------------------------------------------------------------------------
--- Explicit privacy and voice preferences
--- -----------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.elder_settings
   ADD COLUMN IF NOT EXISTS companion_emergency_escalation_enabled BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS companion_auto_read_responses BOOLEAN NOT NULL DEFAULT false;
 
--- -----------------------------------------------------------------------------
--- Allow durable emergency records created by Companion safety detection.
--- -----------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.care_alerts
   DROP CONSTRAINT IF EXISTS care_alerts_alert_type_check;
 
@@ -58,10 +58,10 @@ ALTER TABLE public.care_alerts
     )
   ) NOT VALID;
 
--- -----------------------------------------------------------------------------
--- Create one generic family safety alert without exposing private chat content.
--- Duplicate alerts of the same category are limited to one per clock hour.
--- -----------------------------------------------------------------------------
+
+
+
+
 CREATE OR REPLACE FUNCTION public.raise_companion_safety_alert(
   _category TEXT
 )
@@ -156,9 +156,9 @@ GRANT EXECUTE
 ON FUNCTION public.raise_companion_safety_alert(TEXT)
 TO authenticated, service_role;
 
--- -----------------------------------------------------------------------------
--- Queue web push for Companion safety alerts in addition to detector alerts.
--- -----------------------------------------------------------------------------
+
+
+
 CREATE OR REPLACE FUNCTION public.queue_care_detection_web_push()
 RETURNS TRIGGER
 LANGUAGE plpgsql

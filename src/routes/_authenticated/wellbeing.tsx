@@ -3,21 +3,19 @@ import { AppShell } from "@/components/AppShell";
 import { useActiveParent } from "@/hooks/useProfile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { format, subDays } from "date-fns";
 import { WellbeingCheckCard } from "@/components/WellbeingCheckCard";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-
 export const Route = createFileRoute("/_authenticated/wellbeing")({
   ssr: false,
   component: WellbeingPage,
 });
-
 function WellbeingPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const today = format(new Date(), "yyyy-MM-dd");
-
   const { data: checks } = useQuery({
     queryKey: ["wellbeing-history", activeParentId],
     enabled: !!activeParentId,
@@ -33,15 +31,12 @@ function WellbeingPage() {
       return data ?? [];
     },
   });
-
   const todayCheck = checks?.find((c) => c.check_date === today);
-
   const qc = useQueryClient();
   const remove = useMutation({
     mutationFn: async ({ id, checkDate }: { id: string; checkDate: string }) => {
       if (isChildView) throw new Error("You do not have permission to perform this action.");
       if (!activeParentId) throw new Error("No active parent selected.");
-
       const { data, error } = await supabase
         .from("wellbeing_checks")
         .delete()
@@ -49,7 +44,6 @@ function WellbeingPage() {
         .eq("parent_id", activeParentId)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) throw new Error("Wellbeing record could not be deleted or was already removed.");
       return { id, checkDate };
@@ -58,7 +52,7 @@ function WellbeingPage() {
       toast.success(
         `Wellbeing record for ${format(new Date(`${checkDate}T00:00:00`), "MMM d, yyyy")} deleted.`,
       );
-      qc.setQueryData<any[]>(
+      qc.setQueryData<Tables<"wellbeing_checks">[]>(
         ["wellbeing-history", activeParentId],
         (current) => current?.filter((check) => check.id !== id) ?? [],
       );
@@ -67,7 +61,6 @@ function WellbeingPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (isChildView) throw new Error("You do not have permission to perform this action.");
@@ -85,7 +78,6 @@ function WellbeingPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   return (
     <AppShell>
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
@@ -184,7 +176,6 @@ function WellbeingPage() {
     </AppShell>
   );
 }
-
 function Pill({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>

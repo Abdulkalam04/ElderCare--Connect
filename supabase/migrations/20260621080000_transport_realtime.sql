@@ -1,7 +1,7 @@
--- Enable replica identity full for transport_bookings to access payload.old in realtime updates
+
 ALTER TABLE public.transport_bookings REPLICA IDENTITY FULL;
 
--- Ensure table is registered under the supabase_realtime publication
+
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -14,7 +14,7 @@ BEGIN
   END IF;
 END $$;
 
--- Policy to allow viewing of assigned drivers' profiles
+
 DROP POLICY IF EXISTS "Read assigned transport drivers" ON public.profiles;
 CREATE POLICY "Read assigned transport drivers" ON public.profiles
   FOR SELECT TO authenticated

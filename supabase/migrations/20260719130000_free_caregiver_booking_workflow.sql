@@ -1,14 +1,14 @@
--- =============================================================================
--- ElderCare Connect: free caregiver booking workflow
---
--- Extends trusted_caregivers with scheduling fields, adds lifecycle/review
--- columns to caregiver_bookings, enforces the booking state machine via a
--- BEFORE trigger, and fires in-app notifications on every status change.
--- =============================================================================
 
--- -----------------------------------------------------------------------------
--- Trusted-caregiver scheduling columns
--- -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE public.trusted_caregivers
   ADD COLUMN IF NOT EXISTS qualification      TEXT,
   ADD COLUMN IF NOT EXISTS experience_years   INTEGER  NOT NULL DEFAULT 0,
@@ -65,9 +65,9 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_trusted_caregivers_booking_match
   ON public.trusted_caregivers(parent_id, caregiver_type, available);
 
--- -----------------------------------------------------------------------------
--- Booking assignment, lifecycle, and review fields
--- -----------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.caregiver_bookings
   ADD COLUMN IF NOT EXISTS trusted_caregiver_id UUID
     REFERENCES public.trusted_caregivers(id)
@@ -125,13 +125,13 @@ CREATE INDEX IF NOT EXISTS idx_caregiver_bookings_trusted_caregiver
   ON public.caregiver_bookings(trusted_caregiver_id, scheduled_at DESC)
   WHERE trusted_caregiver_id IS NOT NULL;
 
--- -----------------------------------------------------------------------------
--- Validate assignment and protect the workflow.
---
--- Allowed status movement:
---   pending -> confirmed -> assigned -> in_progress -> completed
---   pending/confirmed/assigned/in_progress -> cancelled
--- -----------------------------------------------------------------------------
+
+
+
+
+
+
+
 CREATE OR REPLACE FUNCTION public.enforce_caregiver_booking_workflow()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -310,9 +310,9 @@ ON public.caregiver_bookings
 FOR EACH ROW
 EXECUTE FUNCTION public.enforce_caregiver_booking_workflow();
 
--- -----------------------------------------------------------------------------
--- Notify the care recipient and linked children when the workflow changes.
--- -----------------------------------------------------------------------------
+
+
+
 CREATE OR REPLACE FUNCTION public.notify_caregiver_booking_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql

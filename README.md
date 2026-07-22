@@ -40,7 +40,7 @@ The application addresses the unique challenges of modern elder care, combining 
 ✅ **Emergency Response** - One-click SOS with live location sharing  
 ✅ **Social Isolation** - AI companion providing emotional support and practical assistance  
 ✅ **Service Coordination** - Book and track professional care services seamlessly  
-✅ **Health Risk Detection** - AI-powered early warning system for critical situations  
+✅ **Health Risk Detection** - AI-powered early warning system for critical situations
 
 ### Target Users
 
@@ -55,6 +55,7 @@ The application addresses the unique challenges of modern elder care, combining 
 ## ✨ Features
 
 ### 1. **Health Dashboard** 🏥
+
 Complete health management system for comprehensive elderly care.
 
 - **📋 Medical Records** - Upload, organize, and access health documents (PDFs, images)
@@ -64,6 +65,7 @@ Complete health management system for comprehensive elderly care.
 - **🚶 Activity Tracking** - Monitor daily activities and wellness metrics
 
 ### 2. **Emergency SOS System** 🚨
+
 Life-saving one-tap emergency alert system with real-time family notification.
 
 - **⚡ One-Click Alert** - Large SOS button for emergency situations
@@ -74,6 +76,7 @@ Life-saving one-tap emergency alert system with real-time family notification.
 - **⚡ Real-time Updates** - WebSocket-based live status streaming
 
 ### 3. **Smart Medicine Reminder** 💊
+
 Multi-modal reminder system ensuring 100% medication adherence.
 
 - **🔊 Voice Reminders** - Browser-based voice announcements at scheduled times
@@ -84,21 +87,25 @@ Multi-modal reminder system ensuring 100% medication adherence.
 - **📋 Dosage Management** - Detailed dosage and frequency configuration
 
 ### 4. **Professional Caregiver Booking** 👨‍⚕️
+
 Professional care service booking system with real-time status tracking.
 
 **Services Available:**
+
 - 🏥 Nurse (certified medical care)
 - 🧘 Physiotherapist (mobility & recovery)
 - 👥 Companion (social support)
 - 🏠 Caretaker (daily living assistance)
 
 **Features:**
+
 - Book services for specific dates and times
 - Assign caregivers to bookings
 - Track booking status in real-time
 - View complete booking history
 
 ### 5. **Transport Assistance** 🚗
+
 Medical transportation booking for hospital visits and appointments.
 
 - **🚕 Trip Types** - One-way or round-trip options
@@ -109,9 +116,11 @@ Medical transportation booking for hospital visits and appointments.
 - **📌 Pickup Location** - Geolocation-based or custom address selection
 
 ### 6. **Daily Wellbeing Check** ✅
+
 Simple, engaging daily check-in system designed for elderly users.
 
 **Health Questions:**
+
 - 🍽️ Did you eat today?
 - 💊 Did you take medicine?
 - 😊 Are you feeling okay?
@@ -119,6 +128,7 @@ Simple, engaging daily check-in system designed for elderly users.
 - 💧 Did you drink water?
 
 **Features:**
+
 - Quick yes/no questions for easy completion
 - Emotional check-in tracking
 - 14-day history visualization
@@ -126,6 +136,7 @@ Simple, engaging daily check-in system designed for elderly users.
 - AI alerts if check-in missed (24+ hours)
 
 ### 7. **Video Consultation** 📹
+
 Telemedicine integration for remote doctor consultations.
 
 - **📅 Schedule Consultations** - Book with specific doctor
@@ -135,15 +146,18 @@ Telemedicine integration for remote doctor consultations.
 - **📍 Status Management** - Track consultation flow from scheduled to completed
 
 ### 8. **AI Health Risk Predictor** 🤖🔮
+
 Machine learning model predicting health risk based on comprehensive vital signs.
 
 **Input Parameters:**
+
 - Age, Blood Pressure (Systolic/Diastolic)
 - Blood Sugar Level, Heart Rate
 - Activity Level, Weight, Oxygen Level
 - Optional wellness notes
 
 **Output:**
+
 - 🎯 **Risk Level**: Low, Medium, or High
 - 📊 **Risk Score**: 0-100 numeric rating
 - 💬 **AI Summary**: Contextualized health assessment
@@ -151,20 +165,24 @@ Machine learning model predicting health risk based on comprehensive vital signs
 - 📈 **Assessment History**: Track predictions over time
 
 **How it Works:**
+
 1. Clinical thresholds evaluate vital signs (deterministic)
 2. Google Gemini AI provides personalized context
 3. Risk level locked to prevent AI manipulation
 4. Fallback recommendations if API fails
 
 ### 9. **Intelligent Emergency Detection** 🚨🤖
+
 Automatic system detecting critical situations requiring immediate intervention.
 
 **Detects:**
+
 - **Missed Medicines** - Doses not taken by scheduled time → Medium severity
 - **Missed Wellbeing Check** - No check-in for 24+ hours → High severity
-- **No Phone Activity** - No app usage for 48+ hours → High severity
+- **No ElderCare App Activity** - No activity heartbeat within the configured threshold → High severity
 
 **Features:**
+
 - Automatic detection (no user action needed)
 - Cooldown periods prevent alert spam (6-24 hours)
 - Parent/Child notification system
@@ -172,18 +190,21 @@ Automatic system detecting critical situations requiring immediate intervention.
 - Grace period for new users (first 24 hours)
 
 ### 10. **AI Companion Chatbot** 🤖💬
+
 Warm, supportive AI friend providing emotional support and practical assistance.
 
 **Capabilities:**
+
 - **💊 Medicine Reminders** - Gentle reminders about taking medicines, drinking water, eating
 - **❓ Question Answering** - Basic health and lifestyle questions
 - **💕 Companionship** - Warm conversation for emotional support
-- **📸 Document Analysis** - Can analyze photos and documents (prescriptions, lab reports, food)
+- **📎 Private Attachments** - Stores user-selected chat attachments privately; local care answers do not require them to be sent to an AI provider
 - **🆘 Safety First** - Redirects to SOS or doctor for medical emergencies
 
 **Features:**
+
 - Text-based chat interface
-- Optional voice calling via Vapi AI
+- Free browser voice input and read-aloud through the Web Speech API
 - File/image attachment support
 - Chat history with date-based grouping
 - Retry mechanism (3 attempts with exponential backoff)
@@ -194,47 +215,51 @@ Warm, supportive AI friend providing emotional support and practical assistance.
 ## 🛠 Tech Stack
 
 ### Frontend
-| Technology | Purpose |
-|-----------|---------|
-| **React 19** | Modern UI library |
-| **TypeScript 5.9** | Type safety and developer experience |
-| **TanStack Router** | Client-side routing and navigation |
-| **TanStack React Query** | Server state management |
-| **TailwindCSS 4.2** | Utility-first styling |
-| **Radix UI** | Accessible component library |
-| **Recharts** | Data visualization and charts |
-| **Zod** | Runtime type validation |
-| **React Hook Form** | Efficient form management |
-| **Sonner** | Toast notifications |
+
+| Technology               | Purpose                              |
+| ------------------------ | ------------------------------------ |
+| **React 19**             | Modern UI library                    |
+| **TypeScript 5.9**       | Type safety and developer experience |
+| **TanStack Router**      | Client-side routing and navigation   |
+| **TanStack React Query** | Server state management              |
+| **TailwindCSS 4.2**      | Utility-first styling                |
+| **Radix UI**             | Accessible component library         |
+| **Recharts**             | Data visualization and charts        |
+| **Zod**                  | Runtime type validation              |
+| **React Hook Form**      | Efficient form management            |
+| **Sonner**               | Toast notifications                  |
 
 ### Backend
-| Technology | Purpose |
-|-----------|---------|
+
+| Technology         | Purpose                    |
+| ------------------ | -------------------------- |
 | **TanStack Start** | Full-stack React framework |
-| **Node.js/Deno** | Runtime environment |
-| **Nitro** | Server engine |
-| **Vite 8** | Build tool and dev server |
+| **Node.js/Deno**   | Runtime environment        |
+| **Nitro**          | Server engine              |
+| **Vite 8**         | Build tool and dev server  |
 
 ### Database & Authentication
-| Technology | Purpose |
-|-----------|---------|
-| **Supabase** | PostgreSQL database hosting |
-| **Supabase Auth** | User authentication & authorization |
-| **Supabase Realtime** | WebSocket subscriptions |
-| **Supabase Storage** | File storage and management |
+
+| Technology            | Purpose                             |
+| --------------------- | ----------------------------------- |
+| **Supabase**          | PostgreSQL database hosting         |
+| **Supabase Auth**     | User authentication & authorization |
+| **Supabase Realtime** | WebSocket subscriptions             |
+| **Supabase Storage**  | File storage and management         |
 
 ### AI & ML
-| Technology | Purpose |
-|-----------|---------|
+
+| Technology       | Purpose                          |
+| ---------------- | -------------------------------- |
 | **Google GenAI** | Gemini 2.5 Flash for AI features |
-| **Vapi AI** | Voice calling for companion |
 
 ### Browser APIs
-| API | Purpose |
-|-----|---------|
-| **Web Push API** | Push notifications |
-| **Web Speech API** | Voice reminders |
-| **Geolocation API** | Location capture |
+
+| API                 | Purpose            |
+| ------------------- | ------------------ |
+| **Web Push API**    | Push notifications |
+| **Web Speech API**  | Voice reminders    |
+| **Geolocation API** | Location capture   |
 | **Service Workers** | Offline capability |
 
 ---
@@ -242,6 +267,7 @@ Warm, supportive AI friend providing emotional support and practical assistance.
 ## 🚀 Quick Start
 
 ### 1. **Clone & Install (5 minutes)**
+
 ```bash
 git clone https://github.com/yourusername/eldercare-connect.git
 cd eldercare-connect
@@ -249,17 +275,20 @@ npm install
 ```
 
 ### 2. **Configure Environment (10 minutes)**
+
 ```bash
-cp .env.example .env
+cp env.example .env
 # Edit .env with your Supabase & Google Gemini keys
 ```
 
 ### 3. **Setup Database (2 minutes)**
+
 ```bash
 supabase db push
 ```
 
 ### 4. **Start Development (1 minute)**
+
 ```bash
 npm run dev
 ```
@@ -280,12 +309,14 @@ Visit: **http://localhost:5173**
 ### Step-by-Step Installation
 
 #### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/yourusername/eldercare-connect.git
 cd eldercare-connect
 ```
 
 #### 2. Install Dependencies
+
 ```bash
 npm install
 # or
@@ -297,17 +328,15 @@ pnpm install
 #### 3. Environment Configuration
 
 Create `.env` file in root directory:
+
 ```env
 # ============ SUPABASE ============
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key_here
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 # ============ GOOGLE GEMINI ============
 GEMINI_API_KEY=your_gemini_api_key_here
-
-# ============ VAPI (Optional - for voice calls) ============
-VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 # ============ APP CONFIG ============
 VITE_APP_NAME=ElderCare Connect
@@ -317,27 +346,23 @@ VITE_APP_URL=http://localhost:5173
 #### 4. Database Setup
 
 **Option A: Automatic (Recommended)**
+
 ```bash
 supabase link --project-ref your-project-id
 supabase db push
 ```
 
 **Option B: Manual**
-- Run migrations in `supabase/migrations/` folder one by one
-- Or import `supabase/MASTER_SETUP.sql` directly in Supabase SQL editor
 
-#### 5. Create Storage Buckets
+- Run every file in `supabase/migrations/` in chronological filename order.
+- Do not use a separate master or repair SQL script; the migration history is the only supported schema source.
 
-```sql
--- Run in Supabase SQL Editor
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('health-records', 'health-records', false);
+#### 5. Storage Buckets
 
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('prescriptions', 'prescriptions', false);
-```
+The migrations create and secure the private `health-records`, `prescriptions`, and avatar buckets. Do not create public replacements manually.
 
 #### 6. Start Development Server
+
 ```bash
 npm run dev
 ```
@@ -364,10 +389,7 @@ eldercare-connect/
 │   │   ├── medicine/        # Medicine reminder components
 │   │   └── shared/          # Shared UI components
 │   ├── hooks/               # Custom React hooks
-│   ├── integrations/        # External API integrations
-│   │   ├── gemini/          # Google Gemini AI
-│   │   ├── supabase/        # Supabase client
-│   │   └── vapi/            # Vapi AI voice
+│   ├── integrations/        # Supabase auth, database and Storage clients
 │   ├── lib/                 # Utility functions
 │   ├── routes/              # TanStack Router pages
 │   │   ├── parent/          # Elderly parent routes
@@ -379,7 +401,7 @@ eldercare-connect/
 ├── supabase/
 │   ├── migrations/          # Database migrations
 │   ├── functions/           # Edge functions
-│   ├── MASTER_SETUP.sql     # Complete setup script
+│   ├── README.md            # Migration and deployment rules
 │   └── config.toml          # Supabase config
 ├── public/                  # Static assets
 ├── package.json             # Dependencies
@@ -394,80 +416,96 @@ eldercare-connect/
 ### User Management Tables
 
 **profiles**
+
 - User identification (user_id, email)
 - Role and profile information
 - Preferences and settings
 
 **family_relations**
+
 - Links between parents and children
 - Relationship tracking
 
 ### Health Data Tables
 
 **medicines**
+
 - Medicine details (name, dosage, frequency)
 - Schedule timing and duration
 - User history and tracking
 
 **medicine_logs**
+
 - Daily medicine intake records
 - Timestamps and status tracking
 
 **vital_signs**
+
 - Blood pressure, heart rate, blood sugar
 - Temperature, weight, oxygen level
 - Abnormality flags
 
 **health_records**
+
 - File metadata (title, category, record_date)
 - Storage integration with Supabase
 
 **health_risk_assessments**
+
 - Vital signs inputs, risk_level, risk_score
 - AI-generated summary and recommendations
 
 ### Service Tables
 
 **caregiver_bookings**
+
 - Service type (nurse, physiotherapist, companion, caretaker)
 - Status tracking and caregiver assignment
 - Date, time, duration, and notes
 
 **transport_bookings**
+
 - Trip type (one_way | round_trip)
 - Pickup location and destination
 - Driver assignment and real-time updates
 
 **appointments**
+
 - Doctor name and specialty
 - Location and status
 - Reminder settings
 
 **video_consultations**
+
 - Doctor information and reason
 - Meeting URL and status
 - Completion tracking
 
 **prescriptions**
+
 - Post-consultation prescription files
 
 ### Emergency & Notification Tables
 
 **sos_alerts**
+
 - Location (latitude, longitude, address)
 - Status (active, acknowledged, resolved)
 - Timestamps and responder information
 
-**emergency_alerts**
-- Type (missed_wellbeing, missed_medicine, no_activity)
-- Severity levels and messages
-- Cooldown tracking
+**care_alerts**
+
+- Type (missed wellbeing, missed medicine, no app activity, health risk, companion safety)
+- Active, acknowledged and resolved lifecycle
+- Severity, evidence metadata and deduplication keys
 
 **push_subscriptions**
+
 - Device endpoints for push notifications
 - Subscription metadata
 
 **companion_messages**
+
 - Chat history with role and timestamp
 - Message content and attachments
 
@@ -480,14 +518,11 @@ eldercare-connect/
 ```env
 # SUPABASE - Database & Auth
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key_here
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 # GOOGLE GEMINI - AI Features
 GEMINI_API_KEY=your_gemini_api_key_here
-
-# VAPI - Voice Calling (Optional)
-VITE_VAPI_PUBLIC_KEY=your_vapi_public_key
 
 # APP CONFIGURATION
 VITE_APP_NAME=ElderCare Connect
@@ -498,23 +533,27 @@ VITE_APP_ENV=development
 ### Supabase Setup Guide
 
 #### Create Project
+
 1. Visit [supabase.com](https://supabase.com)
 2. Click "New Project"
 3. Enter project name and database password
 4. Copy URL and API keys to `.env`
 
 #### Configure Authentication
+
 ```sql
 -- In Supabase SQL Editor
 -- Creates auth policies automatically via migrations
 ```
 
 #### Enable RLS (Row-Level Security)
+
 - Policies are auto-created by migrations
 - Each user sees only their own data
 - Verify in Supabase dashboard
 
 #### Create Storage Buckets
+
 ```sql
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('health-records', 'health-records', false);
@@ -542,11 +581,14 @@ VALUES ('prescriptions', 'prescriptions', false);
 ### Deploy to Vercel (Recommended)
 
 #### Prerequisites
+
 - GitHub account with repository
 - Vercel account (free tier available)
 
 #### Steps
+
 1. **Push to GitHub**
+
    ```bash
    git remote add origin https://github.com/yourusername/eldercare-connect.git
    git branch -M main
@@ -572,12 +614,14 @@ VALUES ('prescriptions', 'prescriptions', false);
 ### Deploy to Other Platforms
 
 #### Netlify
+
 ```bash
 npm run build
 # Upload 'dist' folder to Netlify
 ```
 
 #### Docker
+
 ```dockerfile
 FROM node:18-alpine
 
@@ -598,6 +642,7 @@ CMD ["npm", "start"]
 Then push to Docker Hub or your container registry.
 
 #### Heroku (Deprecated)
+
 Consider Vercel or Netlify instead for better performance.
 
 ---
@@ -607,6 +652,7 @@ Consider Vercel or Netlify instead for better performance.
 ### Supabase Connection Issues
 
 **Error: "Supabase connection failed"**
+
 ```bash
 # Verify environment variables
 cat .env | grep SUPABASE
@@ -616,6 +662,7 @@ cat .env | grep SUPABASE
 ```
 
 **Solution:**
+
 - Ensure `VITE_SUPABASE_URL` includes full URL
 - Verify anon key is public (ok to expose)
 - Check service role key is private (never expose)
@@ -626,6 +673,7 @@ cat .env | grep SUPABASE
 **Symptoms:** SOS location not capturing
 
 **Solutions:**
+
 - App must use HTTPS (except localhost)
 - Check browser permissions for location
 - Some regions block geolocation APIs
@@ -636,6 +684,7 @@ cat .env | grep SUPABASE
 **Symptoms:** No notifications on device
 
 **Solutions:**
+
 - Verify Service Worker: `chrome://serviceworker-internals`
 - Check notification permissions in browser settings
 - Ensure HTTPS connection (required)
@@ -646,6 +695,7 @@ cat .env | grep SUPABASE
 **Symptoms:** No audio from reminders
 
 **Solutions:**
+
 - Browser must support Web Speech API
 - Chrome and Edge support it; Safari partial support
 - Check browser console for errors
@@ -655,6 +705,7 @@ cat .env | grep SUPABASE
 ### Google Gemini API Errors
 
 **Error: "API key not valid"**
+
 ```bash
 # Verify API key
 echo $GEMINI_API_KEY
@@ -664,6 +715,7 @@ echo $GEMINI_API_KEY
 ```
 
 **Error: Rate limit exceeded**
+
 - Upgrade Google Cloud project
 - Check quotas in console
 - Implement request caching
@@ -694,6 +746,7 @@ We welcome contributions! ElderCare Connect is built by the community, for the c
 ### How to Contribute
 
 1. **Fork the Repository**
+
    ```bash
    # Click "Fork" on GitHub
    # Clone your fork
@@ -701,6 +754,7 @@ We welcome contributions! ElderCare Connect is built by the community, for the c
    ```
 
 2. **Create Feature Branch**
+
    ```bash
    git checkout -b feature/your-amazing-feature
    ```
@@ -712,6 +766,7 @@ We welcome contributions! ElderCare Connect is built by the community, for the c
    - Update documentation if needed
 
 4. **Commit with Clear Messages**
+
    ```bash
    # Use conventional commits
    git commit -m "feat: add amazing feature"
@@ -750,6 +805,7 @@ We welcome contributions! ElderCare Connect is built by the community, for the c
 ## 📚 Additional Resources
 
 ### Documentation
+
 - **[Supabase Docs](https://supabase.com/docs)** - Database & authentication
 - **[React Documentation](https://react.dev)** - UI library
 - **[TanStack Router](https://tanstack.com/router)** - Routing
@@ -757,10 +813,11 @@ We welcome contributions! ElderCare Connect is built by the community, for the c
 - **[Radix UI](https://radix-ui.com)** - Component library
 
 ### AI & APIs
+
 - **[Google GenAI Docs](https://ai.google.dev)** - Gemini AI
-- **[Vapi AI](https://vapi.ai)** - Voice calling
 
 ### Learning Resources
+
 - **Web APIs**: [MDN Web Docs](https://developer.mozilla.org)
 - **TypeScript**: [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - **Accessibility**: [WebAIM](https://webaim.org/)
@@ -799,14 +856,14 @@ This project exists because we believe technology should bridge generational gap
 
 ## 📊 Project Status
 
-| Component | Status |
-|-----------|--------|
-| Core Features | ✅ Production Ready |
-| Health Dashboard | ✅ Stable |
-| Emergency SOS | ✅ Stable |
-| AI Companion | ✅ Beta |
-| Mobile Support | 📱 In Progress |
-| i18n Support | 🌐 Planned |
+| Component        | Status              |
+| ---------------- | ------------------- |
+| Core Features    | ✅ Production Ready |
+| Health Dashboard | ✅ Stable           |
+| Emergency SOS    | ✅ Stable           |
+| AI Companion     | ✅ Beta             |
+| Mobile Support   | 📱 In Progress      |
+| i18n Support     | 🌐 Planned          |
 
 ---
 
@@ -816,6 +873,6 @@ This project exists because we believe technology should bridge generational gap
 
 ---
 
-*ElderCare Connect - Connecting families, improving health, one reminder at a time.* 🌟
+_ElderCare Connect - Connecting families, improving health, one reminder at a time._ 🌟
 
 **Questions? Start a [GitHub Discussion](https://github.com/yourusername/eldercare-connect/discussions)**

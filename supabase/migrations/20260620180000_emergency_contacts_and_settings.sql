@@ -1,7 +1,7 @@
--- =====================================================
--- Emergency Contacts + Elder Settings
--- (Moved from supabase/manual_sql so it auto-applies.)
--- =====================================================
+
+
+
+
 
 CREATE TABLE IF NOT EXISTS public.emergency_contacts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,7 +47,7 @@ CREATE POLICY "Delete emergency contact for linked parent" ON public.emergency_c
 CREATE INDEX IF NOT EXISTS idx_emergency_contacts_parent
   ON public.emergency_contacts(parent_id, priority);
 
--- ELDER SETTINGS
+
 CREATE TABLE IF NOT EXISTS public.elder_settings (
   parent_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   notify_email BOOLEAN NOT NULL DEFAULT true,

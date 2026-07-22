@@ -1,18 +1,18 @@
 
--- Roles enum
+
 CREATE TYPE public.user_role AS ENUM ('parent', 'child');
 CREATE TYPE public.caregiver_type AS ENUM ('nurse', 'caretaker', 'physiotherapist', 'companion');
 CREATE TYPE public.booking_status AS ENUM ('pending', 'confirmed', 'completed', 'cancelled');
 CREATE TYPE public.sos_status AS ENUM ('active', 'acknowledged', 'resolved');
 CREATE TYPE public.med_period AS ENUM ('morning', 'noon', 'evening', 'night');
 
--- updated_at trigger
+
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
--- PROFILES
+
 CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL DEFAULT '',
@@ -33,7 +33,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 CREATE TRIGGER trg_profiles_updated BEFORE UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- LINKS
+
 CREATE TABLE public.parent_child_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -45,7 +45,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.parent_child_links TO authenticat
 GRANT ALL ON public.parent_child_links TO service_role;
 ALTER TABLE public.parent_child_links ENABLE ROW LEVEL SECURITY;
 
--- Helper: is the current user linked to the given parent?
+
 CREATE OR REPLACE FUNCTION public.is_linked_child(_parent UUID)
 RETURNS BOOLEAN
 LANGUAGE SQL STABLE SECURITY DEFINER SET search_path = public AS $$
@@ -61,7 +61,7 @@ LANGUAGE SQL STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT _parent = auth.uid() OR public.is_linked_child(_parent);
 $$;
 
--- PROFILES policies
+
 CREATE POLICY "Read own profile" ON public.profiles FOR SELECT TO authenticated
   USING (id = auth.uid());
 CREATE POLICY "Read linked profiles" ON public.profiles FOR SELECT TO authenticated
@@ -75,7 +75,7 @@ CREATE POLICY "Insert own profile" ON public.profiles FOR INSERT TO authenticate
 CREATE POLICY "Update own profile" ON public.profiles FOR UPDATE TO authenticated
   USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 
--- LINKS policies
+
 CREATE POLICY "View own links" ON public.parent_child_links FOR SELECT TO authenticated
   USING (parent_id = auth.uid() OR child_id = auth.uid());
 CREATE POLICY "Child can create link to self" ON public.parent_child_links FOR INSERT TO authenticated
@@ -83,7 +83,7 @@ CREATE POLICY "Child can create link to self" ON public.parent_child_links FOR I
 CREATE POLICY "Either party can delete link" ON public.parent_child_links FOR DELETE TO authenticated
   USING (parent_id = auth.uid() OR child_id = auth.uid());
 
--- MEDICINES
+
 CREATE TABLE public.medicines (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -110,7 +110,7 @@ CREATE POLICY "Update meds (self+linked)" ON public.medicines FOR UPDATE TO auth
 CREATE POLICY "Delete meds (self+linked)" ON public.medicines FOR DELETE TO authenticated
   USING (public.can_view_parent(parent_id));
 
--- MEDICINE LOGS
+
 CREATE TABLE public.medicine_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   medicine_id UUID NOT NULL REFERENCES public.medicines(id) ON DELETE CASCADE,
@@ -130,7 +130,7 @@ CREATE POLICY "Insert med logs" ON public.medicine_logs FOR INSERT TO authentica
 CREATE POLICY "Delete med logs" ON public.medicine_logs FOR DELETE TO authenticated
   USING (public.can_view_parent(parent_id));
 
--- WELLBEING
+
 CREATE TABLE public.wellbeing_checks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -154,7 +154,7 @@ CREATE POLICY "Insert wellbeing (self)" ON public.wellbeing_checks FOR INSERT TO
 CREATE POLICY "Update wellbeing (self)" ON public.wellbeing_checks FOR UPDATE TO authenticated
   USING (parent_id = auth.uid()) WITH CHECK (parent_id = auth.uid());
 
--- SOS ALERTS
+
 CREATE TABLE public.sos_alerts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -173,7 +173,7 @@ CREATE POLICY "Trigger sos (self)" ON public.sos_alerts FOR INSERT TO authentica
 CREATE POLICY "Update sos (linked)" ON public.sos_alerts FOR UPDATE TO authenticated
   USING (public.can_view_parent(parent_id)) WITH CHECK (public.can_view_parent(parent_id));
 
--- CAREGIVER BOOKINGS
+
 CREATE TABLE public.caregiver_bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -200,7 +200,7 @@ CREATE POLICY "Update bookings" ON public.caregiver_bookings FOR UPDATE TO authe
 CREATE POLICY "Delete bookings" ON public.caregiver_bookings FOR DELETE TO authenticated
   USING (public.can_view_parent(parent_id));
 
--- HEALTH RECORDS
+
 CREATE TABLE public.health_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -224,7 +224,7 @@ CREATE POLICY "Update records" ON public.health_records FOR UPDATE TO authentica
 CREATE POLICY "Delete records" ON public.health_records FOR DELETE TO authenticated
   USING (public.can_view_parent(parent_id));
 
--- Auto-create profile on signup
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE

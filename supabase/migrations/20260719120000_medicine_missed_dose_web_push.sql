@@ -1,19 +1,19 @@
--- =============================================================================
--- ElderCare Connect: free background web push for missed medicines
---
--- Flow:
---   detect_care_issues() creates parent_notifications
---   -> trigger queues one push event per recipient
---   -> pg_cron invokes the care-push Edge Function
---   -> Edge Function sends VAPID web push to every device subscribed by that user
---
--- No SMS, Vapi, Twilio, Firebase, or paid notification provider is required.
--- =============================================================================
+
+
+
+
+
+
+
+
+
+
+
 
 CREATE EXTENSION IF NOT EXISTS pg_net;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- Keep runtime webhook configuration outside the public API schema.
+
 CREATE SCHEMA IF NOT EXISTS private;
 REVOKE ALL ON SCHEMA private FROM PUBLIC, anon, authenticated;
 
@@ -26,10 +26,10 @@ CREATE TABLE IF NOT EXISTS private.runtime_settings (
 REVOKE ALL ON TABLE private.runtime_settings FROM PUBLIC, anon, authenticated;
 GRANT  ALL ON TABLE private.runtime_settings TO   postgres, service_role;
 
--- ---------------------------------------------------------------------------
--- care_push_queue
--- One queued event is created for each in-app notification recipient.
--- ---------------------------------------------------------------------------
+
+
+
+
 CREATE TABLE IF NOT EXISTS public.care_push_queue (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -89,10 +89,10 @@ ALTER TABLE public.care_push_queue ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.care_push_queue FROM PUBLIC, anon, authenticated;
 GRANT  ALL ON TABLE public.care_push_queue TO   service_role;
 
--- ---------------------------------------------------------------------------
--- care_push_deliveries
--- Track every device independently so retries never duplicate a successful push.
--- ---------------------------------------------------------------------------
+
+
+
+
 CREATE TABLE IF NOT EXISTS public.care_push_deliveries (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -132,11 +132,11 @@ ALTER TABLE public.care_push_deliveries ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.care_push_deliveries FROM PUBLIC, anon, authenticated;
 GRANT  ALL ON TABLE public.care_push_deliveries TO   service_role;
 
--- ---------------------------------------------------------------------------
--- queue_missed_medicine_web_push()
--- Queue only missed-medicine notifications.
--- Other notification categories can later use the same delivery worker.
--- ---------------------------------------------------------------------------
+
+
+
+
+
 CREATE OR REPLACE FUNCTION public.queue_missed_medicine_web_push()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -221,11 +221,11 @@ AFTER INSERT ON public.parent_notifications
 FOR EACH ROW
 EXECUTE FUNCTION public.queue_missed_medicine_web_push();
 
--- ---------------------------------------------------------------------------
--- claim_care_push_events(_limit)
--- Atomically claim pending work.
--- Stuck 'processing' rows become available again after ten minutes.
--- ---------------------------------------------------------------------------
+
+
+
+
+
 CREATE OR REPLACE FUNCTION public.claim_care_push_events(
   _limit INTEGER DEFAULT 25
 )
@@ -267,9 +267,9 @@ $$;
 REVOKE ALL ON FUNCTION public.claim_care_push_events(INTEGER) FROM PUBLIC, anon, authenticated;
 GRANT  EXECUTE ON FUNCTION public.claim_care_push_events(INTEGER) TO service_role;
 
--- ---------------------------------------------------------------------------
--- finish_care_push_event(_event_id, _status, _last_error, _available_at)
--- ---------------------------------------------------------------------------
+
+
+
 CREATE OR REPLACE FUNCTION public.finish_care_push_event(
   _event_id    UUID,
   _status      TEXT,
@@ -312,10 +312,10 @@ REVOKE ALL ON FUNCTION public.finish_care_push_event(UUID, TEXT, TEXT, TIMESTAMP
 GRANT EXECUTE ON FUNCTION public.finish_care_push_event(UUID, TEXT, TEXT, TIMESTAMPTZ)
   TO service_role;
 
--- ---------------------------------------------------------------------------
--- invoke_care_push_delivery()
--- Calls the Edge Function only after the private runtime values are configured.
--- ---------------------------------------------------------------------------
+
+
+
+
 CREATE OR REPLACE FUNCTION public.invoke_care_push_delivery()
 RETURNS BIGINT
 LANGUAGE plpgsql
@@ -363,11 +363,11 @@ $$;
 REVOKE ALL ON FUNCTION public.invoke_care_push_delivery() FROM PUBLIC, anon, authenticated;
 GRANT  EXECUTE ON FUNCTION public.invoke_care_push_delivery() TO postgres, service_role;
 
--- ---------------------------------------------------------------------------
--- pg_cron schedule
--- The missed-dose detector runs every 15 minutes.
--- Running delivery every five minutes keeps delivery prompt.
--- ---------------------------------------------------------------------------
+
+
+
+
+
 DO $$
 BEGIN
   PERFORM cron.unschedule('deliver-care-web-push');

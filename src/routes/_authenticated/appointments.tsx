@@ -32,12 +32,10 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { DateInput, TimeInput } from "@/components/ui/datetime-input";
-
 export const Route = createFileRoute("/_authenticated/appointments")({
   ssr: false,
   component: AppointmentsPage,
 });
-
 type AppointmentRow = {
   id: string;
   parent_id: string;
@@ -54,13 +52,11 @@ type AppointmentRow = {
   created_at: string;
   updated_at: string;
 };
-
 function AppointmentsPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingAppt, setEditingAppt] = useState<AppointmentRow | null>(null);
-
   const [title, setTitle] = useState("");
   const [doctorName, setDoctorName] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -69,13 +65,9 @@ function AppointmentsPage() {
   const [appointmentTime, setAppointmentTime] = useState("");
   const [notes, setNotes] = useState("");
   const [reminderEnabled, setReminderEnabled] = useState(false);
-
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-
   const todayStr = format(new Date(), "yyyy-MM-dd");
-
-  // Fetch appointments
   const { data: appts } = useQuery({
     queryKey: ["appointments", activeParentId],
     enabled: !!activeParentId,
@@ -90,16 +82,12 @@ function AppointmentsPage() {
       return (data ?? []) as AppointmentRow[];
     },
   });
-
-  // KPI Calculations
   const upcomingCount = (appts ?? []).filter(
     (a) => a.appointment_date >= todayStr && a.status !== "cancelled",
   ).length;
   const todayCount = (appts ?? []).filter(
     (a) => a.appointment_date === todayStr && a.status !== "cancelled",
   ).length;
-
-  // Filtered upcoming vs past appointments
   const upcomingAppts = (appts ?? [])
     .filter((a) => a.appointment_date >= todayStr)
     .sort((a, b) => {
@@ -111,7 +99,6 @@ function AppointmentsPage() {
       ).getTime();
       return dateTimeA - dateTimeB;
     });
-
   const pastAppts = (appts ?? [])
     .filter((a) => a.appointment_date < todayStr)
     .sort((a, b) => {
@@ -123,23 +110,18 @@ function AppointmentsPage() {
       ).getTime();
       return dateTimeB - dateTimeA;
     });
-
-  // Calendar dates with active appointments
   const apptDates = (appts ?? [])
     .filter((a) => a.status !== "cancelled")
     .map((a) => a.appointment_date);
-
   const modifiers = {
     hasAppointment: (date: Date) => {
       const formattedDate = format(date, "yyyy-MM-dd");
       return apptDates.includes(formattedDate);
     },
   };
-
   const modifiersClassNames = {
     hasAppointment: "underline decoration-primary decoration-2 font-bold text-primary",
   };
-
   const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const dayAppts = (appts ?? [])
     .filter((a) => a.appointment_date === selectedDateStr)
@@ -148,7 +130,6 @@ function AppointmentsPage() {
       const timeB = b.appointment_time || "00:00";
       return timeA.localeCompare(timeB);
     });
-
   const validateForm = (): boolean => {
     if (isChildView) {
       toast.error("You do not have permission to modify appointments.");
@@ -172,11 +153,9 @@ function AppointmentsPage() {
     }
     return true;
   };
-
   const add = useMutation({
     mutationFn: async () => {
       if (isChildView) throw new Error("You do not have permission to modify appointments.");
-
       const timeStr = appointmentTime ? appointmentTime : "12:00";
       let scheduledAt: string;
       try {
@@ -188,7 +167,6 @@ function AppointmentsPage() {
       } catch {
         throw new Error("Invalid date/time");
       }
-
       const { error } = await supabase.from("appointments").insert({
         parent_id: activeParentId!,
         title: title.trim(),
@@ -220,17 +198,13 @@ function AppointmentsPage() {
       }
     },
   });
-
   const edit = useMutation({
     mutationFn: async (apptId: string) => {
       if (isChildView) throw new Error("You do not have permission to modify appointments.");
-
-      // Check if editing a deleted appointment
       const exists = appts?.some((a) => a.id === apptId);
       if (!exists) {
         throw new Error("Appointment not found");
       }
-
       const timeStr = appointmentTime ? appointmentTime : "12:00";
       let scheduledAt: string;
       try {
@@ -242,7 +216,6 @@ function AppointmentsPage() {
       } catch {
         throw new Error("Invalid date/time");
       }
-
       const { error } = await supabase
         .from("appointments")
         .update({
@@ -278,12 +251,10 @@ function AppointmentsPage() {
       }
     },
   });
-
   const remove = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView) throw new Error("You do not have permission to modify appointments.");
       if (!activeParentId) throw new Error("No active parent selected.");
-
       const { data, error } = await supabase
         .from("appointments")
         .delete()
@@ -291,7 +262,6 @@ function AppointmentsPage() {
         .eq("parent_id", activeParentId)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) throw new Error("Appointment could not be deleted or was already removed.");
       return id;
@@ -310,7 +280,6 @@ function AppointmentsPage() {
       toast.error(e.message || "Unable to delete appointment. Please try again.");
     },
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (isChildView) throw new Error("You do not have permission to modify appointments.");
@@ -330,7 +299,6 @@ function AppointmentsPage() {
       toast.error("Unable to clear appointments. Please try again.");
     },
   });
-
   const resetFormState = () => {
     setTitle("");
     setDoctorName("");
@@ -341,39 +309,36 @@ function AppointmentsPage() {
     setNotes("");
     setReminderEnabled(false);
   };
-
   const handleReminderEnabledChange = async (enabled: boolean) => {
     setReminderEnabled(enabled);
-
     if (!enabled || typeof window === "undefined" || !("Notification" in window)) {
       return;
     }
-
     if (window.Notification.permission === "default") {
       const permission = await window.Notification.requestPermission();
-
       if (permission === "granted") {
         toast.success("Browser appointment notifications enabled");
       } else {
-        toast.info("Browser notifications are blocked. The in-app appointment alarm will still work.");
+        toast.info(
+          "Browser notifications are blocked. The in-app appointment alarm will still work.",
+        );
       }
     } else if (window.Notification.permission === "denied") {
-      toast.info("Browser notifications are blocked. The in-app appointment alarm will still work.");
+      toast.info(
+        "Browser notifications are blocked. The in-app appointment alarm will still work.",
+      );
     }
   };
-
   const handleEditClick = (appt: AppointmentRow) => {
     if (isChildView) {
       toast.error("You do not have permission to modify appointments.");
       return;
     }
-    // Verify existence in local state (Edge Case: Editing deleted appointment)
     const exists = appts?.some((a) => a.id === appt.id);
     if (!exists) {
       toast.error("Appointment not found");
       return;
     }
-
     setEditingAppt(appt);
     setTitle(appt.title);
     setDoctorName(appt.doctor_name);
@@ -385,7 +350,6 @@ function AppointmentsPage() {
     setReminderEnabled(appt.reminder_enabled);
     setOpen(true);
   };
-
   const handleDeleteClick = (appt: AppointmentRow) => {
     if (isChildView) {
       toast.error("You do not have permission to modify appointments.");
@@ -395,10 +359,8 @@ function AppointmentsPage() {
       remove.mutate(appt.id);
     }
   };
-
   return (
     <AppShell>
-      {/* Header */}
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Appointments</h1>
@@ -444,7 +406,6 @@ function AppointmentsPage() {
         </div>
       </div>
 
-      {/* Child Read-Only Notice */}
       {isChildView && (
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-sm text-amber-800">
           <ShieldAlert className="size-4 shrink-0" />
@@ -453,7 +414,6 @@ function AppointmentsPage() {
         </div>
       )}
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
         <div className="bg-card border border-border p-6 rounded-3xl flex flex-col justify-between min-h-[120px]">
           <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
@@ -477,7 +437,6 @@ function AppointmentsPage() {
         </div>
       </div>
 
-      {/* View Tabs */}
       <div className="flex border-b border-border mb-6">
         <button
           onClick={() => setViewMode("list")}
@@ -501,7 +460,6 @@ function AppointmentsPage() {
         </button>
       </div>
 
-      {/* Content Area */}
       {!appts || appts.length === 0 ? (
         <div className="bg-card border border-border rounded-3xl p-16 text-center text-muted-foreground">
           <CalendarDays className="size-10 mx-auto mb-3 opacity-30" />
@@ -514,7 +472,6 @@ function AppointmentsPage() {
         <>
           {viewMode === "list" ? (
             <div className="space-y-6">
-              {/* Upcoming Section */}
               {upcomingAppts.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-xs font-mono text-muted-foreground uppercase tracking-widest px-2">
@@ -526,11 +483,8 @@ function AppointmentsPage() {
                       return (
                         <div
                           key={appt.id}
-                          className={`p-4 sm:p-6 flex items-start gap-4 sm:gap-6 hover:bg-stone-50/50 transition-colors ${
-                            isToday ? "border-l-4 border-primary bg-primary/[0.02]" : ""
-                          }`}
+                          className={`p-4 sm:p-6 flex items-start gap-4 sm:gap-6 hover:bg-stone-50/50 transition-colors ${isToday ? "border-l-4 border-primary bg-primary/[0.02]" : ""}`}
                         >
-                          {/* Left date block */}
                           <div className="size-12 sm:size-14 rounded-2xl bg-stone-100 flex flex-col items-center justify-center shrink-0">
                             <span className="text-[10px] font-mono uppercase text-muted-foreground">
                               {format(new Date(`${appt.appointment_date}T00:00:00`), "MMM")}
@@ -540,7 +494,6 @@ function AppointmentsPage() {
                             </span>
                           </div>
 
-                          {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-semibold text-base truncate">{appt.title}</p>
@@ -586,7 +539,6 @@ function AppointmentsPage() {
                             )}
                           </div>
 
-                          {/* Actions */}
                           {!isChildView && (
                             <div className="flex items-center gap-1 shrink-0">
                               <button
@@ -614,7 +566,6 @@ function AppointmentsPage() {
                 </div>
               )}
 
-              {/* Past Section */}
               {pastAppts.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-xs font-mono text-muted-foreground uppercase tracking-widest px-2">
@@ -668,7 +619,6 @@ function AppointmentsPage() {
                           </div>
                         </div>
 
-                        {/* Actions */}
                         {!isChildView && (
                           <div className="flex items-center gap-1 shrink-0">
                             <button
@@ -697,7 +647,6 @@ function AppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-              {/* Calendar Section */}
               <div className="md:col-span-5 bg-card border border-border p-6 rounded-3xl flex justify-center shadow-sm">
                 <UI_Calendar
                   mode="single"
@@ -709,7 +658,6 @@ function AppointmentsPage() {
                 />
               </div>
 
-              {/* Day Appointments Panel */}
               <div className="md:col-span-7 space-y-4">
                 <div className="flex items-center justify-between border-b border-border pb-3 px-2">
                   <h3 className="text-lg font-bold font-display italic">
@@ -733,9 +681,7 @@ function AppointmentsPage() {
                       return (
                         <div
                           key={appt.id}
-                          className={`bg-card border border-border p-5 rounded-2xl flex items-start gap-4 shadow-sm hover:shadow transition-shadow ${
-                            isToday ? "border-l-4 border-primary" : ""
-                          }`}
+                          className={`bg-card border border-border p-5 rounded-2xl flex items-start gap-4 shadow-sm hover:shadow transition-shadow ${isToday ? "border-l-4 border-primary" : ""}`}
                         >
                           <div className="size-10 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center shrink-0">
                             <Clock className="size-5" />
@@ -782,7 +728,6 @@ function AppointmentsPage() {
                             )}
                           </div>
 
-                          {/* Actions */}
                           {!isChildView && (
                             <div className="flex flex-col gap-1 shrink-0">
                               <button
@@ -814,7 +759,6 @@ function AppointmentsPage() {
         </>
       )}
 
-      {/* Add / Edit Dialog */}
       <Dialog
         open={open}
         onOpenChange={(o) => {
@@ -833,7 +777,6 @@ function AppointmentsPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Title */}
             <div className="space-y-1.5">
               <Label htmlFor="appt-title">
                 Title <span className="text-destructive">*</span>
@@ -847,7 +790,6 @@ function AppointmentsPage() {
               />
             </div>
 
-            {/* Doctor */}
             <div className="space-y-1.5">
               <Label htmlFor="appt-doctor">
                 Doctor / Hospital Name <span className="text-destructive">*</span>
@@ -861,7 +803,6 @@ function AppointmentsPage() {
               />
             </div>
 
-            {/* Specialty */}
             <div className="space-y-1.5">
               <Label htmlFor="appt-specialty">
                 Doctor Specialty <span className="text-xs text-muted-foreground">(optional)</span>
@@ -875,7 +816,6 @@ function AppointmentsPage() {
               />
             </div>
 
-            {/* Location */}
             <div className="space-y-1.5">
               <Label htmlFor="appt-location">
                 Location <span className="text-xs text-muted-foreground">(optional)</span>
@@ -889,7 +829,6 @@ function AppointmentsPage() {
               />
             </div>
 
-            {/* Date & Time */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="appt-date">
@@ -915,7 +854,6 @@ function AppointmentsPage() {
               </div>
             </div>
 
-            {/* Notes */}
             <div className="space-y-1.5">
               <Label htmlFor="appt-notes">
                 Notes <span className="text-xs text-muted-foreground">(optional)</span>
@@ -929,7 +867,6 @@ function AppointmentsPage() {
               />
             </div>
 
-            {/* Reminders Toggle */}
             <div className="flex items-center justify-between p-3 bg-stone-50 rounded-2xl border border-stone-100">
               <div className="flex items-center gap-2">
                 <Bell className="size-4 text-stone-600" />

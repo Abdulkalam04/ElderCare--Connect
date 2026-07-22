@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
@@ -26,27 +27,20 @@ import {
   Video,
   Wind,
 } from "lucide-react";
-import {
-  format,
-  formatDistanceToNow,
-  isToday,
-  isTomorrow,
-} from "date-fns";
+import { format, formatDistanceToNow, isToday, isTomorrow } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
 import { AppShell } from "@/components/AppShell";
 import { WellbeingCheckCard } from "@/components/WellbeingCheckCard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveParent } from "@/hooks/useProfile";
 import { useSosActions } from "@/hooks/useSosActions";
-
+import { createMedicalFileAccessUrl } from "@/lib/api/medicalFiles.functions";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
   component: DashboardPage,
 });
-
 type MedicineRow = {
   id: string;
   name: string;
@@ -56,13 +50,7 @@ type MedicineRow = {
   notes: string | null;
   active: boolean;
 };
-
-type VitalType =
-  | "blood_pressure"
-  | "blood_sugar"
-  | "heart_rate"
-  | "oxygen_saturation";
-
+type VitalType = "blood_pressure" | "blood_sugar" | "heart_rate" | "oxygen_saturation";
 type VitalRow = {
   id: string;
   vital_type: VitalType;
@@ -73,7 +61,6 @@ type VitalRow = {
   created_at: string;
   is_abnormal: boolean;
 };
-
 type CaregiverBooking = {
   id: string;
   caregiver_type: string | null;
@@ -83,7 +70,6 @@ type CaregiverBooking = {
   status: "pending" | "confirmed" | "assigned" | "in_progress";
   notes: string | null;
 };
-
 type HealthRecord = {
   id: string;
   title: string;
@@ -93,13 +79,11 @@ type HealthRecord = {
   file_path: string | null;
   file_url: string | null;
 };
-
 type ScheduleData = {
   appointments: Array<Record<string, any>>;
   consultations: Array<Record<string, any>>;
   transport: Array<Record<string, any>>;
 };
-
 type CareEvent = {
   id: string;
   kind: "appointment" | "video" | "transport";
@@ -111,7 +95,6 @@ type CareEvent = {
   route: "/appointments" | "/video" | "/transport";
   isLive: boolean;
 };
-
 type ActiveSosAlert = {
   id: string;
   parent_name: string | null;
@@ -120,15 +103,14 @@ type ActiveSosAlert = {
   address: string | null;
   acknowledged_at?: string | null;
 };
-
 const VITAL_TYPES: VitalType[] = [
   "blood_pressure",
   "blood_sugar",
   "heart_rate",
   "oxygen_saturation",
 ];
-
 function DashboardPage() {
+  const medicalFileAccess = useServerFn(createMedicalFileAccessUrl);
   const {
     activeParent,
     activeParentId,
@@ -139,35 +121,29 @@ function DashboardPage() {
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"my" | "family">("my");
   const [now, setNow] = useState(() => new Date());
-
   const today = format(now, "yyyy-MM-dd");
   const medicationLogKey = ["medLogs", activeParentId, today] as const;
-
   const sosActions = useSosActions({
     parentId: profile?.role === "parent" ? profile.id : activeParentId,
     actor: profile,
   });
-
   const linkedChildren = sosActions.linkedChildren;
   const emergencyContacts = sosActions.emergencyContacts;
   const showViewToggle = !isChildView && linkedChildren.length > 0;
   const isFamilyView = showViewToggle && viewMode === "family";
-
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    const timer = window.setInterval(() => setNow(new Date()), 30000);
     return () => window.clearInterval(timer);
   }, []);
-
   useEffect(() => {
     if (!showViewToggle && viewMode === "family") {
       setViewMode("my");
     }
   }, [showViewToggle, viewMode]);
-
   const medicinesQuery = useQuery({
     queryKey: ["dashboardMedicines", activeParentId],
     enabled: Boolean(activeParentId),
-    staleTime: 30_000,
+    staleTime: 30000,
     refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
@@ -176,16 +152,14 @@ function DashboardPage() {
         .eq("parent_id", activeParentId!)
         .eq("active", true)
         .order("schedule_time", { ascending: true });
-
       if (error) throw error;
       return (data ?? []) as MedicineRow[];
     },
   });
-
   const medicineLogsQuery = useQuery({
     queryKey: medicationLogKey,
     enabled: Boolean(activeParentId),
-    staleTime: 15_000,
+    staleTime: 15000,
     refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
@@ -193,16 +167,14 @@ function DashboardPage() {
         .select("medicine_id")
         .eq("parent_id", activeParentId!)
         .eq("log_date", today);
-
       if (error) throw error;
       return new Set((data ?? []).map((log) => log.medicine_id));
     },
   });
-
   const wellbeingQuery = useQuery({
     queryKey: ["wellbeing", activeParentId, today],
     enabled: Boolean(activeParentId),
-    staleTime: 15_000,
+    staleTime: 15000,
     refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
@@ -211,106 +183,86 @@ function DashboardPage() {
         .eq("parent_id", activeParentId!)
         .eq("check_date", today)
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
   });
-
   const latestVitalsQuery = useQuery({
     queryKey: ["latestVitals", activeParentId],
     enabled: Boolean(activeParentId),
-    staleTime: 15_000,
+    staleTime: 15000,
     refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("vitals")
-        .select(
-          "id,vital_type,value,value_secondary,unit,recorded_at,created_at,is_abnormal",
-        )
+        .select("id,vital_type,value,value_secondary,unit,recorded_at,created_at,is_abnormal")
         .eq("parent_id", activeParentId!)
         .in("vital_type", VITAL_TYPES)
         .order("recorded_at", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(80);
-
       if (error) throw error;
       return (data ?? []) as VitalRow[];
     },
   });
-
   const nextCaregiverQuery = useQuery({
     queryKey: ["nextBooking", activeParentId],
     enabled: Boolean(activeParentId),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 30000,
+    refetchInterval: 60000,
     refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("caregiver_bookings")
-        .select(
-          "id,caregiver_type,caregiver_name,scheduled_at,duration_hours,status,notes",
-        )
+        .select("id,caregiver_type,caregiver_name,scheduled_at,duration_hours,status,notes")
         .eq("parent_id", activeParentId!)
         .in("status", ["pending", "confirmed", "assigned", "in_progress"])
         .order("scheduled_at", { ascending: true })
         .limit(40);
-
       if (error) throw error;
-
       const rows = (data ?? []) as CaregiverBooking[];
       const inProgress = rows
         .filter((booking) => booking.status === "in_progress")
         .sort(
-          (first, second) =>
-            toTimestamp(second.scheduled_at) - toTimestamp(first.scheduled_at),
+          (first, second) => toTimestamp(second.scheduled_at) - toTimestamp(first.scheduled_at),
         )[0];
-
       if (inProgress) return inProgress;
-
       const currentTime = Date.now();
       const future = rows
         .filter((booking) => toTimestamp(booking.scheduled_at) >= currentTime)
         .sort(
-          (first, second) =>
-            toTimestamp(first.scheduled_at) - toTimestamp(second.scheduled_at),
+          (first, second) => toTimestamp(first.scheduled_at) - toTimestamp(second.scheduled_at),
         )[0];
-
       if (future) return future;
-
-      return rows.sort(
-        (first, second) =>
-          toTimestamp(second.scheduled_at) - toTimestamp(first.scheduled_at),
-      )[0] ?? null;
+      return (
+        rows.sort(
+          (first, second) => toTimestamp(second.scheduled_at) - toTimestamp(first.scheduled_at),
+        )[0] ?? null
+      );
     },
   });
-
   const recentReportsQuery = useQuery({
     queryKey: ["recentReports", activeParentId],
     enabled: Boolean(activeParentId),
-    staleTime: 30_000,
+    staleTime: 30000,
     refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("health_records")
-        .select(
-          "id,title,category,doctor_name,record_date,file_path,file_url,created_at",
-        )
+        .select("id,title,category,doctor_name,record_date,file_path,file_url,created_at")
         .eq("parent_id", activeParentId!)
         .order("record_date", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(3);
-
       if (error) throw error;
       return (data ?? []) as HealthRecord[];
     },
   });
-
   const scheduleQuery = useQuery({
     queryKey: ["dashboardSchedule", activeParentId],
     enabled: Boolean(activeParentId),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 30000,
+    refetchInterval: 60000,
     refetchOnMount: "always",
     queryFn: async (): Promise<ScheduleData> => {
       const [appointments, consultations, transport] = await Promise.all([
@@ -338,21 +290,13 @@ function DashboardPage() {
             "id,purpose,pickup_address,destination,scheduled_at,status,transport_date,transport_time,driver_name",
           )
           .eq("parent_id", activeParentId!)
-          .in("status", [
-            "pending",
-            "confirmed",
-            "driver_assigned",
-            "en_route",
-            "arrived",
-          ])
+          .in("status", ["pending", "confirmed", "driver_assigned", "en_route", "arrived"])
           .order("scheduled_at", { ascending: true })
           .limit(15),
       ]);
-
       if (appointments.error) throw appointments.error;
       if (consultations.error) throw consultations.error;
       if (transport.error) throw transport.error;
-
       return {
         appointments: appointments.data ?? [],
         consultations: consultations.data ?? [],
@@ -360,38 +304,31 @@ function DashboardPage() {
       };
     },
   });
-
   const activeSosQuery = useQuery({
     queryKey: ["activeSosDashboard", activeParentId],
     enabled: Boolean(activeParentId),
-    staleTime: 5_000,
-    refetchInterval: 15_000,
+    staleTime: 5000,
+    refetchInterval: 15000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("sos_alerts")
-        .select(
-          "id,parent_name,status,created_at,address,acknowledged_at,acknowledged_by",
-        )
+        .select("id,parent_name,status,created_at,address,acknowledged_at,acknowledged_by")
         .eq("parent_id", activeParentId!)
         .in("status", ["active", "acknowledged"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (error) throw error;
       return (data ?? null) as ActiveSosAlert | null;
     },
   });
-
   useEffect(() => {
     if (!activeParentId) return;
-
     const invalidate = (keys: ReadonlyArray<ReadonlyArray<unknown>>) => {
       for (const key of keys) {
         void queryClient.invalidateQueries({ queryKey: [...key] });
       }
     };
-
     const channel = supabase
       .channel(`dashboard-sync-${activeParentId}`)
       .on(
@@ -536,15 +473,12 @@ function DashboardPage() {
           ]),
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [activeParentId, queryClient]);
-
   useEffect(() => {
     if (!profile?.id || profile.role !== "parent") return;
-
     const channel = supabase
       .channel(`dashboard-family-sync-${profile.id}`)
       .on(
@@ -562,22 +496,18 @@ function DashboardPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [profile?.id, profile?.role, queryClient]);
-
   const markTaken = useMutation({
     mutationFn: async (medicineId: string) => {
       if (!activeParentId) throw new Error("No care profile is selected.");
-
       const { error } = await supabase.from("medicine_logs").insert({
         medicine_id: medicineId,
         parent_id: activeParentId,
         log_date: today,
       });
-
       if (error && (error as any).code !== "23505") throw error;
       return {
         medicineId,
@@ -590,23 +520,19 @@ function DashboardPage() {
         updated.add(medicineId);
         return updated;
       });
-
       void queryClient.invalidateQueries({
         queryKey: ["global_taken_meds", activeParentId],
       });
-
       toast.success(alreadyTaken ? "Already marked as taken" : "Marked as taken");
     },
     onError: (error: Error) =>
       toast.error(error.message || "Unable to mark the medicine as taken."),
   });
-
   const acknowledgeSos = useMutation({
     mutationFn: async (alertId: string) => {
       if (!profile?.id || !activeParentId) {
         throw new Error("Your profile is not ready.");
       }
-
       const { data, error } = await (supabase as any)
         .from("sos_alerts")
         .update({
@@ -618,7 +544,6 @@ function DashboardPage() {
         .eq("parent_id", activeParentId)
         .eq("status", "active")
         .select("id");
-
       if (error) throw error;
       if (!data?.length) {
         throw new Error("This SOS alert was already acknowledged or changed.");
@@ -631,13 +556,11 @@ function DashboardPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const resolveSos = useMutation({
     mutationFn: async (alertId: string) => {
       if (!profile?.id || !activeParentId) {
         throw new Error("Your profile is not ready.");
       }
-
       const { data, error } = await (supabase as any)
         .from("sos_alerts")
         .update({
@@ -649,7 +572,6 @@ function DashboardPage() {
         .eq("parent_id", activeParentId)
         .in("status", ["active", "acknowledged"])
         .select("id");
-
       if (error) throw error;
       if (!data?.length) {
         throw new Error("This SOS alert was already resolved or changed.");
@@ -657,89 +579,77 @@ function DashboardPage() {
     },
     onSuccess: () => {
       toast.success("SOS alert marked as resolved.");
-      queryClient.setQueryData(
-        ["activeSosDashboard", activeParentId],
-        null,
-      );
+      queryClient.setQueryData(["activeSosDashboard", activeParentId], null);
       void queryClient.invalidateQueries({ queryKey: ["sos"] });
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const latestVitalByType = useMemo(() => {
     const map = new Map<VitalType, VitalRow>();
     const sorted = [...(latestVitalsQuery.data ?? [])].sort((first, second) => {
-      const recordedDifference =
-        toTimestamp(second.recorded_at) - toTimestamp(first.recorded_at);
+      const recordedDifference = toTimestamp(second.recorded_at) - toTimestamp(first.recorded_at);
       if (recordedDifference !== 0) return recordedDifference;
       return toTimestamp(second.created_at) - toTimestamp(first.created_at);
     });
-
     for (const vital of sorted) {
       if (!map.has(vital.vital_type)) map.set(vital.vital_type, vital);
     }
     return map;
   }, [latestVitalsQuery.data]);
-
   const upcomingCareEvents = useMemo(() => {
     const source = scheduleQuery.data;
     if (!source) return [] as CareEvent[];
-
     const events: CareEvent[] = [
-      ...source.appointments.map((appointment): CareEvent => ({
-        id: `appointment-${appointment.id}`,
-        kind: "appointment",
-        title: appointment.title || "Medical appointment",
-        subtitle: appointment.doctor_name
-          ? formatDoctorName(appointment.doctor_name)
-          : "Doctor appointment",
-        location: appointment.location || null,
-        scheduledAt:
-          appointment.scheduled_at ||
-          localDateTime(
-            appointment.appointment_date,
-            appointment.appointment_time,
-          ),
-        status: appointment.status || "scheduled",
-        route: "/appointments",
-        isLive: false,
-      })),
-      ...source.consultations.map((consultation): CareEvent => ({
-        id: `video-${consultation.id}`,
-        kind: "video",
-        title: consultation.doctor_name
-          ? `Video consultation with ${formatDoctorName(consultation.doctor_name)}`
-          : "Video consultation",
-        subtitle: consultation.specialty || "Online medical consultation",
-        location: "Online",
-        scheduledAt:
-          consultation.scheduled_at ||
-          localDateTime(
-            consultation.consultation_date,
-            consultation.consultation_time,
-          ),
-        status: consultation.status || "scheduled",
-        route: "/video",
-        isLive: consultation.status === "in_progress" || consultation.status === "waiting",
-      })),
-      ...source.transport.map((ride): CareEvent => ({
-        id: `transport-${ride.id}`,
-        kind: "transport",
-        title: `${humanize(ride.purpose || "medical")} transport`,
-        subtitle: ride.destination || "Medical transport",
-        location: ride.pickup_address || null,
-        scheduledAt:
-          ride.scheduled_at ||
-          localDateTime(ride.transport_date, ride.transport_time),
-        status: ride.status || "pending",
-        route: "/transport",
-        isLive: ["en_route", "arrived"].includes(ride.status),
-      })),
+      ...source.appointments.map(
+        (appointment): CareEvent => ({
+          id: `appointment-${appointment.id}`,
+          kind: "appointment",
+          title: appointment.title || "Medical appointment",
+          subtitle: appointment.doctor_name
+            ? formatDoctorName(appointment.doctor_name)
+            : "Doctor appointment",
+          location: appointment.location || null,
+          scheduledAt:
+            appointment.scheduled_at ||
+            localDateTime(appointment.appointment_date, appointment.appointment_time),
+          status: appointment.status || "scheduled",
+          route: "/appointments",
+          isLive: false,
+        }),
+      ),
+      ...source.consultations.map(
+        (consultation): CareEvent => ({
+          id: `video-${consultation.id}`,
+          kind: "video",
+          title: consultation.doctor_name
+            ? `Video consultation with ${formatDoctorName(consultation.doctor_name)}`
+            : "Video consultation",
+          subtitle: consultation.specialty || "Online medical consultation",
+          location: "Online",
+          scheduledAt:
+            consultation.scheduled_at ||
+            localDateTime(consultation.consultation_date, consultation.consultation_time),
+          status: consultation.status || "scheduled",
+          route: "/video",
+          isLive: consultation.status === "in_progress" || consultation.status === "waiting",
+        }),
+      ),
+      ...source.transport.map(
+        (ride): CareEvent => ({
+          id: `transport-${ride.id}`,
+          kind: "transport",
+          title: `${humanize(ride.purpose || "medical")} transport`,
+          subtitle: ride.destination || "Medical transport",
+          location: ride.pickup_address || null,
+          scheduledAt: ride.scheduled_at || localDateTime(ride.transport_date, ride.transport_time),
+          status: ride.status || "pending",
+          route: "/transport",
+          isLive: ["en_route", "arrived"].includes(ride.status),
+        }),
+      ),
     ];
-
     const currentTime = now.getTime();
     const recentCutoff = currentTime - 6 * 60 * 60 * 1000;
-
     return events
       .filter((event) => {
         const timestamp = toTimestamp(event.scheduledAt);
@@ -751,7 +661,6 @@ function DashboardPage() {
       })
       .slice(0, 5);
   }, [now, scheduleQuery.data]);
-
   const medicines = medicinesQuery.data ?? [];
   const takenMedicineIds = medicineLogsQuery.data ?? new Set<string>();
   const completedMedicineCount = medicines.filter((medicine) =>
@@ -760,9 +669,7 @@ function DashboardPage() {
   const medicineProgress = medicines.length
     ? Math.round((completedMedicineCount / medicines.length) * 100)
     : 0;
-  const allMedicinesTaken =
-    medicines.length > 0 && completedMedicineCount === medicines.length;
-
+  const allMedicinesTaken = medicines.length > 0 && completedMedicineCount === medicines.length;
   const dashboardQueries = [
     medicinesQuery,
     medicineLogsQuery,
@@ -775,10 +682,8 @@ function DashboardPage() {
   ];
   const dashboardError = dashboardQueries.find((query) => query.isError)?.error;
   const isRefreshing = dashboardQueries.some((query) => query.isFetching);
-
   async function refreshDashboard() {
     if (!activeParentId) return;
-
     void queryClient.invalidateQueries({
       queryKey: ["emergency_contacts", activeParentId],
     });
@@ -787,7 +692,6 @@ function DashboardPage() {
         queryKey: ["linkedChildren", profile.id],
       });
     }
-
     const results = await Promise.all([
       medicinesQuery.refetch(),
       medicineLogsQuery.refetch(),
@@ -798,22 +702,21 @@ function DashboardPage() {
       scheduleQuery.refetch(),
       activeSosQuery.refetch(),
     ]);
-
     const failed = results.filter((result) => result.isError).length;
     if (failed > 0) {
-      toast.warning(`${failed} dashboard section${failed === 1 ? "" : "s"} could not be refreshed.`);
+      toast.warning(
+        `${failed} dashboard section${failed === 1 ? "" : "s"} could not be refreshed.`,
+      );
     } else {
       toast.success("Dashboard refreshed");
     }
   }
-
   async function openReport(record: HealthRecord) {
     const hasFile = Boolean(record.file_path || record.file_url);
     if (!hasFile) {
       toast.info("This record does not have an attached file.");
       return;
     }
-
     const popup = window.open("about:blank", "_blank");
     if (popup) {
       popup.opener = null;
@@ -821,33 +724,25 @@ function DashboardPage() {
       popup.document.body.innerHTML =
         '<p style="font-family:system-ui;padding:24px">Opening health record…</p>';
     }
-
     try {
-      let url = record.file_url;
-
-      if (record.file_path) {
-        const { data, error } = await supabase.storage
-          .from("health-records")
-          .createSignedUrl(record.file_path, 300);
-
-        if (error || !data?.signedUrl) {
-          throw new Error(error?.message || "Unable to create a secure file link.");
-        }
-        url = data.signedUrl;
+      if (!record.file_path) {
+        throw new Error("This legacy record must be re-uploaded into private medical storage.");
       }
-
-      if (!url) throw new Error("No file URL is available.");
-
+      const result = await medicalFileAccess({
+        data: {
+          documentKind: "health_record",
+          documentId: record.id,
+          action: "view",
+        },
+      });
+      const url = result.signedUrl;
       if (popup) popup.location.replace(url);
       else window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
       popup?.close();
-      toast.error(
-        error instanceof Error ? error.message : "Unable to open the health record.",
-      );
+      toast.error(error instanceof Error ? error.message : "Unable to open the health record.");
     }
   }
-
   if (activeParentLoading) {
     return (
       <AppShell>
@@ -860,7 +755,6 @@ function DashboardPage() {
       </AppShell>
     );
   }
-
   if (!activeParent) {
     return (
       <AppShell>
@@ -881,11 +775,9 @@ function DashboardPage() {
       </AppShell>
     );
   }
-
   const activeSosAlert = activeSosQuery.data;
   const primaryEmergencyContact = emergencyContacts[0] ?? null;
   const greeting = getGreeting(now);
-
   return (
     <AppShell>
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -947,7 +839,9 @@ function DashboardPage() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 size-5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold">Some dashboard information could not be loaded.</p>
+              <p className="text-sm font-semibold">
+                Some dashboard information could not be loaded.
+              </p>
               <p className="mt-0.5 text-xs text-red-700">
                 {dashboardError instanceof Error
                   ? dashboardError.message
@@ -988,7 +882,8 @@ function DashboardPage() {
           <div className="text-sm">
             <p className="font-semibold">No automatic SOS recipient is configured.</p>
             <p className="mt-0.5 text-xs text-amber-800">
-              SOS will still activate, but add a linked family member or an emergency-contact email for automatic delivery.
+              SOS will still activate, but add a linked family member or an emergency-contact email
+              for automatic delivery.
             </p>
             <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
               <Link to="/family" className="underline underline-offset-2">
@@ -1058,9 +953,7 @@ function DashboardPage() {
               {medicines.length > 0 && (
                 <div className="mb-5">
                   <div className="mb-2 flex items-center justify-between text-xs font-medium">
-                    <span className="text-emerald-600">
-                      {completedMedicineCount} completed
-                    </span>
+                    <span className="text-emerald-600">{completedMedicineCount} completed</span>
                     <span className="text-muted-foreground">
                       {medicines.length - completedMedicineCount} remaining
                     </span>
@@ -1072,7 +965,8 @@ function DashboardPage() {
                     />
                   </div>
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    {completedMedicineCount} of {medicines.length} doses taken today ({medicineProgress}%)
+                    {completedMedicineCount} of {medicines.length} doses taken today (
+                    {medicineProgress}%)
                   </p>
                 </div>
               )}
@@ -1105,7 +999,6 @@ function DashboardPage() {
                     const overdue = !taken && schedule.getTime() < now.getTime();
                     const markingThisMedicine =
                       markTaken.isPending && markTaken.variables === medicine.id;
-
                     return (
                       <div
                         key={medicine.id}
@@ -1209,9 +1102,7 @@ function DashboardPage() {
                 onClick={() => sosActions.trigger.mutate()}
                 disabled={sosActions.trigger.isPending || sosActions.cooldown > 0}
                 className={`flex w-full items-center gap-3 rounded-2xl p-4 text-white shadow-sm transition-all disabled:opacity-65 ${
-                  sosActions.cooldown > 0
-                    ? "bg-stone-500"
-                    : "bg-red-600 hover:bg-red-700"
+                  sosActions.cooldown > 0 ? "bg-stone-500" : "bg-red-600 hover:bg-red-700"
                 }`}
               >
                 <div className="grid size-11 shrink-0 place-items-center rounded-full border-2 border-white/30">
@@ -1249,7 +1140,6 @@ function DashboardPage() {
     </AppShell>
   );
 }
-
 function FamilyView({ members }: { members: Array<Record<string, any>> }) {
   return (
     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
@@ -1260,7 +1150,8 @@ function FamilyView({ members }: { members: Array<Record<string, any>> }) {
         <div>
           <h2 className="text-lg font-bold">Linked Family Members</h2>
           <p className="text-xs text-muted-foreground">
-            {members.length} trusted {members.length === 1 ? "person can" : "people can"} view your care information.
+            {members.length} trusted {members.length === 1 ? "person can" : "people can"} view your
+            care information.
           </p>
         </div>
       </div>
@@ -1270,11 +1161,7 @@ function FamilyView({ members }: { members: Array<Record<string, any>> }) {
           <div key={member.id} className="rounded-xl bg-muted/40 p-4">
             <div className="flex items-start gap-3">
               {member.avatar_url ? (
-                <img
-                  src={member.avatar_url}
-                  alt=""
-                  className="size-12 rounded-full object-cover"
-                />
+                <img src={member.avatar_url} alt="" className="size-12 rounded-full object-cover" />
               ) : (
                 <div className="grid size-12 shrink-0 place-items-center rounded-full bg-brand/10 font-bold text-brand">
                   {(member.full_name || "?").slice(0, 1).toUpperCase()}
@@ -1320,7 +1207,6 @@ function FamilyView({ members }: { members: Array<Record<string, any>> }) {
     </section>
   );
 }
-
 function VitalCard({
   label,
   icon,
@@ -1332,12 +1218,7 @@ function VitalCard({
 }) {
   const value = vital ? formatVitalValue(vital) : "—";
   const unit = vital?.unit || defaultVitalUnit(label);
-  const statusLabel = !vital
-    ? "No data"
-    : vital.is_abnormal
-      ? "Needs attention"
-      : "Within range";
-
+  const statusLabel = !vital ? "No data" : vital.is_abnormal ? "Needs attention" : "Within range";
   return (
     <Link
       to="/vitals"
@@ -1373,7 +1254,6 @@ function VitalCard({
     </Link>
   );
 }
-
 function CareEventItem({ event, now }: { event: CareEvent; now: Date }) {
   const icon =
     event.kind === "appointment" ? (
@@ -1383,10 +1263,8 @@ function CareEventItem({ event, now }: { event: CareEvent; now: Date }) {
     ) : (
       <Car className="size-5" />
     );
-
   const timestamp = new Date(event.scheduledAt);
   const isPastDue = !event.isLive && timestamp.getTime() < now.getTime();
-
   return (
     <Link
       to={event.route as any}
@@ -1407,7 +1285,11 @@ function CareEventItem({ event, now }: { event: CareEvent; now: Date }) {
                   : "bg-blue-100 text-blue-700"
             }`}
           >
-            {event.isLive ? humanize(event.status) : isPastDue ? "Past due" : humanize(event.status)}
+            {event.isLive
+              ? humanize(event.status)
+              : isPastDue
+                ? "Past due"
+                : humanize(event.status)}
           </span>
         </div>
         <p className="truncate text-xs text-muted-foreground">{event.subtitle}</p>
@@ -1425,7 +1307,6 @@ function CareEventItem({ event, now }: { event: CareEvent; now: Date }) {
     </Link>
   );
 }
-
 function QuickContacts({
   isChildView,
   activeParent,
@@ -1469,7 +1350,6 @@ function QuickContacts({
           email: member.email,
         })),
       ];
-
   return (
     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
@@ -1491,11 +1371,7 @@ function QuickContacts({
             <div key={contact.id} className="border-b border-border pb-4 last:border-0 last:pb-0">
               <p className="font-semibold">{contact.name}</p>
               <p className="text-[11px] text-muted-foreground">{contact.subtitle}</p>
-              <ContactActions
-                name={contact.name}
-                phone={contact.phone}
-                email={contact.email}
-              />
+              <ContactActions name={contact.name} phone={contact.phone} email={contact.email} />
             </div>
           ))}
         </div>
@@ -1503,7 +1379,6 @@ function QuickContacts({
     </section>
   );
 }
-
 function ContactActions({
   name,
   phone,
@@ -1515,11 +1390,9 @@ function ContactActions({
 }) {
   const cleanedPhone = cleanPhone(phone);
   const whatsappPhone = cleanedPhone.replace(/\D/g, "");
-
   if (!cleanedPhone && !email) {
     return <p className="mt-2 text-xs italic text-muted-foreground">No contact method saved.</p>;
   }
-
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {cleanedPhone && (
@@ -1563,7 +1436,6 @@ function ContactActions({
     </div>
   );
 }
-
 function UpcomingCaregiver({
   booking,
   now,
@@ -1582,9 +1454,7 @@ function UpcomingCaregiver({
         <>
           <div className="flex items-center gap-3">
             <div className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 font-bold text-primary">
-              {(booking.caregiver_name || booking.caregiver_type || "C")
-                .slice(0, 1)
-                .toUpperCase()}
+              {(booking.caregiver_name || booking.caregiver_type || "C").slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="truncate font-semibold">
@@ -1619,9 +1489,7 @@ function UpcomingCaregiver({
               {booking.duration_hours ? ` · ${booking.duration_hours} hr` : ""}
             </p>
             {booking.notes && (
-              <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
-                {booking.notes}
-              </p>
+              <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{booking.notes}</p>
             )}
           </div>
 
@@ -1634,9 +1502,7 @@ function UpcomingCaregiver({
         </>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">
-            No active caregiver visit is scheduled.
-          </p>
+          <p className="text-sm text-muted-foreground">No active caregiver visit is scheduled.</p>
           <Link
             to="/caregivers"
             className="mt-4 block w-full rounded-xl bg-foreground py-3 text-center text-sm font-semibold text-background transition-opacity hover:opacity-90"
@@ -1648,7 +1514,6 @@ function UpcomingCaregiver({
     </section>
   );
 }
-
 function RecentReports({
   records,
   loading,
@@ -1713,7 +1578,6 @@ function RecentReports({
     </section>
   );
 }
-
 function SosBanner({
   alert,
   parentName,
@@ -1738,7 +1602,6 @@ function SosBanner({
   onResend: () => void;
 }) {
   const acknowledged = alert.status === "acknowledged";
-
   return (
     <div
       className={`mb-6 flex flex-col gap-4 rounded-3xl border-2 p-5 shadow-lg sm:flex-row sm:items-center sm:justify-between ${
@@ -1749,9 +1612,7 @@ function SosBanner({
     >
       <div className="flex items-start gap-4">
         <div
-          className={`grid size-12 shrink-0 place-items-center rounded-2xl ${
-            acknowledged ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"
-          }`}
+          className={`grid size-12 shrink-0 place-items-center rounded-2xl ${acknowledged ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}
         >
           <Siren className="size-6" />
         </div>
@@ -1820,14 +1681,12 @@ function SosBanner({
     </div>
   );
 }
-
 function formatVitalValue(vital: VitalRow) {
   if (vital.vital_type === "blood_pressure") {
     return `${vital.value}/${vital.value_secondary ?? "—"}`;
   }
   return String(vital.value);
 }
-
 function defaultVitalUnit(label: string) {
   switch (label) {
     case "Blood Pressure":
@@ -1842,52 +1701,41 @@ function defaultVitalUnit(label: string) {
       return "";
   }
 }
-
 function getGreeting(date: Date) {
   const hour = date.getHours();
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
 }
-
 function toTimestamp(value: string | null | undefined) {
   if (!value) return Number.NaN;
   const timestamp = new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : Number.NaN;
 }
-
 function medicineSchedule(date: string, time: string) {
   const parsed = new Date(`${date}T${(time || "00:00").slice(0, 5)}:00`);
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
-
 function localDateTime(date: string | null | undefined, time: string | null | undefined) {
   if (!date) return "";
   return `${date}T${(time || "00:00").slice(0, 5)}:00`;
 }
-
 function formatEventDate(date: Date) {
   if (isToday(date)) return "Today";
   if (isTomorrow(date)) return "Tomorrow";
   return format(date, "EEE, MMM d");
 }
-
 function formatLocalDate(value: string) {
   const parsed = new Date(`${value}T00:00:00`);
   return Number.isNaN(parsed.getTime()) ? value : format(parsed, "MMM d");
 }
-
 function formatDoctorName(name: string) {
   const trimmed = name.trim();
   return /^dr\.?\s/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
 }
-
 function humanize(value: string) {
-  return value
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
-
 function cleanPhone(value: string | null | undefined) {
   return value?.replace(/[^+\d]/g, "") ?? "";
 }

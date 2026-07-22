@@ -25,7 +25,7 @@ COMMENT ON COLUMN public.transport_bookings.completed_at IS
 COMMENT ON COLUMN public.transport_bookings.cancelled_at IS
   'Time the transport request was cancelled.';
 
--- Normalize blank values before adding validation constraints.
+
 UPDATE public.transport_bookings
 SET
   driver_phone = NULLIF(BTRIM(driver_phone), ''),
@@ -46,7 +46,7 @@ ALTER TABLE public.transport_bookings
 CREATE INDEX IF NOT EXISTS idx_transport_bookings_parent_status_schedule
   ON public.transport_bookings(parent_id, status, scheduled_at ASC);
 
--- Validate workflow transitions and populate lifecycle timestamps in one place.
+
 CREATE OR REPLACE FUNCTION public.validate_transport_booking_workflow()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -197,7 +197,7 @@ ON public.transport_bookings
 FOR EACH ROW
 EXECUTE FUNCTION public.validate_transport_booking_workflow();
 
--- Keep parent-only mutation policies explicit. Linked children remain read-only.
+
 DROP POLICY IF EXISTS "Create transport" ON public.transport_bookings;
 DROP POLICY IF EXISTS "Create transport (parent only)" ON public.transport_bookings;
 CREATE POLICY "Create transport (parent only)"
@@ -230,7 +230,7 @@ ON public.transport_bookings
 FOR SELECT TO authenticated
 USING (public.can_view_parent(parent_id));
 
--- Create one in-app notification for the parent and every linked child.
+
 CREATE OR REPLACE FUNCTION public.notify_transport_booking_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql

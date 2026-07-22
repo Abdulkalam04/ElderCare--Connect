@@ -1,8 +1,13 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | {
+      [key: string]: Json | undefined;
+    }
+  | Json[];
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5";
   };
@@ -894,6 +899,16 @@ export type Database = {
           notify_email: boolean;
           notify_push: boolean;
           notify_sms: boolean;
+          push_sos_enabled: boolean;
+          push_medicine_enabled: boolean;
+          push_wellbeing_enabled: boolean;
+          push_appointments_enabled: boolean;
+          push_caregiver_enabled: boolean;
+          push_transport_enabled: boolean;
+          push_video_enabled: boolean;
+          push_emergency_detection_enabled: boolean;
+          push_health_risk_enabled: boolean;
+          push_companion_safety_enabled: boolean;
           med_reminders_enabled: boolean;
           med_reminder_lead_minutes: number;
           med_voice_reminders: boolean;
@@ -905,6 +920,7 @@ export type Database = {
           detect_no_app_activity: boolean;
           wellbeing_checkin_cutoff: string;
           no_app_activity_hours: number;
+          health_risk_alerts_enabled: boolean;
           sos_escalation_minutes: number;
           sos_auto_call_primary: boolean;
           sos_share_location: boolean;
@@ -924,6 +940,16 @@ export type Database = {
           notify_email?: boolean;
           notify_push?: boolean;
           notify_sms?: boolean;
+          push_sos_enabled?: boolean;
+          push_medicine_enabled?: boolean;
+          push_wellbeing_enabled?: boolean;
+          push_appointments_enabled?: boolean;
+          push_caregiver_enabled?: boolean;
+          push_transport_enabled?: boolean;
+          push_video_enabled?: boolean;
+          push_emergency_detection_enabled?: boolean;
+          push_health_risk_enabled?: boolean;
+          push_companion_safety_enabled?: boolean;
           med_reminders_enabled?: boolean;
           med_reminder_lead_minutes?: number;
           med_voice_reminders?: boolean;
@@ -935,6 +961,7 @@ export type Database = {
           detect_no_app_activity?: boolean;
           wellbeing_checkin_cutoff?: string;
           no_app_activity_hours?: number;
+          health_risk_alerts_enabled?: boolean;
           sos_escalation_minutes?: number;
           sos_auto_call_primary?: boolean;
           sos_share_location?: boolean;
@@ -954,6 +981,16 @@ export type Database = {
           notify_email?: boolean;
           notify_push?: boolean;
           notify_sms?: boolean;
+          push_sos_enabled?: boolean;
+          push_medicine_enabled?: boolean;
+          push_wellbeing_enabled?: boolean;
+          push_appointments_enabled?: boolean;
+          push_caregiver_enabled?: boolean;
+          push_transport_enabled?: boolean;
+          push_video_enabled?: boolean;
+          push_emergency_detection_enabled?: boolean;
+          push_health_risk_enabled?: boolean;
+          push_companion_safety_enabled?: boolean;
           med_reminders_enabled?: boolean;
           med_reminder_lead_minutes?: number;
           med_voice_reminders?: boolean;
@@ -965,6 +1002,7 @@ export type Database = {
           detect_no_app_activity?: boolean;
           wellbeing_checkin_cutoff?: string;
           no_app_activity_hours?: number;
+          health_risk_alerts_enabled?: boolean;
           sos_escalation_minutes?: number;
           sos_auto_call_primary?: boolean;
           sos_share_location?: boolean;
@@ -1145,7 +1183,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      can_view_parent: { Args: { _parent: string }; Returns: boolean };
+      can_view_parent: {
+        Args: {
+          _parent: string;
+        };
+        Returns: boolean;
+      };
+      create_push_test_notification: {
+        Args: never;
+        Returns: string;
+      };
       detect_care_issues: {
         Args: never;
         Returns: {
@@ -1155,7 +1202,9 @@ export type Database = {
         }[];
       };
       detect_care_issues_for_parent: {
-        Args: { _parent_id: string };
+        Args: {
+          _parent_id: string;
+        };
         Returns: {
           missed_medicine_alerts: number;
           no_checkin_alerts: number;
@@ -1170,31 +1219,49 @@ export type Database = {
         };
         Returns: void;
       };
-      is_linked_child: { Args: { _parent: string }; Returns: boolean };
+      is_linked_child: {
+        Args: {
+          _parent: string;
+        };
+        Returns: boolean;
+      };
       link_parent_by_invite_code: {
-        Args: { _code: string; _phone?: string | null };
+        Args: {
+          _code: string;
+          _phone?: string | null;
+        };
         Returns: string;
       };
-      regenerate_family_invite_code: { Args: never; Returns: string };
-      touch_app_activity: { Args: { _source?: string }; Returns: string };
+      regenerate_family_invite_code: {
+        Args: never;
+        Returns: string;
+      };
+      touch_app_activity: {
+        Args: {
+          _source?: string;
+        };
+        Returns: string;
+      };
       raise_companion_safety_alert: {
-        Args: { _category: string };
+        Args: {
+          _category: string;
+        };
         Returns: number;
       };
     };
     Enums: {
       booking_status:
-      | "pending"
-      | "confirmed"
-      | "completed"
-      | "cancelled"
-      | "assigned"
-      | "in_progress"
-      | "driver_assigned"
-      | "en_route"
-      | "arrived"
-      | "scheduled"
-      | "waiting";
+        | "pending"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
+        | "assigned"
+        | "in_progress"
+        | "driver_assigned"
+        | "en_route"
+        | "arrived"
+        | "scheduled"
+        | "waiting";
       caregiver_type: "nurse" | "caretaker" | "physiotherapist" | "companion";
       med_period: "morning" | "noon" | "evening" | "night";
       risk_level: "low" | "medium" | "high";
@@ -1208,122 +1275,124 @@ export type Database = {
     };
   };
 };
-
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
-
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
-
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | {
+        schema: keyof DatabaseWithoutInternals;
+      },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
-  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-  : never = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R;
     }
-  ? R
-  : never
+    ? R
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-  ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-    Row: infer R;
-  }
-  ? R
-  : never
-  : never;
-
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | {
+        schema: keyof DatabaseWithoutInternals;
+      },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer I;
-  }
-  ? I
-  : never
+      Insert: infer I;
+    }
+    ? I
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Insert: infer I;
-  }
-  ? I
-  : never
-  : never;
-
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | {
+        schema: keyof DatabaseWithoutInternals;
+      },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Update: infer U;
-  }
-  ? U
-  : never
+      Update: infer U;
+    }
+    ? U
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Update: infer U;
-  }
-  ? U
-  : never
-  : never;
-
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-  | keyof DefaultSchema["Enums"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | {
+        schema: keyof DatabaseWithoutInternals;
+      },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-  : never;
-
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-  | keyof DefaultSchema["CompositeTypes"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["CompositeTypes"]
+    | {
+        schema: keyof DatabaseWithoutInternals;
+      },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
-  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-  : never;
-
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
 export const Constants = {
   public: {
     Enums: {

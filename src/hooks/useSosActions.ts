@@ -8,7 +8,6 @@ import { useLinkedChildren } from "@/hooks/useProfile";
 import { captureLocation, reverseGeocode } from "@/lib/geolocation";
 import { notifySosAlert } from "@/lib/api/sosNotify.functions";
 import { sendPushForAlert } from "@/lib/api/pushNotify.functions";
-
 type EmergencyContact = {
   id: string;
   name: string;
@@ -17,13 +16,11 @@ type EmergencyContact = {
   relationship: string | null;
   priority: number;
 };
-
 type SosSettings = {
   sos_share_location: boolean;
   sos_auto_call_primary: boolean;
   sos_escalation_minutes: number;
 };
-
 type DeliveryResult = {
   inAppSent: number;
   emailSent: number;
@@ -33,14 +30,12 @@ type DeliveryResult = {
   emailReason: string | null;
   pushReason: string | null;
 };
-
 type ServerDeliveryResult = {
   sent?: number;
   failed?: number;
   reason?: string;
   skipped?: string | number;
 };
-
 type SosAlertSummary = {
   id: string;
   parent_id: string;
@@ -52,21 +47,17 @@ type SosAlertSummary = {
   longitude: number | null;
   address: string | null;
 };
-
 const DEFAULT_SETTINGS: SosSettings = {
   sos_share_location: true,
   sos_auto_call_primary: false,
   sos_escalation_minutes: 5,
 };
-
 function cleanPhone(value: string | null | undefined) {
   return value?.replace(/[^+\d]/g, "") ?? "";
 }
-
 function getCooldownKey(parentId: string) {
   return `eldercare:sos-cooldown:${parentId}`;
 }
-
 export function useSosActions({
   parentId,
   actor,
@@ -78,11 +69,9 @@ export function useSosActions({
   const notifyEmail = useServerFn(notifySosAlert);
   const notifyPush = useServerFn(sendPushForAlert);
   const canTrigger = Boolean(actor?.role === "parent" && actor.id === parentId);
-
   const { data: linkedChildren = [] } = useLinkedChildren(
     canTrigger ? (parentId ?? undefined) : undefined,
   );
-
   const { data: emergencyContacts = [], isLoading: contactsLoading } = useQuery({
     queryKey: ["emergency_contacts", parentId],
     enabled: Boolean(parentId),
@@ -93,12 +82,10 @@ export function useSosActions({
         .eq("parent_id", parentId!)
         .order("priority", { ascending: true })
         .order("created_at", { ascending: true });
-
       if (error) throw error;
       return (data ?? []) as EmergencyContact[];
     },
   });
-
   const { data: trustedCaregiverEmails = [] } = useQuery({
     queryKey: ["trusted-caregiver-emails", parentId],
     enabled: Boolean(parentId),
@@ -110,7 +97,6 @@ export function useSosActions({
         .eq("available", true)
         .not("email", "is", null);
       if (error) {
-        // The migration may not have been applied yet; SOS must still work.
         console.warn("Trusted caregiver emails are unavailable", error);
         return [] as string[];
       }
@@ -119,7 +105,6 @@ export function useSosActions({
         .filter((email: string | undefined): email is string => Boolean(email));
     },
   });
-
   const { data: settings = DEFAULT_SETTINGS } = useQuery({
     queryKey: ["elder-settings-sos", parentId],
     enabled: Boolean(parentId),
@@ -129,7 +114,6 @@ export function useSosActions({
         .select("sos_share_location,sos_auto_call_primary,sos_escalation_minutes")
         .eq("parent_id", parentId!)
         .maybeSingle();
-
       if (error) throw error;
       return {
         ...DEFAULT_SETTINGS,
@@ -137,15 +121,12 @@ export function useSosActions({
       } as SosSettings;
     },
   });
-
   const [cooldown, setCooldown] = useState(0);
-
   useEffect(() => {
     if (!parentId || typeof window === "undefined") {
       setCooldown(0);
       return;
     }
-
     const key = getCooldownKey(parentId);
     const update = () => {
       const deadline = Number(window.localStorage.getItem(key) ?? 0);
@@ -155,20 +136,16 @@ export function useSosActions({
         window.localStorage.removeItem(key);
       }
     };
-
     update();
     const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
   }, [parentId]);
-
   const startCooldown = (seconds: number) => {
     if (!parentId || typeof window === "undefined") return;
     window.localStorage.setItem(getCooldownKey(parentId), String(Date.now() + seconds * 1000));
     setCooldown(seconds);
   };
-
   const primaryContact = emergencyContacts.find((contact) => cleanPhone(contact.phone));
-
   const automatedRecipientCount = useMemo(() => {
     const emergencyEmailCount = new Set(
       emergencyContacts
@@ -177,7 +154,6 @@ export function useSosActions({
     ).size;
     return linkedChildren.length + emergencyEmailCount + new Set(trustedCaregiverEmails).size;
   }, [emergencyContacts, linkedChildren.length, trustedCaregiverEmails]);
-
   const delivery = useMutation({
     mutationFn: async ({
       alertId,
@@ -188,14 +164,12 @@ export function useSosActions({
     }): Promise<DeliveryResult> => {
       let inAppSent = 0;
       let inAppError: Error | null = null;
-
       if (linkedChildren.length > 0 && actor) {
         const now = new Date();
         const timeLabel = now.toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         });
-
         const notifications = linkedChildren.map((child) => ({
           parent_id: child.id,
           sender_id: actor.id,
@@ -212,26 +186,21 @@ export function useSosActions({
             resent: isResend,
           },
         }));
-
         const { data, error } = await (supabase as any)
           .from("parent_notifications")
           .insert(notifications)
           .select("id");
-
         if (error) inAppError = new Error(error.message);
         else inAppSent = data?.length ?? 0;
       }
-
       const [emailResult, pushResult] = await Promise.allSettled([
         notifyEmail({ data: { alertId, alertType: isResend ? "manual_resend" : "manual" } }),
         notifyPush({ data: { alertId, alertType: isResend ? "manual_resend" : "manual" } }),
       ]);
-
       const email =
         emailResult.status === "fulfilled" ? (emailResult.value as ServerDeliveryResult) : null;
       const push =
         pushResult.status === "fulfilled" ? (pushResult.value as ServerDeliveryResult) : null;
-
       if (inAppError) {
         console.error("SOS in-app notification delivery failed:", inAppError);
       }
@@ -241,7 +210,6 @@ export function useSosActions({
       if (pushResult.status === "rejected") {
         console.error("SOS push delivery failed:", pushResult.reason);
       }
-
       return {
         inAppSent,
         emailSent: email?.sent ?? 0,
@@ -255,7 +223,6 @@ export function useSosActions({
     onSuccess: (result) => {
       const delivered = result.inAppSent + result.emailSent + result.pushSent;
       const failed = result.emailFailed + result.pushFailed;
-
       if (delivered > 0) {
         toast.success(
           `SOS notifications delivered through ${delivered} available channel${delivered === 1 ? "" : "s"}.`,
@@ -276,12 +243,10 @@ export function useSosActions({
           { duration: 9000 },
         );
       }
-
       qc.invalidateQueries({ queryKey: ["notifications"] });
       qc.invalidateQueries({ queryKey: ["notifUnread"] });
     },
   });
-
   const trigger = useMutation({
     mutationFn: async (): Promise<{
       alert: SosAlertSummary;
@@ -290,7 +255,6 @@ export function useSosActions({
       if (!actor || actor.role !== "parent" || actor.id !== parentId) {
         throw new Error("Only the care-recipient account can activate SOS.");
       }
-
       const { data: existing, error: existingError } = await supabase
         .from("sos_alerts")
         .select("id,parent_id,parent_name,message,status,created_at,latitude,longitude,address")
@@ -299,16 +263,13 @@ export function useSosActions({
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (existingError) throw existingError;
       if (existing) {
         return { alert: existing as SosAlertSummary, created: false };
       }
-
       let latitude: number | null = null;
       let longitude: number | null = null;
       let address: string | null = null;
-
       if (settings.sos_share_location) {
         const coords = await captureLocation(3500);
         if (coords) {
@@ -317,7 +278,6 @@ export function useSosActions({
           address = await reverseGeocode(coords.latitude, coords.longitude, 1800);
         }
       }
-
       const { data: inserted, error } = await supabase
         .from("sos_alerts")
         .insert({
@@ -334,9 +294,7 @@ export function useSosActions({
         } as any)
         .select("id,parent_id,parent_name,message,status,created_at,latitude,longitude,address")
         .single();
-
       if (error) throw error;
-
       const now = new Date();
       const { error: confirmationError } = await (supabase as any)
         .from("parent_notifications")
@@ -355,16 +313,13 @@ export function useSosActions({
             triggered_at: now.toISOString(),
           },
         });
-
       if (confirmationError) {
         console.error("SOS confirmation notification failed:", confirmationError);
       }
-
       return { alert: inserted as SosAlertSummary, created: true };
     },
     onSuccess: ({ alert, created }) => {
       startCooldown(created ? 30 : 15);
-
       if (created) {
         toast.success("SOS activated. Emergency notifications are being sent.", {
           duration: 7000,
@@ -375,14 +330,11 @@ export function useSosActions({
           { duration: 8000 },
         );
       }
-
       qc.invalidateQueries({ queryKey: ["sos"] });
       qc.invalidateQueries({ queryKey: ["activeSosAlerts"] });
       qc.invalidateQueries({ queryKey: ["activeSosDashboard"] });
       qc.invalidateQueries({ queryKey: ["parent_active_sos"] });
-
       delivery.mutate({ alertId: alert.id, isResend: !created });
-
       if (created && settings.sos_auto_call_primary && primaryContact?.phone) {
         const phone = cleanPhone(primaryContact.phone);
         if (phone) {
@@ -399,7 +351,6 @@ export function useSosActions({
       toast.error(error.message || "Unable to activate SOS.");
     },
   });
-
   const resend = useMutation({
     mutationFn: async (alertId: string) => {
       if (!canTrigger)
@@ -412,7 +363,6 @@ export function useSosActions({
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   return {
     canTrigger,
     linkedChildren,

@@ -33,15 +33,18 @@ import {
   Stethoscope,
   Trash2,
 } from "lucide-react";
-
 export const Route = createFileRoute("/_authenticated/health-risk")({
   ssr: false,
   component: HealthRiskPage,
 });
-
 const riskStyles: Record<
   RiskAssessment["risk_level"],
-  { bg: string; text: string; border: string; dot: string }
+  {
+    bg: string;
+    text: string;
+    border: string;
+    dot: string;
+  }
 > = {
   low: {
     bg: "bg-emerald-50",
@@ -62,7 +65,6 @@ const riskStyles: Record<
     dot: "bg-red-500",
   },
 };
-
 type RiskAssessment = {
   id: string;
   parent_id: string;
@@ -94,7 +96,6 @@ type RiskAssessment = {
   } | null;
   created_at: string;
 };
-
 type VitalType =
   | "blood_pressure"
   | "blood_sugar"
@@ -102,7 +103,6 @@ type VitalType =
   | "weight"
   | "oxygen_saturation"
   | "temperature";
-
 type VitalRow = {
   id: string;
   vital_type: VitalType;
@@ -111,7 +111,6 @@ type VitalRow = {
   recorded_at: string;
   created_at: string;
 };
-
 function getAge(dateOfBirth: string | null | undefined) {
   if (!dateOfBirth) return null;
   const date = new Date(dateOfBirth);
@@ -119,7 +118,6 @@ function getAge(dateOfBirth: string | null | undefined) {
   const years = differenceInYears(new Date(), date);
   return years >= 18 && years <= 125 ? years : null;
 }
-
 function getWarningFlags(assessment: RiskAssessment) {
   const flags: string[] = [];
   let urgent = false;
@@ -128,7 +126,6 @@ function getWarningFlags(assessment: RiskAssessment) {
   const sugar = assessment.sugar_level;
   const heartRate = assessment.heart_rate;
   const oxygen = assessment.oxygen_level;
-
   if (sys !== null && dia !== null) {
     if (sys >= 180 || dia >= 120) {
       urgent = true;
@@ -136,7 +133,6 @@ function getWarningFlags(assessment: RiskAssessment) {
     } else if (sys >= 140 || dia >= 90) {
       flags.push("Elevated blood pressure reading");
     }
-
     if (sys < 80 || dia < 50) {
       urgent = true;
       flags.push("Very low blood pressure reading");
@@ -144,7 +140,6 @@ function getWarningFlags(assessment: RiskAssessment) {
       flags.push("Low blood pressure reading");
     }
   }
-
   if (sugar !== null) {
     if (sugar < 54) {
       urgent = true;
@@ -158,7 +153,6 @@ function getWarningFlags(assessment: RiskAssessment) {
       flags.push("Fasting blood sugar is above the usual range");
     }
   }
-
   if (heartRate !== null) {
     if (heartRate < 40 || heartRate > 130) {
       urgent = true;
@@ -167,7 +161,6 @@ function getWarningFlags(assessment: RiskAssessment) {
       flags.push(heartRate < 50 ? "Slow heart-rate reading" : "Fast heart-rate reading");
     }
   }
-
   if (oxygen !== null) {
     if (oxygen < 90) {
       urgent = true;
@@ -176,17 +169,13 @@ function getWarningFlags(assessment: RiskAssessment) {
       flags.push("Oxygen saturation is below the usual range");
     }
   }
-
   if (assessment.activity_level === "low") flags.push("Low daily activity level");
-
   return { flags: [...new Set(flags)], urgent };
 }
-
 function HealthRiskPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const qc = useQueryClient();
   const predict = useServerFn(predictHealthRisk);
-
   const [age, setAge] = useState("");
   const [sys, setSys] = useState("");
   const [dia, setDia] = useState("");
@@ -198,12 +187,10 @@ function HealthRiskPage() {
   const [wellnessData, setWellnessData] = useState("");
   const [loadedFromVitals, setLoadedFromVitals] = useState(false);
   const [sourceVitalIds, setSourceVitalIds] = useState<string[]>([]);
-
   useEffect(() => {
     const profileAge = getAge(activeParent?.date_of_birth);
     if (profileAge !== null) setAge((current) => current || String(profileAge));
   }, [activeParent?.date_of_birth]);
-
   const {
     data: history = [],
     isLoading,
@@ -223,7 +210,6 @@ function HealthRiskPage() {
       return (data ?? []) as RiskAssessment[];
     },
   });
-
   const { data: latestVitals = [], isFetching: loadingVitals } = useQuery({
     queryKey: ["riskLatestVitals", activeParentId],
     enabled: !!activeParentId && !isChildView,
@@ -239,7 +225,6 @@ function HealthRiskPage() {
       return (data ?? []) as VitalRow[];
     },
   });
-
   useEffect(() => {
     if (!activeParentId) return;
     const channel = supabase
@@ -257,12 +242,10 @@ function HealthRiskPage() {
         },
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
   }, [activeParentId, qc]);
-
   const latest = history[0];
   const latestSafety = useMemo(() => {
     if (!latest) return null;
@@ -272,7 +255,6 @@ function HealthRiskPage() {
       urgent: latest.urgent || calculated.urgent,
     };
   }, [latest]);
-
   function resetForm() {
     setAge(getAge(activeParent?.date_of_birth)?.toString() ?? "");
     setSys("");
@@ -286,13 +268,11 @@ function HealthRiskPage() {
     setLoadedFromVitals(false);
     setSourceVitalIds([]);
   }
-
   function loadLatestVitals() {
     const byType = new Map<VitalType, VitalRow>();
     for (const vital of latestVitals) {
       if (!byType.has(vital.vital_type)) byType.set(vital.vital_type, vital);
     }
-
     const bloodPressure = byType.get("blood_pressure");
     const bloodSugar = byType.get("blood_sugar");
     const pulse = byType.get("heart_rate");
@@ -300,7 +280,6 @@ function HealthRiskPage() {
     const latestOxygen = byType.get("oxygen_saturation");
     const missing: string[] = [];
     const usedIds: string[] = [];
-
     if (bloodPressure?.value_secondary !== null && bloodPressure?.value_secondary !== undefined) {
       setSys(String(bloodPressure.value));
       setDia(String(bloodPressure.value_secondary));
@@ -308,17 +287,14 @@ function HealthRiskPage() {
     } else {
       missing.push("blood pressure");
     }
-
     if (bloodSugar) {
       setSugar(String(bloodSugar.value));
       usedIds.push(bloodSugar.id);
     } else missing.push("blood sugar");
-
     if (pulse) {
       setHeartRate(String(pulse.value));
       usedIds.push(pulse.id);
     } else missing.push("heart rate");
-
     if (latestWeight) {
       setWeight(String(latestWeight.value));
       usedIds.push(latestWeight.id);
@@ -327,14 +303,11 @@ function HealthRiskPage() {
       setOxygen(String(latestOxygen.value));
       usedIds.push(latestOxygen.id);
     }
-
     const profileAge = getAge(activeParent?.date_of_birth);
     if (profileAge !== null) setAge(String(profileAge));
     else if (!age) missing.push("age/date of birth");
-
     setLoadedFromVitals(true);
     setSourceVitalIds([...new Set(usedIds)]);
-
     if (missing.length) {
       toast.warning(`Loaded available readings. Still enter: ${missing.join(", ")}.`);
     } else {
@@ -343,13 +316,11 @@ function HealthRiskPage() {
       );
     }
   }
-
   function validateInputs() {
     if (!age || !sys || !dia || !sugar || !heartRate) {
       toast.error("Age, blood pressure, fasting blood sugar, and heart rate are required.");
       return false;
     }
-
     const parsed = {
       age: Number(age),
       sys: Number(sys),
@@ -359,12 +330,10 @@ function HealthRiskPage() {
       weight: weight ? Number(weight) : undefined,
       oxygen: oxygen ? Number(oxygen) : undefined,
     };
-
     if (Object.values(parsed).some((value) => value !== undefined && !Number.isFinite(value))) {
       toast.error("Please enter valid numeric measurements.");
       return false;
     }
-
     if (!Number.isInteger(parsed.age) || parsed.age < 18 || parsed.age > 125) {
       toast.error("Age must be a whole number between 18 and 125.");
       return false;
@@ -397,16 +366,13 @@ function HealthRiskPage() {
       toast.error("Wellness context must be 1,000 characters or fewer.");
       return false;
     }
-
     return true;
   }
-
   const run = useMutation({
     mutationFn: async () => {
       if (!activeParentId || isChildView) {
         throw new Error("Only the care-recipient account can run a risk check.");
       }
-
       const result = await predict({
         data: {
           age: Number(age),
@@ -422,7 +388,6 @@ function HealthRiskPage() {
           sourceVitalIds: loadedFromVitals ? sourceVitalIds : [],
         },
       });
-
       return { row: result.assessment as RiskAssessment, urgent: result.urgent };
     },
     onSuccess: ({ row, urgent }) => {
@@ -443,7 +408,6 @@ function HealthRiskPage() {
     onError: (error: Error) =>
       toast.error(error.message || "The risk check could not be completed."),
   });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!activeParentId || isChildView) throw new Error("You cannot delete this assessment.");
@@ -470,7 +434,6 @@ function HealthRiskPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (!activeParentId || isChildView) throw new Error("You cannot delete these assessments.");
@@ -492,7 +455,6 @@ function HealthRiskPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   return (
     <AppShell>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -926,7 +888,7 @@ function HealthRiskPage() {
                             <p className="mt-1 text-[10px] font-semibold capitalize text-muted-foreground">
                               Trend: {item.comparison.trend}
                               {item.comparison.score_delta !== null &&
-                                item.comparison.score_delta !== undefined
+                              item.comparison.score_delta !== undefined
                                 ? ` (${item.comparison.score_delta > 0 ? "+" : ""}${item.comparison.score_delta})`
                                 : ""}
                             </p>
@@ -959,7 +921,6 @@ function HealthRiskPage() {
     </AppShell>
   );
 }
-
 function Field({
   label,
   required,
@@ -985,7 +946,6 @@ function Field({
     </div>
   );
 }
-
 function Measurement({
   label,
   value,

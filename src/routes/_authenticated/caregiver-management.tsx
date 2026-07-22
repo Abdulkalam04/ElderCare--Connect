@@ -23,7 +23,6 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,12 +45,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useActiveParent } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
-
 export const Route = createFileRoute("/_authenticated/caregiver-management")({
   ssr: false,
   component: CaregiverManagementPage,
 });
-
 type BookingStatus =
   | "pending"
   | "confirmed"
@@ -59,10 +56,8 @@ type BookingStatus =
   | "in_progress"
   | "completed"
   | "cancelled";
-
 type ServiceType = "nurse" | "physiotherapist" | "companion" | "caretaker";
 type CaregiverType = ServiceType | "other";
-
 type Booking = {
   id: string;
   parent_id: string;
@@ -87,7 +82,6 @@ type Booking = {
   created_at: string;
   updated_at: string;
 };
-
 type TrustedCaregiver = {
   id: string;
   parent_id: string;
@@ -102,9 +96,7 @@ type TrustedCaregiver = {
   available_from: string | null;
   available_until: string | null;
 };
-
 type StatusFilter = "all" | BookingStatus;
-
 const SERVICE_CONFIG: Record<
   ServiceType,
   {
@@ -139,8 +131,14 @@ const SERVICE_CONFIG: Record<
     background: "bg-rose-50",
   },
 };
-
-const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string; dot: string }> = {
+const STATUS_CONFIG: Record<
+  BookingStatus,
+  {
+    label: string;
+    className: string;
+    dot: string;
+  }
+> = {
   pending: {
     label: "Pending",
     className: "bg-amber-50 text-amber-700 border-amber-200",
@@ -172,7 +170,6 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string; d
     dot: "bg-red-400",
   },
 };
-
 const WORKFLOW_STEPS: BookingStatus[] = [
   "pending",
   "confirmed",
@@ -180,7 +177,6 @@ const WORKFLOW_STEPS: BookingStatus[] = [
   "in_progress",
   "completed",
 ];
-
 function formatBookingDate(value: string | null) {
   if (!value) return "—";
   try {
@@ -189,7 +185,6 @@ function formatBookingDate(value: string | null) {
     return value;
   }
 }
-
 function formatBookingTime(value: string | null) {
   if (!value) return "—";
   try {
@@ -201,7 +196,6 @@ function formatBookingTime(value: string | null) {
     return value;
   }
 }
-
 function formatTimestamp(value: string | null) {
   if (!value) return null;
   try {
@@ -210,31 +204,24 @@ function formatTimestamp(value: string | null) {
     return value;
   }
 }
-
 function timeValue(value: string | null) {
   return value ? value.slice(0, 5) : null;
 }
-
 function caregiverMatchesBooking(caregiver: TrustedCaregiver, booking: Booking) {
   if (!caregiver.available) return false;
-
   if (caregiver.caregiver_type !== "other" && caregiver.caregiver_type !== booking.caregiver_type) {
     return false;
   }
-
   const dateValue = booking.booking_date ?? booking.scheduled_at.slice(0, 10);
   const bookingDate = new Date(`${dateValue}T00:00:00`);
   const day = bookingDate.getDay();
   const availableDays = caregiver.available_days?.length
     ? caregiver.available_days
     : [0, 1, 2, 3, 4, 5, 6];
-
   if (!availableDays.includes(day)) return false;
-
   const bookingTime = timeValue(booking.booking_time);
   const availableFrom = timeValue(caregiver.available_from);
   const availableUntil = timeValue(caregiver.available_until);
-
   if (
     bookingTime &&
     availableFrom &&
@@ -243,13 +230,10 @@ function caregiverMatchesBooking(caregiver: TrustedCaregiver, booking: Booking) 
   ) {
     return false;
   }
-
   return true;
 }
-
 function StatusBadge({ status }: { status: BookingStatus }) {
   const config = STATUS_CONFIG[status];
-
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${config.className}`}
@@ -259,35 +243,28 @@ function StatusBadge({ status }: { status: BookingStatus }) {
     </span>
   );
 }
-
 function RatingStars({ rating }: { rating: number }) {
   return (
     <span className="inline-flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((value) => (
         <Star
           key={value}
-          className={`size-4 ${value <= rating ? "fill-amber-400 text-amber-400" : "text-stone-300"
-            }`}
+          className={`size-4 ${value <= rating ? "fill-amber-400 text-amber-400" : "text-stone-300"}`}
         />
       ))}
     </span>
   );
 }
-
 function CaregiverManagementPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const queryClient = useQueryClient();
-
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
-
   const [assigningBooking, setAssigningBooking] = useState<Booking | null>(null);
   const [selectedCaregiverId, setSelectedCaregiverId] = useState("");
-
   const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
-
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["caregiver_bookings", activeParentId],
     enabled: !!activeParentId,
@@ -297,12 +274,10 @@ function CaregiverManagementPage() {
         .select("*")
         .eq("parent_id", activeParentId!)
         .order("scheduled_at", { ascending: true });
-
       if (error) throw error;
       return (data ?? []) as Booking[];
     },
   });
-
   const { data: caregivers = [], isLoading: caregiversLoading } = useQuery({
     queryKey: ["trusted-caregivers", activeParentId],
     enabled: !!activeParentId,
@@ -315,15 +290,12 @@ function CaregiverManagementPage() {
         .eq("parent_id", activeParentId!)
         .order("available", { ascending: false })
         .order("name", { ascending: true });
-
       if (error) throw error;
       return (data ?? []) as TrustedCaregiver[];
     },
   });
-
   useEffect(() => {
     if (!activeParentId) return;
-
     const bookingChannel = supabase
       .channel(`caregiver-workflow-${activeParentId}`)
       .on(
@@ -342,7 +314,6 @@ function CaregiverManagementPage() {
         },
       )
       .subscribe();
-
     const caregiverChannel = supabase
       .channel(`caregiver-assignment-directory-${activeParentId}`)
       .on(
@@ -360,27 +331,22 @@ function CaregiverManagementPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(bookingChannel);
       void supabase.removeChannel(caregiverChannel);
     };
   }, [activeParentId, queryClient]);
-
   const caregiverById = useMemo(
     () => new Map(caregivers.map((caregiver) => [caregiver.id, caregiver])),
     [caregivers],
   );
-
   const eligibleCaregivers = useMemo(() => {
     if (!assigningBooking) return [];
     return caregivers.filter((caregiver) => caregiverMatchesBooking(caregiver, assigningBooking));
   }, [assigningBooking, caregivers]);
-
   const selectedCaregiver = selectedCaregiverId
     ? (caregiverById.get(selectedCaregiverId) ?? null)
     : null;
-
   const updateStatus = useMutation({
     mutationFn: async ({
       booking,
@@ -394,29 +360,23 @@ function CaregiverManagementPage() {
       if (isChildView) {
         throw new Error("You do not have permission to manage caregiver bookings.");
       }
-
       if (!activeParentId) {
         throw new Error("No parent profile is selected.");
       }
-
       const changes: TablesUpdate<"caregiver_bookings"> = {
         status: nextStatus,
       };
-
       if (nextStatus === "assigned") {
         if (!trustedCaregiverId) {
           throw new Error("Select an available caregiver before assigning the booking.");
         }
-
         const caregiver = caregiverById.get(trustedCaregiverId);
         if (!caregiver || !caregiverMatchesBooking(caregiver, booking)) {
           throw new Error("The selected caregiver is unavailable for this service, day, or time.");
         }
-
         changes.trusted_caregiver_id = trustedCaregiverId;
         changes.caregiver_name = caregiver.name;
       }
-
       const { data, error } = await supabase
         .from("caregiver_bookings")
         .update(changes)
@@ -425,14 +385,12 @@ function CaregiverManagementPage() {
         .eq("status", booking.status)
         .select("*")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) {
         throw new Error(
           "The booking was not updated. Its status may already have changed in another session.",
         );
       }
-
       return data as Booking;
     },
     onSuccess: (updatedBooking) => {
@@ -441,12 +399,9 @@ function CaregiverManagementPage() {
           booking.id === updatedBooking.id ? updatedBooking : booking,
         ),
       );
-
       toast.success(`Booking moved to ${STATUS_CONFIG[updatedBooking.status].label}.`);
-
       setAssigningBooking(null);
       setSelectedCaregiverId("");
-
       queryClient.invalidateQueries({
         queryKey: ["caregiver_bookings", activeParentId],
       });
@@ -456,25 +411,20 @@ function CaregiverManagementPage() {
       toast.error(error.message || "Unable to update the booking status.");
     },
   });
-
   const saveReview = useMutation({
     mutationFn: async () => {
       if (isChildView) {
         throw new Error("Only the parent can review a caregiver service.");
       }
-
       if (!activeParentId || !reviewingBooking) {
         throw new Error("No completed caregiver booking is selected.");
       }
-
       if (reviewingBooking.status !== "completed") {
         throw new Error("Only a completed caregiver service can be reviewed.");
       }
-
       if (reviewRating < 1 || reviewRating > 5) {
         throw new Error("Select a rating from 1 to 5 stars.");
       }
-
       const { data, error } = await supabase
         .from("caregiver_bookings")
         .update({
@@ -486,7 +436,6 @@ function CaregiverManagementPage() {
         .eq("status", "completed")
         .select("*")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) throw new Error("The review could not be saved.");
       return data as Booking;
@@ -497,7 +446,6 @@ function CaregiverManagementPage() {
           booking.id === updatedBooking.id ? updatedBooking : booking,
         ),
       );
-
       setReviewingBooking(null);
       setReviewRating(0);
       setReviewComment("");
@@ -505,17 +453,13 @@ function CaregiverManagementPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const filteredBookings = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return bookings.filter((booking) => {
       const matchesStatus = statusFilter === "all" || booking.status === statusFilter;
-
       const assignedCaregiver = booking.trusted_caregiver_id
         ? caregiverById.get(booking.trusted_caregiver_id)
         : null;
-
       const serviceName = SERVICE_CONFIG[booking.caregiver_type].label;
       const matchesSearch =
         !query ||
@@ -526,20 +470,16 @@ function CaregiverManagementPage() {
         booking.notes?.toLowerCase().includes(query) ||
         booking.review_comment?.toLowerCase().includes(query) ||
         booking.booking_date?.toLowerCase().includes(query);
-
       return matchesStatus && matchesSearch;
     });
   }, [bookings, caregiverById, search, statusFilter]);
-
   function confirmBooking(booking: Booking) {
     if (window.confirm(`Confirm this ${SERVICE_CONFIG[booking.caregiver_type].label} booking?`)) {
       updateStatus.mutate({ booking, nextStatus: "confirmed" });
     }
   }
-
   function openAssignDialog(booking: Booking) {
     const matching = caregivers.filter((caregiver) => caregiverMatchesBooking(caregiver, booking));
-
     setAssigningBooking(booking);
     setSelectedCaregiverId(
       booking.trusted_caregiver_id &&
@@ -548,23 +488,19 @@ function CaregiverManagementPage() {
         : (matching[0]?.id ?? ""),
     );
   }
-
   function assignCaregiver() {
     if (!assigningBooking) return;
-
     updateStatus.mutate({
       booking: assigningBooking,
       nextStatus: "assigned",
       trustedCaregiverId: selectedCaregiverId,
     });
   }
-
   function startService(booking: Booking) {
     if (window.confirm(`Start the ${SERVICE_CONFIG[booking.caregiver_type].label} service now?`)) {
       updateStatus.mutate({ booking, nextStatus: "in_progress" });
     }
   }
-
   function completeService(booking: Booking) {
     if (
       window.confirm(
@@ -574,19 +510,16 @@ function CaregiverManagementPage() {
       updateStatus.mutate({ booking, nextStatus: "completed" });
     }
   }
-
   function cancelBooking(booking: Booking) {
     if (window.confirm(`Cancel this ${SERVICE_CONFIG[booking.caregiver_type].label} booking?`)) {
       updateStatus.mutate({ booking, nextStatus: "cancelled" });
     }
   }
-
   function openReviewDialog(booking: Booking) {
     setReviewingBooking(booking);
     setReviewRating(booking.review_rating ?? 0);
     setReviewComment(booking.review_comment ?? "");
   }
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
@@ -628,14 +561,12 @@ function CaregiverManagementPage() {
         {WORKFLOW_STEPS.map((status) => {
           const config = STATUS_CONFIG[status];
           const count = bookings.filter((booking) => booking.status === status).length;
-
           return (
             <button
               key={status}
               type="button"
               onClick={() => setStatusFilter(status)}
-              className={`rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${statusFilter === status ? config.className : "border-border bg-card"
-                }`}
+              className={`rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${statusFilter === status ? config.className : "border-border bg-card"}`}
             >
               <span className="text-[10px] font-mono uppercase tracking-widest">
                 {config.label}
@@ -887,8 +818,7 @@ function CaregiverManagementPage() {
                     aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
                   >
                     <Star
-                      className={`size-8 ${value <= reviewRating ? "fill-amber-400 text-amber-400" : "text-stone-300"
-                        }`}
+                      className={`size-8 ${value <= reviewRating ? "fill-amber-400 text-amber-400" : "text-stone-300"}`}
                     />
                   </button>
                 ))}
@@ -935,7 +865,6 @@ function CaregiverManagementPage() {
     </AppShell>
   );
 }
-
 function WorkflowCard({
   booking,
   caregiver,
@@ -963,7 +892,6 @@ function WorkflowCard({
   const ServiceIcon = service.icon;
   const currentStep = WORKFLOW_STEPS.indexOf(booking.status);
   const isFinished = booking.status === "completed" || booking.status === "cancelled";
-
   const lifecycle = [
     { label: "Confirmed", value: booking.confirmed_at },
     { label: "Assigned", value: booking.assigned_at },
@@ -971,7 +899,6 @@ function WorkflowCard({
     { label: "Completed", value: booking.completed_at },
     { label: "Cancelled", value: booking.cancelled_at },
   ].filter((item) => item.value);
-
   return (
     <article className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
@@ -1141,7 +1068,6 @@ function WorkflowCard({
             {WORKFLOW_STEPS.map((step, index) => {
               const reached = currentStep >= index;
               const active = booking.status === step;
-
               return (
                 <div key={step} className="min-w-0 text-center">
                   <div className="mb-2 flex items-center">
@@ -1149,10 +1075,11 @@ function WorkflowCard({
                       <span className={`h-0.5 flex-1 ${reached ? "bg-primary" : "bg-stone-200"}`} />
                     )}
                     <span
-                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${reached
+                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${
+                        reached
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-stone-300 bg-white text-stone-400"
-                        } ${active ? "ring-4 ring-primary/10" : ""}`}
+                      } ${active ? "ring-4 ring-primary/10" : ""}`}
                     >
                       {reached && index < currentStep ? (
                         <CheckCircle2 className="size-3.5" />
@@ -1162,14 +1089,12 @@ function WorkflowCard({
                     </span>
                     {index < WORKFLOW_STEPS.length - 1 && (
                       <span
-                        className={`h-0.5 flex-1 ${currentStep > index ? "bg-primary" : "bg-stone-200"
-                          }`}
+                        className={`h-0.5 flex-1 ${currentStep > index ? "bg-primary" : "bg-stone-200"}`}
                       />
                     )}
                   </div>
                   <p
-                    className={`truncate text-[9px] font-medium sm:text-[10px] ${reached ? "text-foreground" : "text-muted-foreground"
-                      }`}
+                    className={`truncate text-[9px] font-medium sm:text-[10px] ${reached ? "text-foreground" : "text-muted-foreground"}`}
                   >
                     {STATUS_CONFIG[step].label}
                   </p>

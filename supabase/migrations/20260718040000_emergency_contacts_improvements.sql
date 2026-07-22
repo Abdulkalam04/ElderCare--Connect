@@ -1,4 +1,4 @@
--- Emergency contacts: validation, efficient ordering, and realtime updates.
+
 
 ALTER TABLE public.emergency_contacts
   DROP CONSTRAINT IF EXISTS emergency_contacts_priority_range;

@@ -27,14 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import {
-  AlertTriangle,
-  Plus,
-  Trash2,
-  Activity,
-  Check,
-  SkipForward,
-} from "lucide-react";
+import { AlertTriangle, Plus, Trash2, Activity, Check, SkipForward } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -45,12 +38,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import { DateTimeInput } from "@/components/ui/datetime-input";
-
 export const Route = createFileRoute("/_authenticated/vitals")({
   ssr: false,
   component: VitalsPage,
 });
-
 type VitalType =
   | "blood_pressure"
   | "blood_sugar"
@@ -58,7 +49,6 @@ type VitalType =
   | "weight"
   | "oxygen_saturation"
   | "temperature";
-
 type VitalRow = {
   id: string;
   parent_id: string;
@@ -72,7 +62,6 @@ type VitalRow = {
   created_by: string | null;
   created_at: string;
 };
-
 type VitalInput = {
   vital_type: VitalType;
   value: number;
@@ -80,9 +69,7 @@ type VitalInput = {
   recorded_at: string;
   notes: string;
 };
-
 type StepStatus = "pending" | "saved" | "skipped";
-
 const VITAL_SEQUENCE: VitalType[] = [
   "blood_pressure",
   "blood_sugar",
@@ -91,7 +78,6 @@ const VITAL_SEQUENCE: VitalType[] = [
   "oxygen_saturation",
   "temperature",
 ];
-
 const VITAL_META: Record<
   VitalType,
   {
@@ -129,7 +115,6 @@ const VITAL_META: Record<
     placeholder: "e.g. 36.7",
   },
 };
-
 function createInitialStepStatus(): Record<VitalType, StepStatus> {
   return {
     blood_pressure: "pending",
@@ -140,12 +125,14 @@ function createInitialStepStatus(): Record<VitalType, StepStatus> {
     temperature: "pending",
   };
 }
-
 function checkAbnormal(
   type: VitalType,
   value: number,
   secondary?: number | null,
-): { abnormal: boolean; reason?: string } {
+): {
+  abnormal: boolean;
+  reason?: string;
+} {
   switch (type) {
     case "blood_pressure":
       if (value >= 140 || (secondary ?? 0) >= 90) {
@@ -194,25 +181,20 @@ function checkAbnormal(
       return { abnormal: false };
   }
 }
-
 function formatValue(vital: VitalRow): string {
   if (vital.vital_type === "blood_pressure") {
     return `${vital.value}/${vital.value_secondary ?? "—"}`;
   }
   return String(vital.value);
 }
-
 function VitalsPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const { data: user } = useCurrentUser();
   const queryClient = useQueryClient();
-
   const [filterType, setFilterType] = useState<VitalType | "all">("all");
   const [days, setDays] = useState<number>(30);
   const [open, setOpen] = useState(false);
-  const [initialVitalType, setInitialVitalType] =
-    useState<VitalType>("blood_pressure");
-
+  const [initialVitalType, setInitialVitalType] = useState<VitalType>("blood_pressure");
   const { data: vitals = [], isLoading } = useQuery({
     queryKey: ["vitals", activeParentId, days],
     enabled: !!activeParentId,
@@ -225,62 +207,39 @@ function VitalsPage() {
         .gte("recorded_at", since)
         .order("recorded_at", { ascending: false })
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       return (data ?? []) as VitalRow[];
     },
   });
-
   const filtered = useMemo(
     () =>
-      filterType === "all"
-        ? vitals
-        : vitals.filter((vital) => vital.vital_type === filterType),
+      filterType === "all" ? vitals : vitals.filter((vital) => vital.vital_type === filterType),
     [vitals, filterType],
   );
-
   const latestByType = useMemo(() => {
     const map = new Map<VitalType, VitalRow>();
-
-    // Do not depend only on the database response order. Two readings can have
-    // the same recorded_at minute, so created_at is used as the tie-breaker.
     const newestFirst = [...vitals].sort((first, second) => {
       const recordedDifference =
-        new Date(second.recorded_at).getTime() -
-        new Date(first.recorded_at).getTime();
-
+        new Date(second.recorded_at).getTime() - new Date(first.recorded_at).getTime();
       if (recordedDifference !== 0) {
         return recordedDifference;
       }
-
-      return (
-        new Date(second.created_at).getTime() -
-        new Date(first.created_at).getTime()
-      );
+      return new Date(second.created_at).getTime() - new Date(first.created_at).getTime();
     });
-
     for (const vital of newestFirst) {
       if (!map.has(vital.vital_type)) {
         map.set(vital.vital_type, vital);
       }
     }
-
     return map;
   }, [vitals]);
-
   const addMutation = useMutation({
     mutationFn: async (input: VitalInput) => {
       if (!activeParentId || !user) {
         throw new Error("The selected profile is not ready.");
       }
-
       const meta = VITAL_META[input.vital_type];
-      const abnormalResult = checkAbnormal(
-        input.vital_type,
-        input.value,
-        input.value_secondary,
-      );
-
+      const abnormalResult = checkAbnormal(input.vital_type, input.value, input.value_secondary);
       const { error } = await (supabase as any).from("vitals").insert({
         parent_id: activeParentId,
         vital_type: input.vital_type,
@@ -292,17 +251,13 @@ function VitalsPage() {
         is_abnormal: abnormalResult.abnormal,
         created_by: user.id,
       });
-
       if (error) throw error;
       return abnormalResult;
     },
     onSuccess: (abnormalResult, input) => {
       queryClient.invalidateQueries({ queryKey: ["vitals"] });
-
       if (abnormalResult.abnormal) {
-        toast.warning(
-          `${VITAL_META[input.vital_type].label}: ${abnormalResult.reason}`,
-        );
+        toast.warning(`${VITAL_META[input.vital_type].label}: ${abnormalResult.reason}`);
       } else {
         toast.success(`${VITAL_META[input.vital_type].label} recorded`);
       }
@@ -311,7 +266,6 @@ function VitalsPage() {
       toast.error(error.message ?? "Failed to save the vital record");
     },
   });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView) {
@@ -320,47 +274,35 @@ function VitalsPage() {
       if (!activeParentId) {
         throw new Error("No parent profile is selected.");
       }
-
       const { data, error } = await (supabase as any)
         .from("vitals")
         .delete()
         .eq("id", id)
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (error) throw error;
       if (!data || data.length === 0) {
         throw new Error(
           "The record was not deleted. It may already be removed or blocked by permissions.",
         );
       }
-
       return id;
     },
     onSuccess: async (deletedId) => {
-      // Immediately remove only the deleted reading from every cached vitals
-      // list. latestByType then automatically falls back to the previous
-      // reading of the same type without waiting for the five-minute cache.
       queryClient.setQueriesData<VitalRow[]>(
         { queryKey: ["vitals", activeParentId] },
-        (currentVitals) =>
-          currentVitals?.filter((vital) => vital.id !== deletedId),
+        (currentVitals) => currentVitals?.filter((vital) => vital.id !== deletedId),
       );
-
-      // Confirm the cache against Supabase so every card, filter and history
-      // list stays synchronized with the database.
       await queryClient.refetchQueries({
         queryKey: ["vitals", activeParentId],
         type: "active",
       });
-
       toast.success("Vital record deleted");
     },
     onError: (error: any) => {
       toast.error(error.message ?? "Failed to delete the vital record");
     },
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (isChildView) {
@@ -369,12 +311,10 @@ function VitalsPage() {
       if (!activeParentId) {
         throw new Error("No parent profile is selected.");
       }
-
       const { error } = await (supabase as any)
         .from("vitals")
         .delete()
         .eq("parent_id", activeParentId);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -385,14 +325,11 @@ function VitalsPage() {
       toast.error(error.message ?? "Failed to clear vitals");
     },
   });
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">
-            Vitals
-          </h1>
+          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">Vitals</h1>
           <p className="mt-1 text-muted-foreground">
             Health vitals for {activeParent?.full_name ?? "—"}
           </p>
@@ -445,7 +382,6 @@ function VitalsPage() {
       <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {VITAL_SEQUENCE.map((type) => {
           const vital = latestByType.get(type);
-
           return (
             <button
               key={type}
@@ -498,9 +434,7 @@ function VitalsPage() {
       <div className="mb-4 flex flex-wrap gap-3">
         <Select
           value={filterType}
-          onValueChange={(value) =>
-            setFilterType(value as VitalType | "all")
-          }
+          onValueChange={(value) => setFilterType(value as VitalType | "all")}
         >
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue />
@@ -515,10 +449,7 @@ function VitalsPage() {
           </SelectContent>
         </Select>
 
-        <Select
-          value={String(days)}
-          onValueChange={(value) => setDays(Number(value))}
-        >
+        <Select value={String(days)} onValueChange={(value) => setDays(Number(value))}>
           <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
@@ -534,8 +465,7 @@ function VitalsPage() {
       {filterType !== "all" && filtered.length > 0 && (
         <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card p-4">
           <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <Activity className="size-4" /> {VITAL_META[filterType].label}{" "}
-            trend
+            <Activity className="size-4" /> {VITAL_META[filterType].label} trend
           </p>
           <div className="h-56 min-w-0 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -543,9 +473,7 @@ function VitalsPage() {
                 data={[...filtered].reverse().map((vital) => ({
                   date: format(new Date(vital.recorded_at), "MMM d"),
                   value: Number(vital.value),
-                  secondary: vital.value_secondary
-                    ? Number(vital.value_secondary)
-                    : undefined,
+                  secondary: vital.value_secondary ? Number(vital.value_secondary) : undefined,
                 }))}
               >
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -589,14 +517,9 @@ function VitalsPage() {
                 className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:gap-4"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">
-                    {VITAL_META[vital.vital_type].label}
-                  </p>
+                  <p className="text-sm font-semibold">{VITAL_META[vital.vital_type].label}</p>
                   <p className="font-mono text-[10px] uppercase text-muted-foreground">
-                    {format(
-                      new Date(vital.recorded_at),
-                      "MMM d, yyyy HH:mm",
-                    )}
+                    {format(new Date(vital.recorded_at), "MMM d, yyyy HH:mm")}
                   </p>
                   {vital.notes && (
                     <p className="mt-0.5 line-clamp-1 text-xs italic text-muted-foreground">
@@ -606,12 +529,8 @@ function VitalsPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-lg font-bold">
-                    {formatValue(vital)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {vital.unit}
-                  </span>
+                  <span className="font-display text-lg font-bold">{formatValue(vital)}</span>
+                  <span className="text-xs text-muted-foreground">{vital.unit}</span>
 
                   {vital.is_abnormal ? (
                     <Badge variant="destructive" className="text-[10px]">
@@ -654,7 +573,6 @@ function VitalsPage() {
     </AppShell>
   );
 }
-
 function AddVitalDialog({
   initialType,
   onSubmit,
@@ -670,54 +588,40 @@ function AddVitalDialog({
   const [value, setValue] = useState("");
   const [secondary, setSecondary] = useState("");
   const [notes, setNotes] = useState("");
-  const [when, setWhen] = useState(
-    format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-  );
-  const [stepStatus, setStepStatus] = useState<
-    Record<VitalType, StepStatus>
-  >(createInitialStepStatus);
-
+  const [when, setWhen] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+  const [stepStatus, setStepStatus] =
+    useState<Record<VitalType, StepStatus>>(createInitialStepStatus);
   const meta = VITAL_META[type];
   const currentIndex = VITAL_SEQUENCE.indexOf(type);
   const processedCount = VITAL_SEQUENCE.filter(
     (vitalType) => stepStatus[vitalType] !== "pending",
   ).length;
-
   function clearReadingFields() {
     setValue("");
     setSecondary("");
     setNotes("");
   }
-
   function moveToNextStep(updatedStatus: Record<VitalType, StepStatus>) {
     const orderedNextTypes = [
       ...VITAL_SEQUENCE.slice(currentIndex + 1),
       ...VITAL_SEQUENCE.slice(0, currentIndex + 1),
     ];
-
-    const nextType = orderedNextTypes.find(
-      (vitalType) => updatedStatus[vitalType] === "pending",
-    );
-
+    const nextType = orderedNextTypes.find((vitalType) => updatedStatus[vitalType] === "pending");
     if (!nextType) {
       toast.success("Vital recording session completed");
       onComplete();
       return;
     }
-
     setType(nextType);
     clearReadingFields();
   }
-
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue) || numericValue <= 0) {
       toast.error(`Enter a valid ${meta.label.toLowerCase()} value`);
       return;
     }
-
     let secondaryValue: number | null = null;
     if (meta.hasSecondary) {
       const numericSecondary = Number(secondary);
@@ -727,13 +631,11 @@ function AddVitalDialog({
       }
       secondaryValue = numericSecondary;
     }
-
     const selectedDate = new Date(when);
     if (Number.isNaN(selectedDate.getTime())) {
       toast.error("Enter a valid date and time");
       return;
     }
-
     try {
       await onSubmit({
         vital_type: type,
@@ -742,7 +644,6 @@ function AddVitalDialog({
         recorded_at: selectedDate.toISOString(),
         notes,
       });
-
       const updatedStatus = {
         ...stepStatus,
         [type]: "saved" as StepStatus,
@@ -750,34 +651,28 @@ function AddVitalDialog({
       setStepStatus(updatedStatus);
       moveToNextStep(updatedStatus);
     } catch {
-      // The mutation already shows the database error. Keep this step open so
-      // the user can correct the value or try saving again.
+      void 0;
     }
   }
-
   function skipCurrentStep() {
     const updatedStatus = {
       ...stepStatus,
       [type]: stepStatus[type] === "saved" ? "saved" : "skipped",
     };
-
     setStepStatus(updatedStatus);
     toast.message(`${meta.label} skipped`);
     moveToNextStep(updatedStatus);
   }
-
   const remainingAfterSave = VITAL_SEQUENCE.filter(
     (vitalType) => vitalType !== type && stepStatus[vitalType] === "pending",
   ).length;
-
   return (
     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
       <DialogHeader>
         <DialogTitle>Add vital records</DialogTitle>
         <DialogDescription>
-          The form starts with blood pressure and automatically moves through
-          all six vitals. Use the list to jump to another vital, or skip a
-          reading you do not have.
+          The form starts with blood pressure and automatically moves through all six vitals. Use
+          the list to jump to another vital, or skip a reading you do not have.
         </DialogDescription>
       </DialogHeader>
 
@@ -786,16 +681,13 @@ function AddVitalDialog({
           <span className="font-medium">
             Step {currentIndex + 1} of {VITAL_SEQUENCE.length}
           </span>
-          <span className="text-muted-foreground">
-            {processedCount} completed or skipped
-          </span>
+          <span className="text-muted-foreground">{processedCount} completed or skipped</span>
         </div>
 
         <div className="mt-3 grid grid-cols-6 gap-1.5">
           {VITAL_SEQUENCE.map((vitalType, index) => {
             const status = stepStatus[vitalType];
             const isCurrent = vitalType === type;
-
             return (
               <button
                 key={vitalType}
@@ -841,15 +733,10 @@ function AddVitalDialog({
             <SelectContent>
               {VITAL_SEQUENCE.map((vitalType) => {
                 const status = stepStatus[vitalType];
-
                 return (
                   <SelectItem key={vitalType} value={vitalType}>
                     {VITAL_META[vitalType].label}
-                    {status === "saved"
-                      ? " — Saved"
-                      : status === "skipped"
-                        ? " — Skipped"
-                        : ""}
+                    {status === "saved" ? " — Saved" : status === "skipped" ? " — Skipped" : ""}
                   </SelectItem>
                 );
               })}
@@ -908,31 +795,17 @@ function AddVitalDialog({
 
         <DialogFooter className="gap-2 sm:justify-between">
           <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onComplete}
-              disabled={pending}
-            >
+            <Button type="button" variant="ghost" onClick={onComplete} disabled={pending}>
               Close
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={skipCurrentStep}
-              disabled={pending}
-            >
+            <Button type="button" variant="outline" onClick={skipCurrentStep} disabled={pending}>
               <SkipForward className="mr-2 size-4" /> Skip
             </Button>
           </div>
 
           <Button type="submit" disabled={pending}>
             <Check className="mr-2 size-4" />
-            {pending
-              ? "Saving…"
-              : remainingAfterSave === 0
-                ? "Save & Finish"
-                : "Save & Next"}
+            {pending ? "Saving…" : remainingAfterSave === 0 ? "Save & Finish" : "Save & Next"}
           </Button>
         </DialogFooter>
       </form>

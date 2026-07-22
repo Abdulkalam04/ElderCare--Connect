@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-
 export type Profile = {
   id: string;
   full_name: string;
@@ -21,7 +20,6 @@ export type Profile = {
   last_activity_source: string | null;
   avatarUrl?: string | null;
 };
-
 export function useCurrentUser() {
   return useQuery({
     queryKey: ["currentUser"],
@@ -31,7 +29,6 @@ export function useCurrentUser() {
     },
   });
 }
-
 export function useProfile() {
   const { data: user } = useCurrentUser();
   return useQuery({
@@ -53,7 +50,6 @@ export function useProfile() {
     },
   });
 }
-
 export function useLinkedParents() {
   const { data: user } = useCurrentUser();
   return useQuery({
@@ -65,7 +61,10 @@ export function useLinkedParents() {
         .select("parent_id, created_at")
         .eq("child_id", user!.id);
       const ids = (links ?? []).map((l) => l.parent_id);
-      if (ids.length === 0) return [] as (Profile & { linked_at?: string })[];
+      if (ids.length === 0)
+        return [] as (Profile & {
+          linked_at?: string;
+        })[];
       const { data: profiles } = await supabase.from("profiles").select("*").in("id", ids);
       return (links ?? []).map((link) => {
         const prof = (profiles ?? []).find((p) => p.id === link.parent_id);
@@ -73,12 +72,13 @@ export function useLinkedParents() {
           ...prof,
           avatarUrl: prof?.avatar_url || null,
           linked_at: link.created_at,
-        } as Profile & { linked_at: string };
+        } as Profile & {
+          linked_at: string;
+        };
       });
     },
   });
 }
-
 export function useLinkedChildren(parentId: string | undefined) {
   return useQuery({
     queryKey: ["linkedChildren", parentId],
@@ -89,7 +89,10 @@ export function useLinkedChildren(parentId: string | undefined) {
         .select("child_id, created_at")
         .eq("parent_id", parentId!);
       const ids = (links ?? []).map((l) => l.child_id);
-      if (ids.length === 0) return [] as (Profile & { linked_at?: string })[];
+      if (ids.length === 0)
+        return [] as (Profile & {
+          linked_at?: string;
+        })[];
       const { data: profiles } = await supabase.from("profiles").select("*").in("id", ids);
       return (links ?? []).map((link) => {
         const prof = (profiles ?? []).find((p) => p.id === link.child_id);
@@ -97,18 +100,17 @@ export function useLinkedChildren(parentId: string | undefined) {
           ...prof,
           avatarUrl: prof?.avatar_url || null,
           linked_at: link.created_at,
-        } as Profile & { linked_at: string };
+        } as Profile & {
+          linked_at: string;
+        };
       });
     },
   });
 }
-
-/** Returns the parent profile currently being viewed/managed. */
 export function useActiveParent() {
   const { data: profile, isLoading: pLoad } = useProfile();
   const { data: linkedParents, isLoading: lLoad } = useLinkedParents();
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
-
   useEffect(() => {
     if (
       profile?.role === "child" &&
@@ -119,12 +121,10 @@ export function useActiveParent() {
       setSelectedParentId(linkedParents[0].id);
     }
   }, [profile, linkedParents, selectedParentId]);
-
   const activeParent: Profile | null =
     profile?.role === "parent"
       ? profile
       : ((linkedParents ?? []).find((p) => p.id === selectedParentId) ?? null);
-
   return {
     profile,
     activeParent,

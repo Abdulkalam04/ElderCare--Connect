@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { useActiveParent, useCurrentUser } from "@/hooks/useProfile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,12 +29,10 @@ import { Plus, Trash2, Pencil, Bell, Phone, CheckCircle2, Clock } from "lucide-r
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { TimeInput } from "@/components/ui/datetime-input";
-
 export const Route = createFileRoute("/_authenticated/medicines")({
   ssr: false,
   component: MedicinesPage,
 });
-
 type MedForm = {
   name: string;
   dosage: string;
@@ -42,7 +41,6 @@ type MedForm = {
   duration: string;
   notes: string;
 };
-
 const EMPTY_FORM: MedForm = {
   name: "",
   dosage: "",
@@ -51,16 +49,13 @@ const EMPTY_FORM: MedForm = {
   duration: "",
   notes: "",
 };
-
 function MedicinesPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const { data: user } = useCurrentUser();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [editingMed, setEditingMed] = useState<any | null>(null);
+  const [editingMed, setEditingMed] = useState<Tables<"medicines"> | null>(null);
   const [form, setForm] = useState<MedForm>(EMPTY_FORM);
-
-  // ── Fetch medicines ────────────────────────────────────────────────────────
   const { data: meds } = useQuery({
     queryKey: ["medicines-all", activeParentId],
     enabled: !!activeParentId,
@@ -74,8 +69,6 @@ function MedicinesPage() {
       return data ?? [];
     },
   });
-
-  // ── Today's taken set ─────────────────────────────────────────────────────
   const today = format(new Date(), "yyyy-MM-dd");
   const { data: takenToday } = useQuery({
     queryKey: ["medLogs", activeParentId, today],
@@ -89,8 +82,6 @@ function MedicinesPage() {
       return new Set((data ?? []).map((l) => l.medicine_id));
     },
   });
-
-  // ── Validate form ─────────────────────────────────────────────────────────
   function validateForm(): boolean {
     if (!form.name.trim()) {
       toast.error("Please enter a medication name.");
@@ -106,8 +97,6 @@ function MedicinesPage() {
     }
     return true;
   }
-
-  // ── Add ───────────────────────────────────────────────────────────────────
   const add = useMutation({
     mutationFn: async () => {
       if (isChildView) throw new Error("You do not have permission to perform this action.");
@@ -135,8 +124,6 @@ function MedicinesPage() {
       if (e.message !== "__validation__") toast.error(e.message);
     },
   });
-
-  // ── Edit ──────────────────────────────────────────────────────────────────
   const edit = useMutation({
     mutationFn: async (medId: string) => {
       if (isChildView) throw new Error("You do not have permission to perform this action.");
@@ -173,13 +160,10 @@ function MedicinesPage() {
       if (e.message !== "__validation__") toast.error(e.message);
     },
   });
-
-  // ── Delete ────────────────────────────────────────────────────────────────
   const remove = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView) throw new Error("You do not have permission to perform this action.");
       if (!activeParentId) throw new Error("No active parent selected.");
-
       const { data, error } = await supabase
         .from("medicines")
         .delete()
@@ -187,14 +171,13 @@ function MedicinesPage() {
         .eq("parent_id", activeParentId)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) throw new Error("Medication could not be deleted or was already removed.");
       return id;
     },
     onSuccess: (deletedId) => {
       toast.success("Medication removed.");
-      qc.setQueryData<any[]>(
+      qc.setQueryData<Tables<"medicines">[]>(
         ["medicines-all", activeParentId],
         (current) => current?.filter((medicine) => medicine.id !== deletedId) ?? [],
       );
@@ -206,7 +189,6 @@ function MedicinesPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (isChildView) throw new Error("You do not have permission to perform this action.");
@@ -221,8 +203,6 @@ function MedicinesPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  // ── Mark Taken (Parent-only) ───────────────────────────────────────────────
   const markTaken = useMutation({
     mutationFn: async (medId: string) => {
       if (isChildView) throw new Error("You do not have permission to perform this action.");
@@ -240,8 +220,6 @@ function MedicinesPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  // ── Child: Send Reminder ───────────────────────────────────────────────────
   const sendReminder = useMutation({
     mutationFn: async (medName: string) => {
       if (!user || !activeParentId) throw new Error("Not ready");
@@ -256,8 +234,6 @@ function MedicinesPage() {
     onSuccess: () => toast.success("Reminder sent successfully."),
     onError: () => toast.error("Unable to send reminder. Please try again."),
   });
-
-  // ── Child: Call Parent ────────────────────────────────────────────────────
   const callParent = useMutation({
     mutationFn: async () => {
       if (!user || !activeParentId) throw new Error("Not ready");
@@ -272,13 +248,11 @@ function MedicinesPage() {
     onSuccess: () => toast.success("Call alert sent to parent successfully."),
     onError: () => toast.error("Unable to send call alert. Please try again."),
   });
-
   function openAdd() {
     setEditingMed(null);
     setForm(EMPTY_FORM);
     setOpen(true);
   }
-
   function openEdit(m: any) {
     setEditingMed(m);
     setForm({
@@ -291,14 +265,12 @@ function MedicinesPage() {
     });
     setOpen(true);
   }
-
   const periodColors: Record<string, string> = {
     morning: "bg-amber-50 text-amber-700",
     noon: "bg-blue-50 text-blue-700",
     evening: "bg-purple-50 text-purple-700",
     night: "bg-slate-100 text-slate-700",
   };
-
   return (
     <AppShell>
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
@@ -310,7 +282,6 @@ function MedicinesPage() {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          {/* Child quick actions */}
           {isChildView && activeParentId && (
             <>
               <Button
@@ -334,7 +305,6 @@ function MedicinesPage() {
             </>
           )}
 
-          {/* Parent: Add medicine */}
           {!isChildView && activeParentId && (
             <>
               {meds && meds.length > 0 && (
@@ -472,7 +442,6 @@ function MedicinesPage() {
         </div>
       </div>
 
-      {/* Read-only notice for child */}
       {isChildView && (
         <div className="mb-6 bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-3 text-sm text-blue-700">
           <Bell className="size-4 shrink-0" />
@@ -481,7 +450,6 @@ function MedicinesPage() {
         </div>
       )}
 
-      {/* Medication list */}
       <div className="bg-card border border-border rounded-3xl overflow-hidden">
         {!meds || meds.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
@@ -496,7 +464,6 @@ function MedicinesPage() {
                   key={m.id}
                   className={`p-4 sm:p-6 flex flex-wrap items-center gap-3 group hover:bg-stone-50 transition-colors ${taken ? "opacity-70" : ""}`}
                 >
-                  {/* Taken indicator */}
                   <div
                     className={`size-10 rounded-2xl grid place-items-center font-bold text-sm shrink-0 ${taken ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary"}`}
                   >
@@ -543,7 +510,6 @@ function MedicinesPage() {
                     </span>
                   )}
 
-                  {/* Parent: mark taken */}
                   {!isChildView && !taken && (
                     <Button
                       size="sm"
@@ -556,7 +522,6 @@ function MedicinesPage() {
                     </Button>
                   )}
 
-                  {/* Child: send reminder per medicine */}
                   {isChildView && (
                     <Button
                       size="sm"
@@ -569,7 +534,6 @@ function MedicinesPage() {
                     </Button>
                   )}
 
-                  {/* Parent: edit & delete */}
                   {!isChildView && (
                     <>
                       <button

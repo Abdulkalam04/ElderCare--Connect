@@ -41,14 +41,10 @@ import {
 } from "lucide-react";
 import { DateInput, TimeInput } from "@/components/ui/datetime-input";
 import { TrustedCaregiverDirectory } from "@/components/TrustedCaregiverDirectory";
-
 export const Route = createFileRoute("/_authenticated/caregivers")({
   ssr: false,
   component: CaregiversPage,
 });
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type BookingStatus =
   | "pending"
   | "confirmed"
@@ -56,9 +52,7 @@ type BookingStatus =
   | "in_progress"
   | "completed"
   | "cancelled";
-
 type ServiceType = "nurse" | "physiotherapist" | "companion" | "caretaker";
-
 type Booking = {
   id: string;
   parent_id: string;
@@ -74,9 +68,6 @@ type Booking = {
   created_at: string;
   updated_at: string;
 };
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const SERVICE_TYPES: {
   id: ServiceType;
   label: string;
@@ -113,17 +104,20 @@ const SERVICE_TYPES: {
     color: "text-rose-600",
   },
 ];
-
 const SERVICE_LABELS: Record<ServiceType, string> = {
   nurse: "Nurse",
   physiotherapist: "Physiotherapist",
   companion: "Companion",
   caretaker: "Caretaker",
 };
-
 const STATUS_CONFIG: Record<
   BookingStatus,
-  { label: string; bg: string; text: string; dot: string }
+  {
+    label: string;
+    bg: string;
+    text: string;
+    dot: string;
+  }
 > = {
   pending: {
     label: "Pending",
@@ -162,21 +156,15 @@ const STATUS_CONFIG: Record<
     dot: "bg-red-400",
   },
 };
-
 const CANCELLABLE_STATUSES: BookingStatus[] = ["pending", "confirmed", "assigned", "in_progress"];
 const EDITABLE_STATUSES: BookingStatus[] = ["pending", "confirmed", "assigned"];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function todayString() {
   return format(new Date(), "yyyy-MM-dd");
 }
-
 function bookingDateTime(date: string, time: string) {
   const value = new Date(`${date}T${time}:00`);
   return Number.isNaN(value.getTime()) ? null : value;
 }
-
 function isPastBooking(booking: Booking) {
   const scheduled = new Date(booking.scheduled_at);
   return (
@@ -186,7 +174,6 @@ function isPastBooking(booking: Booking) {
     booking.status !== "cancelled"
   );
 }
-
 function formatDisplayDate(dateStr: string | null) {
   if (!dateStr) return "—";
   try {
@@ -195,7 +182,6 @@ function formatDisplayDate(dateStr: string | null) {
     return dateStr;
   }
 }
-
 function formatDisplayTime(timeStr: string | null) {
   if (!timeStr) return "—";
   try {
@@ -207,9 +193,6 @@ function formatDisplayTime(timeStr: string | null) {
     return timeStr;
   }
 }
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
 function StatusBadge({ status }: { status: BookingStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
@@ -221,26 +204,16 @@ function StatusBadge({ status }: { status: BookingStatus }) {
     </span>
   );
 }
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 function CaregiversPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const qc = useQueryClient();
-
-  // ── dialog state ──
   const [open, setOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
-
-  // ── form state ──
   const [serviceType, setServiceType] = useState<ServiceType>("nurse");
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
   const [duration, setDuration] = useState<number | "">(2);
   const [notes, setNotes] = useState("");
-
-  // ─── Query ──────────────────────────────────────────────────────────────────
-
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["caregiver_bookings", activeParentId],
     enabled: !!activeParentId,
@@ -254,12 +227,8 @@ function CaregiversPage() {
       return (data ?? []) as unknown as Booking[];
     },
   });
-
-  // Keep the page in sync when a booking is changed by another session or a
-  // backend process (for example, when a caregiver is assigned).
   useEffect(() => {
     if (!activeParentId) return;
-
     const channel = supabase
       .channel(`caregiver-bookings-${activeParentId}`)
       .on(
@@ -278,14 +247,10 @@ function CaregiversPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [activeParentId, qc]);
-
-  // ─── Form helpers ───────────────────────────────────────────────────────────
-
   function resetForm() {
     setServiceType("nurse");
     setBookingDate("");
@@ -293,7 +258,6 @@ function CaregiversPage() {
     setDuration(2);
     setNotes("");
   }
-
   function openNew(type: ServiceType = "nurse") {
     if (isChildView) {
       toast.error("You do not have permission to manage caregiver services.");
@@ -304,7 +268,6 @@ function CaregiversPage() {
     setServiceType(type);
     setOpen(true);
   }
-
   function openEdit(b: Booking) {
     if (isChildView) {
       toast.error("You do not have permission to manage caregiver services.");
@@ -318,15 +281,11 @@ function CaregiversPage() {
     setNotes(b.notes ?? "");
     setOpen(true);
   }
-
   function closeDialog() {
     setOpen(false);
     setEditingBooking(null);
     resetForm();
   }
-
-  // ─── Validation ─────────────────────────────────────────────────────────────
-
   function validate(): boolean {
     if (!activeParentId) {
       toast.error("No parent profile is selected.");
@@ -344,7 +303,6 @@ function CaregiversPage() {
       toast.error("Please select a preferred time.");
       return false;
     }
-
     const scheduled = bookingDateTime(bookingDate, bookingTime);
     if (!scheduled) {
       toast.error("Please enter a valid booking date and time.");
@@ -354,32 +312,24 @@ function CaregiversPage() {
       toast.error("The caregiver booking must be scheduled for a future time.");
       return false;
     }
-
     if (duration !== "" && (!Number.isInteger(duration) || duration < 1 || duration > 24)) {
       toast.error("Duration must be a whole number between 1 and 24 hours.");
       return false;
     }
-
     return true;
   }
-
-  // ─── Mutations ──────────────────────────────────────────────────────────────
-
   const book = useMutation({
     mutationFn: async () => {
       if (isChildView) {
         throw new Error("You do not have permission to manage caregiver services.");
       }
       if (!activeParentId) throw new Error("No parent profile is selected.");
-
       const scheduled = bookingDateTime(bookingDate, bookingTime);
       if (!scheduled) throw new Error("Invalid booking date or time.");
-
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Your session has expired. Please sign in again.");
-
       const { data, error } = await supabase
         .from("caregiver_bookings")
         .insert({
@@ -395,7 +345,6 @@ function CaregiversPage() {
         } as any)
         .select("id")
         .single();
-
       if (error) throw error;
       if (!data) throw new Error("The booking could not be created.");
     },
@@ -409,17 +358,14 @@ function CaregiversPage() {
       toast.error(e.message || "Unable to create booking. Please try again.");
     },
   });
-
   const edit = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView) {
         throw new Error("You do not have permission to manage caregiver services.");
       }
       if (!activeParentId) throw new Error("No parent profile is selected.");
-
       const scheduled = bookingDateTime(bookingDate, bookingTime);
       if (!scheduled) throw new Error("Invalid booking date or time.");
-
       const { data, error } = await supabase
         .from("caregiver_bookings")
         .update({
@@ -435,7 +381,6 @@ function CaregiversPage() {
         .in("status", EDITABLE_STATUSES)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) {
         throw new Error(
@@ -453,14 +398,12 @@ function CaregiversPage() {
       toast.error(e.message || "Unable to update booking. Please try again.");
     },
   });
-
   const cancel = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView) {
         throw new Error("You do not have permission to manage caregiver services.");
       }
       if (!activeParentId) throw new Error("No parent profile is selected.");
-
       const { data, error } = await supabase
         .from("caregiver_bookings")
         .update({ status: "cancelled" })
@@ -469,7 +412,6 @@ function CaregiversPage() {
         .in("status", CANCELLABLE_STATUSES)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) {
         throw new Error(
@@ -486,14 +428,12 @@ function CaregiversPage() {
       toast.error(e.message || "Unable to cancel booking. Please try again.");
     },
   });
-
   const removeOne = useMutation({
     mutationFn: async (id: string) => {
       if (isChildView) {
         throw new Error("You do not have permission to manage caregiver services.");
       }
       if (!activeParentId) throw new Error("No parent profile is selected.");
-
       const { data, error } = await supabase
         .from("caregiver_bookings")
         .delete()
@@ -501,7 +441,6 @@ function CaregiversPage() {
         .eq("parent_id", activeParentId)
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
       if (!data) {
         throw new Error(
@@ -523,20 +462,17 @@ function CaregiversPage() {
       toast.error(e.message || "Unable to delete booking. Please try again.");
     },
   });
-
   const clearAll = useMutation({
     mutationFn: async () => {
       if (isChildView) {
         throw new Error("You do not have permission to manage caregiver services.");
       }
       if (!activeParentId) throw new Error("No parent profile is selected.");
-
       const { data, error } = await supabase
         .from("caregiver_bookings")
         .delete()
         .eq("parent_id", activeParentId)
         .select("id");
-
       if (error) throw error;
       return data?.length ?? 0;
     },
@@ -554,9 +490,6 @@ function CaregiversPage() {
       toast.error(e.message || "Unable to delete the bookings.");
     },
   });
-
-  // ─── Handlers ───────────────────────────────────────────────────────────────
-
   function handleSubmit() {
     if (!validate()) return;
     if (editingBooking) {
@@ -565,7 +498,6 @@ function CaregiversPage() {
       book.mutate();
     }
   }
-
   function handleCancel(b: Booking) {
     if (isChildView) {
       toast.error("You do not have permission to manage caregiver services.");
@@ -579,7 +511,6 @@ function CaregiversPage() {
       cancel.mutate(b.id);
     }
   }
-
   function handleDelete(b: Booking) {
     if (isChildView) {
       toast.error("You do not have permission to manage caregiver services.");
@@ -593,24 +524,15 @@ function CaregiversPage() {
       removeOne.mutate(b.id);
     }
   }
-
-  // ─── Derived data ───────────────────────────────────────────────────────────
-
   const activeBookings = (bookings ?? [])
     .filter((b) => b.status !== "cancelled" && b.status !== "completed")
     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
-
   const historyBookings = (bookings ?? [])
     .filter((b) => b.status === "cancelled" || b.status === "completed")
     .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime());
-
   const isPending = editingBooking ? edit.isPending : book.isPending;
-
-  // ─── Render ─────────────────────────────────────────────────────────────────
-
   return (
     <AppShell>
-      {/* ── Header ── */}
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Caregiver Services</h1>
@@ -658,7 +580,6 @@ function CaregiversPage() {
         )}
       </div>
 
-      {/* ── Child Read-Only Notice ── */}
       {isChildView && (
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-sm text-amber-800">
           <ShieldAlert className="size-4 shrink-0" />
@@ -672,7 +593,6 @@ function CaregiversPage() {
         </div>
       )}
 
-      {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {(["pending", "confirmed", "assigned", "in_progress"] as BookingStatus[]).map((s) => {
           const count = (bookings ?? []).filter((b) => b.status === s).length;
@@ -691,7 +611,6 @@ function CaregiversPage() {
         })}
       </div>
 
-      {/* ── Service Type Cards (Parent only) ── */}
       {!isChildView && (
         <div className="mb-8">
           <h2 className="font-display text-xl font-bold mb-4">Book a Service</h2>
@@ -717,9 +636,7 @@ function CaregiversPage() {
         </div>
       )}
 
-      {/* ── Bookings List ── */}
       <div className="space-y-6">
-        {/* Active Bookings */}
         <div>
           <h2 className="font-display text-xl font-bold mb-4">Active Bookings</h2>
 
@@ -755,7 +672,6 @@ function CaregiversPage() {
           )}
         </div>
 
-        {/* History */}
         {historyBookings.length > 0 && (
           <div>
             <h2 className="font-display text-xl font-bold mb-4 text-muted-foreground">History</h2>
@@ -777,7 +693,6 @@ function CaregiversPage() {
         )}
       </div>
 
-      {/* ── Book / Edit Dialog ── */}
       <Dialog
         open={open}
         onOpenChange={(v) => {
@@ -793,7 +708,6 @@ function CaregiversPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Service Type */}
             <div className="space-y-1.5">
               <Label htmlFor="cg-service-type">
                 Service Type <span className="text-destructive">*</span>
@@ -821,7 +735,6 @@ function CaregiversPage() {
               )}
             </div>
 
-            {/* Date & Time */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="cg-date">
@@ -848,7 +761,6 @@ function CaregiversPage() {
               </div>
             </div>
 
-            {/* Duration */}
             <div className="space-y-1.5">
               <Label htmlFor="cg-duration">
                 Duration (hours) <span className="text-xs text-muted-foreground">(optional)</span>
@@ -866,7 +778,6 @@ function CaregiversPage() {
               />
             </div>
 
-            {/* Notes */}
             <div className="space-y-1.5">
               <Label htmlFor="cg-notes">
                 Notes / Special Requirements{" "}
@@ -907,9 +818,6 @@ function CaregiversPage() {
     </AppShell>
   );
 }
-
-// ─── Booking Row Component ────────────────────────────────────────────────────
-
 function BookingRow({
   booking: b,
   isChildView,
@@ -933,17 +841,14 @@ function BookingRow({
   const canCancel = !isChildView && CANCELLABLE_STATUSES.includes(b.status);
   const pastDue = isPastBooking(b);
   const actionPending = isCancelling || isDeleting;
-
   return (
     <div className="p-4 sm:p-5 flex items-start gap-4 sm:gap-5 hover:bg-stone-50/50 transition-colors">
-      {/* Icon block */}
       <div
         className={`size-12 rounded-2xl bg-stone-100 flex items-center justify-center shrink-0 ${svc?.color ?? "text-stone-600"}`}
       >
         <Icon className="size-5" />
       </div>
 
-      {/* Details */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="font-semibold text-base">{SERVICE_LABELS[b.caregiver_type]}</p>
@@ -983,7 +888,6 @@ function BookingRow({
         )}
       </div>
 
-      {/* Actions (parent only) */}
       {!isChildView && (
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
           {canEdit && (

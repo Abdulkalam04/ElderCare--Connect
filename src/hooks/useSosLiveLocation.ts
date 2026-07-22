@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-const MIN_UPDATE_GAP_MS = 10_000;
+const MIN_UPDATE_GAP_MS = 10000;
 const MIN_DISTANCE_METERS = 20;
-
-type Point = { latitude: number; longitude: number };
-
+type Point = {
+  latitude: number;
+  longitude: number;
+};
 function distanceMeters(a: Point, b: Point) {
-  const earthRadius = 6_371_000;
+  const earthRadius = 6371000;
   const toRadians = (value: number) => (value * Math.PI) / 180;
   const dLat = toRadians(b.latitude - a.latitude);
   const dLon = toRadians(b.longitude - a.longitude);
@@ -16,13 +16,6 @@ function distanceMeters(a: Point, b: Point) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
   return 2 * earthRadius * Math.asin(Math.sqrt(h));
 }
-
-/**
- * Continuously updates an active SOS record while the care-recipient keeps the
- * app open and grants browser location permission. Browsers stop location
- * updates after the app/browser is fully closed, so this is not native-device
- * background tracking.
- */
 export function useSosLiveLocation(options: {
   alertId: string | null | undefined;
   parentId: string | null | undefined;
@@ -35,7 +28,6 @@ export function useSosLiveLocation(options: {
   >("idle");
   const lastWriteRef = useRef(0);
   const lastPointRef = useRef<Point | null>(null);
-
   useEffect(() => {
     if (
       !enabled ||
@@ -48,15 +40,12 @@ export function useSosLiveLocation(options: {
       setState(enabled && alertId ? "unavailable" : "idle");
       return;
     }
-
     let disposed = false;
     let pending = false;
     setState("requesting");
-
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         if (disposed || pending) return;
-
         const point = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -65,12 +54,10 @@ export function useSosLiveLocation(options: {
           ? distanceMeters(lastPointRef.current, point)
           : Number.POSITIVE_INFINITY;
         const elapsed = Date.now() - lastWriteRef.current;
-
         if (elapsed < MIN_UPDATE_GAP_MS && moved < MIN_DISTANCE_METERS) {
           setState("tracking");
           return;
         }
-
         pending = true;
         const updatedAt = new Date(position.timestamp || Date.now()).toISOString();
         const { data, error } = await supabase
@@ -87,21 +74,17 @@ export function useSosLiveLocation(options: {
           .in("status", ["active", "acknowledged"])
           .select("id")
           .maybeSingle();
-
         pending = false;
         if (disposed) return;
-
         if (error) {
           console.error("Unable to update live SOS location", error);
           setState("error");
           return;
         }
-
         if (!data) {
           setState("idle");
           return;
         }
-
         lastWriteRef.current = Date.now();
         lastPointRef.current = point;
         setState("tracking");
@@ -114,16 +97,14 @@ export function useSosLiveLocation(options: {
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 5_000,
-        timeout: 15_000,
+        maximumAge: 5000,
+        timeout: 15000,
       },
     );
-
     return () => {
       disposed = true;
       navigator.geolocation.clearWatch(watchId);
     };
   }, [actorId, alertId, enabled, parentId]);
-
   return state;
 }

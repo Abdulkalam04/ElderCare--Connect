@@ -1,9 +1,9 @@
--- Secure and realtime Family Link workflow.
--- This migration allows a family-member account to monitor multiple care accounts,
--- but requires a valid Family Link Code for every new connection.
 
--- Invite-code validation is performed only inside the linking RPC.
--- No public lookup function is exposed, preventing code probing from revealing account IDs.
+
+
+
+
+
 
 CREATE OR REPLACE FUNCTION public.link_parent_by_invite_code(
   _code TEXT,
@@ -122,9 +122,9 @@ BEGIN
 END;
 $$;
 
--- New links must be created through link_parent_by_invite_code(), which verifies
--- both account roles and the private invite code. Existing users can still view
--- and remove their own links through the table policies.
+
+
+
 DROP POLICY IF EXISTS "Child can create link to self" ON public.parent_child_links;
 REVOKE INSERT, UPDATE ON public.parent_child_links FROM authenticated;
 GRANT SELECT, DELETE ON public.parent_child_links TO authenticated;

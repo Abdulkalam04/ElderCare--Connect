@@ -1,10 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database, Json } from "@/integrations/supabase/types";
-
 const RiskInput = z
   .object({
     age: z.number().int().min(18).max(125),
@@ -23,11 +21,8 @@ const RiskInput = z
     message: "Systolic blood pressure must be higher than diastolic blood pressure.",
     path: ["bpSystolic"],
   });
-
 type RiskAssessment = Database["public"]["Tables"]["health_risk_assessments"]["Row"];
-
 type RiskTrend = "no_previous" | "increased" | "improved" | "stable";
-
 export type RiskComparison = {
   previous_assessment_id: string | null;
   previous_score: number | null;
@@ -36,7 +31,6 @@ export type RiskComparison = {
   new_warning_flags: string[];
   resolved_warning_flags: string[];
 };
-
 export type RiskResult = {
   risk_level: "low" | "medium" | "high";
   risk_score: number;
@@ -48,28 +42,18 @@ export type RiskResult = {
   comparison: RiskComparison;
   assessment: RiskAssessment;
 };
-
 type Screening = Pick<RiskResult, "risk_level" | "risk_score" | "warning_flags" | "urgent">;
-
 type Wording = Pick<RiskResult, "summary" | "recommendations" | "generated_by">;
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
-
-/**
- * Safety-first deterministic screening rules.
- * The score is an application screening score, not a probability or diagnosis.
- */
 function calculateScreening(data: z.infer<typeof RiskInput>): Screening {
   let score = 5;
   const flags: string[] = [];
   let urgent = false;
-
   if (data.age >= 80) score += 15;
   else if (data.age >= 65) score += 10;
   else if (data.age >= 55) score += 5;
-
   if (data.bpSystolic >= 180 || data.bpDiastolic >= 120) {
     score += 40;
     urgent = true;
@@ -84,7 +68,6 @@ function calculateScreening(data: z.infer<typeof RiskInput>): Screening {
     score += 8;
     flags.push("Blood pressure is above the usual target range");
   }
-
   if (data.bpSystolic < 80 || data.bpDiastolic < 50) {
     score += 40;
     urgent = true;
@@ -93,7 +76,6 @@ function calculateScreening(data: z.infer<typeof RiskInput>): Screening {
     score += 20;
     flags.push("Low blood pressure reading");
   }
-
   if (data.sugarLevel < 54) {
     score += 40;
     urgent = true;
@@ -115,7 +97,6 @@ function calculateScreening(data: z.infer<typeof RiskInput>): Screening {
     score += 8;
     flags.push("Fasting blood sugar is slightly elevated");
   }
-
   if (data.heartRate < 40 || data.heartRate > 130) {
     score += 40;
     urgent = true;
@@ -128,7 +109,6 @@ function calculateScreening(data: z.infer<typeof RiskInput>): Screening {
   } else if (data.heartRate > 90) {
     score += 6;
   }
-
   if (data.oxygenLevel !== undefined) {
     if (data.oxygenLevel < 90) {
       score += 45;
@@ -142,18 +122,15 @@ function calculateScreening(data: z.infer<typeof RiskInput>): Screening {
       flags.push("Oxygen saturation is below the usual range");
     }
   }
-
   if (data.activityLevel === "low") {
     score += 10;
     flags.push("Low daily activity level");
   } else if (data.activityLevel === "high") {
     score -= 3;
   }
-
   const riskScore = clamp(Math.round(score), 5, 100);
   const riskLevel: Screening["risk_level"] =
     urgent || riskScore >= 60 ? "high" : riskScore >= 25 ? "medium" : "low";
-
   return {
     risk_level: riskLevel,
     risk_score: riskScore,
@@ -161,7 +138,6 @@ function calculateScreening(data: z.infer<typeof RiskInput>): Screening {
     urgent,
   };
 }
-
 function fallbackText(screening: Screening): Omit<Wording, "generated_by"> {
   if (screening.urgent) {
     return {
@@ -175,7 +151,6 @@ function fallbackText(screening: Screening): Omit<Wording, "generated_by"> {
       ].join("\n"),
     };
   }
-
   if (screening.risk_level === "high") {
     return {
       summary:
@@ -187,7 +162,6 @@ function fallbackText(screening: Screening): Omit<Wording, "generated_by"> {
       ].join("\n"),
     };
   }
-
   if (screening.risk_level === "medium") {
     return {
       summary:
@@ -199,7 +173,6 @@ function fallbackText(screening: Screening): Omit<Wording, "generated_by"> {
       ].join("\n"),
     };
   }
-
   return {
     summary:
       "The entered readings do not show a major warning in this basic screening. Continue routine monitoring because a normal result does not rule out illness.",
@@ -210,7 +183,6 @@ function fallbackText(screening: Screening): Omit<Wording, "generated_by"> {
     ].join("\n"),
   };
 }
-
 const AiWording = z.object({
   summary: z.string().trim().min(10).max(600),
   recommendations: z
@@ -220,7 +192,6 @@ const AiWording = z.object({
     ])
     .transform((value) => (Array.isArray(value) ? value.join("\n") : value)),
 });
-
 function compareWithPrevious(
   screening: Screening,
   previous: Pick<RiskAssessment, "id" | "risk_score" | "warning_flags"> | null,
@@ -235,11 +206,9 @@ function compareWithPrevious(
       resolved_warning_flags: [],
     };
   }
-
   const previousFlags = new Set(previous.warning_flags ?? []);
   const currentFlags = new Set(screening.warning_flags);
   const delta = screening.risk_score - previous.risk_score;
-
   return {
     previous_assessment_id: previous.id,
     previous_score: previous.risk_score,
@@ -249,7 +218,6 @@ function compareWithPrevious(
     resolved_warning_flags: [...previousFlags].filter((flag) => !currentFlags.has(flag)),
   };
 }
-
 async function createWording(
   data: z.infer<typeof RiskInput>,
   screening: Screening,
@@ -259,13 +227,10 @@ async function createWording(
     ...fallback,
     generated_by: "rules",
   };
-
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) return base;
-
   const ai = new GoogleGenAI({ apiKey: geminiKey });
   const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-
   const prompt = `Rewrite a health-screening explanation in warm, plain language for an older adult.
 
 Important rules:
@@ -287,8 +252,7 @@ Measurements:
 - Blood sugar entered as fasting: ${data.sugarLevel} mg/dL
 - Heart rate: ${data.heartRate} bpm
 - Activity: ${data.activityLevel}
-${data.weight !== undefined ? `- Weight: ${data.weight} kg\n` : ""}${data.oxygenLevel !== undefined ? `- Oxygen saturation: ${data.oxygenLevel}%\n` : ""
-    }
+${data.weight !== undefined ? `- Weight: ${data.weight} kg\n` : ""}${data.oxygenLevel !== undefined ? `- Oxygen saturation: ${data.oxygenLevel}%\n` : ""}
 <patient_context>${data.wellnessData || "none"}</patient_context>
 
 Safety fallback that must be preserved:
@@ -298,7 +262,6 @@ ${fallback.recommendations}
 
 Return this exact JSON shape:
 {"summary":"one or two short sentences","recommendations":["2 to 5 short actions"]}`;
-
   try {
     const result = await ai.models.generateContent({
       model,
@@ -309,15 +272,12 @@ Return this exact JSON shape:
         maxOutputTokens: 500,
       },
     });
-
     const raw = (result.text ?? "{}")
       .replace(/```json/gi, "")
       .replace(/```/g, "")
       .trim();
     const wording = AiWording.safeParse(JSON.parse(raw));
-
     if (!wording.success) return base;
-
     return {
       summary: wording.data.summary,
       recommendations: wording.data.recommendations,
@@ -328,7 +288,6 @@ Return this exact JSON shape:
     return base;
   }
 }
-
 export const predictHealthRisk = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => RiskInput.parse(data))
@@ -338,14 +297,11 @@ export const predictHealthRisk = createServerFn({ method: "POST" })
       .select("role")
       .eq("id", context.userId)
       .maybeSingle();
-
     if (profileError || profile?.role !== "parent") {
       throw new Error("Only the care-recipient account can run a health risk check.");
     }
-
     const screening = calculateScreening(data);
     const wording = await createWording(data, screening);
-
     const { data: previous, error: previousError } = await context.supabase
       .from("health_risk_assessments")
       .select("id,risk_score,warning_flags")
@@ -353,13 +309,10 @@ export const predictHealthRisk = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
     if (previousError) {
       throw new Error(`Could not compare with the previous screening: ${previousError.message}`);
     }
-
     const comparison = compareWithPrevious(screening, previous);
-
     const { data: assessment, error: insertError } = await context.supabase
       .from("health_risk_assessments")
       .insert({
@@ -386,11 +339,9 @@ export const predictHealthRisk = createServerFn({ method: "POST" })
       })
       .select("*")
       .single();
-
     if (insertError || !assessment) {
       throw new Error(insertError?.message || "The health-risk screening could not be saved.");
     }
-
     return {
       ...screening,
       ...wording,

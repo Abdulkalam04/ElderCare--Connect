@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pg_net;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- Per-category push controls. notify_push remains the master switch.
+
 ALTER TABLE public.elder_settings
   ADD COLUMN IF NOT EXISTS push_sos_enabled BOOLEAN NOT NULL DEFAULT true,
   ADD COLUMN IF NOT EXISTS push_medicine_enabled BOOLEAN NOT NULL DEFAULT true,
@@ -14,8 +14,8 @@ ALTER TABLE public.elder_settings
   ADD COLUMN IF NOT EXISTS push_health_risk_enabled BOOLEAN NOT NULL DEFAULT true,
   ADD COLUMN IF NOT EXISTS push_companion_safety_enabled BOOLEAN NOT NULL DEFAULT true;
 
--- Delivery properties are stored on the queue so the Edge Function does not
--- have to infer urgency after an event has been claimed.
+
+
 ALTER TABLE public.care_push_queue
   ADD COLUMN IF NOT EXISTS urgency TEXT NOT NULL DEFAULT 'normal',
   ADD COLUMN IF NOT EXISTS ttl_seconds INTEGER NOT NULL DEFAULT 86400,
@@ -47,18 +47,18 @@ BEGIN
 END;
 $$;
 
--- Remove the older category-specific queue triggers. A single generic trigger
--- below is now the source of truth and prevents duplicate push events.
+
+
 DROP TRIGGER IF EXISTS queue_missed_medicine_web_push_trigger
 ON public.parent_notifications;
 
 DROP TRIGGER IF EXISTS queue_care_detection_web_push_trigger
 ON public.parent_notifications;
 
--- Queue every supported in-app notification except the initial SOS. Initial SOS
--- push is intentionally sent immediately by sendPushForAlert instead of waiting
--- for the five-minute worker. SOS acknowledgement/resolution events use this
--- queue normally.
+
+
+
+
 CREATE OR REPLACE FUNCTION public.queue_parent_notification_web_push()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -252,8 +252,8 @@ ON public.parent_notifications
 FOR EACH ROW
 EXECUTE FUNCTION public.queue_parent_notification_web_push();
 
--- Invoke the Edge Function only when work is ready. This allows a one-minute
--- cron cadence without consuming Edge Function calls while the queue is empty.
+
+
 CREATE OR REPLACE FUNCTION public.invoke_care_push_delivery()
 RETURNS BIGINT
 LANGUAGE plpgsql
@@ -338,9 +338,9 @@ SELECT cron.schedule(
   $$SELECT public.invoke_care_push_delivery();$$
 );
 
--- Server-side appointment reminders so they are generated even if no browser is
--- open. The existing exact-time browser alarm can continue as an additional
--- local reminder for the parent.
+
+
+
 CREATE OR REPLACE FUNCTION public.create_appointment_reminders()
 RETURNS INTEGER
 LANGUAGE plpgsql
@@ -465,10 +465,10 @@ SELECT cron.schedule(
   $$SELECT public.create_appointment_reminders();$$
 );
 
--- A real end-to-end test: this inserts an in-app notification, which is queued
--- by the same trigger and delivered by the same Edge Function as production
--- events. It therefore tests the subscription, database queue, cron secret,
--- Edge Function, VAPID keys, and service worker together.
+
+
+
+
 CREATE OR REPLACE FUNCTION public.create_push_test_notification()
 RETURNS UUID
 LANGUAGE plpgsql
@@ -505,7 +505,7 @@ BEGIN
   )
   RETURNING id INTO v_notification_id;
 
-  -- Ask the worker to process the queue immediately. The normal five-minute
+  -- Ask the worker to process the queue immediately. The normal one-minute
   -- cron remains the fallback if the HTTP request is delayed.
   PERFORM public.invoke_care_push_delivery();
 

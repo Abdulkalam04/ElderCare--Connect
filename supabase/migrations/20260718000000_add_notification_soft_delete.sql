@@ -1,6 +1,6 @@
--- Allow users to dismiss notifications without breaking the notification
--- engine's deduplication checks. Hidden rows remain in the database so an
--- auto-generated notification is not immediately recreated after deletion.
+
+
+
 
 ALTER TABLE public.parent_notifications
   ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;

@@ -35,34 +35,28 @@ import {
 } from "lucide-react";
 import { useBrowserVoice } from "@/hooks/useBrowserVoice";
 import { addDays, format, isToday, isYesterday, parseISO, startOfDay } from "date-fns";
-
 export const Route = createFileRoute("/_authenticated/companion")({
   ssr: false,
   component: CompanionPage,
 });
-
 const MAX_RETRIES = 2;
 const MAX_QUEUE_SIZE = 8;
 const MAX_ATTACHMENTS = 4;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_PDF_BYTES = 8 * 1024 * 1024;
-const MAX_TOTAL_DATA_URL_CHARS = 12_000_000;
+const MAX_TOTAL_DATA_URL_CHARS = 12000000;
 const MAX_MESSAGE_LENGTH = 3000;
-
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-
 type ApiAttachment = {
   kind: "image" | "file";
   name?: string;
   mime: string;
   dataUrl: string;
 };
-
 type Attachment = ApiAttachment & {
   id: string;
   name: string;
 };
-
 type ChatMessage = {
   id: string;
   parent_id: string;
@@ -74,35 +68,30 @@ type ChatMessage = {
   response_source: CompanionSource | "user";
   intent: string | null;
 };
-
 type QueuedMessage = {
   id: string;
   text: string;
   addedAt: number;
   persistedMessageId?: string;
 };
-
 type HistoryMessage = {
   role: "user" | "assistant";
   content: string;
   attachments?: ApiAttachment[];
 };
-
 type CompanionAction = {
   to:
-  | "/dashboard"
-  | "/medicines"
-  | "/appointments"
-  | "/video"
-  | "/wellbeing"
-  | "/emergency-contacts"
-  | "/sos";
+    | "/dashboard"
+    | "/medicines"
+    | "/appointments"
+    | "/video"
+    | "/wellbeing"
+    | "/emergency-contacts"
+    | "/sos";
   label: string;
 };
-
 function getCompanionAction(intent: string | null, urgent: boolean): CompanionAction | null {
   if (urgent || intent === "emergency") return { to: "/sos", label: "Open SOS" };
-
   switch (intent) {
     case "medicine_schedule":
       return { to: "/medicines", label: "Open Medicines" };
@@ -120,7 +109,6 @@ function getCompanionAction(intent: string | null, urgent: boolean): CompanionAc
       return null;
   }
 }
-
 function sourceLabel(source: ChatMessage["response_source"]) {
   switch (source) {
     case "gemini":
@@ -135,14 +123,12 @@ function sourceLabel(source: ChatMessage["response_source"]) {
       return null;
   }
 }
-
 function formatDateLabel(dateString: string) {
   const date = parseISO(dateString);
   if (isToday(date)) return "Today";
   if (isYesterday(date)) return "Yesterday";
   return format(date, "MMM d, yyyy");
 }
-
 function readAsDataUrl(file: Blob) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -151,17 +137,14 @@ function readAsDataUrl(file: Blob) {
     reader.readAsDataURL(file);
   });
 }
-
 async function compressImage(file: File) {
   const originalDataUrl = await readAsDataUrl(file);
   const image = new Image();
-
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
     image.onerror = () => reject(new Error("The image could not be opened."));
     image.src = originalDataUrl;
   });
-
   const maxDimension = 1600;
   const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
   const canvas = document.createElement("canvas");
@@ -169,19 +152,16 @@ async function compressImage(file: File) {
   canvas.height = Math.max(1, Math.round(image.height * scale));
   const context = canvas.getContext("2d");
   if (!context) return { dataUrl: originalDataUrl, mime: file.type };
-
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
   const optimized = canvas.toDataURL("image/webp", 0.82);
   return optimized.length < originalDataUrl.length
     ? { dataUrl: optimized, mime: "image/webp" }
     : { dataUrl: originalDataUrl, mime: file.type };
 }
-
 function CompanionPage() {
   const { activeParentId, activeParent, isChildView } = useActiveParent();
   const queryClient = useQueryClient();
   const ask = useServerFn(askCompanion);
-
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -192,17 +172,14 @@ function CompanionPage() {
   const [retryingIn, setRetryingIn] = useState(0);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [queue, setQueue] = useState<QueuedMessage[]>([]);
-
   const processingQueueRef = useRef(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-
   const appendVoiceTranscript = useCallback((transcript: string) => {
     setInput((current) => [current.trim(), transcript.trim()].filter(Boolean).join(" "));
   }, []);
-
   const {
     recognitionSupported,
     speechSupported,
@@ -215,11 +192,9 @@ function CompanionPage() {
     error: voiceError,
     clearError: clearVoiceError,
   } = useBrowserVoice(appendVoiceTranscript);
-
   const isRateLimited = cooldownEnd !== null && Date.now() < cooldownEnd;
   const todayKey = format(new Date(), "yyyy-MM-dd");
   const isViewingToday = selectedDate === todayKey;
-
   const {
     data: allMessages = [],
     isLoading,
@@ -240,7 +215,6 @@ function CompanionPage() {
       return ((data ?? []) as ChatMessage[]).reverse();
     },
   });
-
   const { data: companionSettings } = useQuery({
     queryKey: ["companion-settings", activeParentId],
     enabled: Boolean(activeParentId) && !isChildView,
@@ -250,7 +224,6 @@ function CompanionPage() {
         .select("companion_auto_read_responses,companion_emergency_escalation_enabled")
         .eq("parent_id", activeParentId!)
         .maybeSingle();
-
       if (error) throw error;
       return {
         autoRead: data?.companion_auto_read_responses === true,
@@ -258,7 +231,6 @@ function CompanionPage() {
       };
     },
   });
-
   useEffect(() => {
     if (!activeParentId || isChildView) return;
     const channel = supabase
@@ -274,24 +246,20 @@ function CompanionPage() {
         () => queryClient.invalidateQueries({ queryKey: ["aiChat", activeParentId] }),
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
   }, [activeParentId, isChildView, queryClient]);
-
   useEffect(() => {
     if (!voiceError) return;
     toast.error(voiceError);
     clearVoiceError();
   }, [voiceError, clearVoiceError]);
-
   useEffect(() => {
     setSelectedDate(format(new Date(), "yyyy-MM-dd"));
     setQueue([]);
     setCooldownEnd(null);
   }, [activeParentId]);
-
   const messagesByDate = useMemo(() => {
     const grouped: Record<string, ChatMessage[]> = {};
     for (const message of allMessages) {
@@ -300,54 +268,44 @@ function CompanionPage() {
     }
     return grouped;
   }, [allMessages]);
-
   const historyDates = useMemo(
     () => Object.keys(messagesByDate).sort((left, right) => right.localeCompare(left)),
     [messagesByDate],
   );
-
   const messages = useMemo(
     () => messagesByDate[selectedDate] ?? [],
     [messagesByDate, selectedDate],
   );
-
   useEffect(() => {
     if (historyDates.length > 0 && !messagesByDate[selectedDate] && selectedDate !== todayKey) {
       setSelectedDate(todayKey);
     }
   }, [historyDates, messagesByDate, selectedDate, todayKey]);
-
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending, queue]);
-
   useEffect(() => {
     if (!cooldownEnd) {
       setCountdown(0);
       return;
     }
-
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((cooldownEnd - Date.now()) / 1000));
       setCountdown(remaining);
       if (remaining === 0) setCooldownEnd(null);
     };
-
     tick();
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
   }, [cooldownEnd]);
-
   async function addFiles(files: FileList | null, kindHint?: "image" | "file") {
     if (!files?.length) return;
     const next: Attachment[] = [];
-
     for (const file of Array.from(files)) {
       if (attachments.length + next.length >= MAX_ATTACHMENTS) {
         toast.error(`A maximum of ${MAX_ATTACHMENTS} attachments is allowed.`);
         break;
       }
-
       const isImage = ACCEPTED_IMAGE_TYPES.has(file.type);
       const isPdf = file.type === "application/pdf";
       if (!isImage && !isPdf) {
@@ -362,7 +320,6 @@ function CompanionPage() {
         toast.error(`“${file.name}” is larger than 8 MB.`);
         continue;
       }
-
       try {
         const encoded = isImage
           ? await compressImage(file)
@@ -375,7 +332,6 @@ function CompanionPage() {
           toast.error("The combined attachment size is too large. Remove a file and try again.");
           break;
         }
-
         next.push({
           id: crypto.randomUUID(),
           kind: kindHint ?? (isImage ? "image" : "file"),
@@ -387,14 +343,11 @@ function CompanionPage() {
         toast.error(error instanceof Error ? error.message : `Could not read “${file.name}”.`);
       }
     }
-
     if (next.length > 0) setAttachments((current) => [...current, ...next]);
   }
-
   function removeAttachment(id: string) {
     setAttachments((current) => current.filter((attachment) => attachment.id !== id));
   }
-
   const setCachedMessage = useCallback(
     (message: ChatMessage) => {
       queryClient.setQueryData<ChatMessage[]>(["aiChat", activeParentId], (current = []) => {
@@ -407,7 +360,6 @@ function CompanionPage() {
     },
     [activeParentId, queryClient],
   );
-
   const insertUserMessage = useCallback(
     async (text: string) => {
       if (!activeParentId) throw new Error("No care-recipient account is selected.");
@@ -431,7 +383,6 @@ function CompanionPage() {
     },
     [activeParentId, setCachedMessage],
   );
-
   const insertAssistantMessage = useCallback(
     async (
       content: string,
@@ -458,7 +409,6 @@ function CompanionPage() {
     },
     [activeParentId, setCachedMessage],
   );
-
   function waitWithCountdown(milliseconds: number) {
     return new Promise<void>((resolve) => {
       let remaining = Math.ceil(milliseconds / 1000);
@@ -473,7 +423,6 @@ function CompanionPage() {
       }, 1000);
     });
   }
-
   const buildHistory = useCallback(
     async (currentText: string, currentAttachments: ApiAttachment[], currentMessageId: string) => {
       if (!activeParentId) return [] as HistoryMessage[];
@@ -485,11 +434,9 @@ function CompanionPage() {
         .order("created_at", { ascending: false })
         .limit(19);
       if (error) throw error;
-
       const previous = ((data ?? []) as Pick<ChatMessage, "role" | "content">[])
         .reverse()
         .map((message) => ({ role: message.role, content: message.content }));
-
       return [
         ...previous,
         {
@@ -501,12 +448,10 @@ function CompanionPage() {
     },
     [activeParentId],
   );
-
   const sendWithRetry = useCallback(
     async (text: string, currentAttachments: ApiAttachment[], userMessageId: string) => {
       if (!activeParentId) return false;
       const history = await buildHistory(text, currentAttachments, userMessageId);
-
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
         setRetryAttempt(attempt);
         const result = await ask({
@@ -516,7 +461,6 @@ function CompanionPage() {
             messages: history,
           },
         });
-
         if (result.reply) {
           await insertAssistantMessage(
             result.reply,
@@ -524,11 +468,9 @@ function CompanionPage() {
             result.source ?? "local",
             result.intent ?? null,
           );
-
           if (companionSettings?.autoRead && speechSupported) {
             speak(result.reply);
           }
-
           if (result.urgent) {
             toast.warning(
               result.escalated
@@ -538,11 +480,9 @@ function CompanionPage() {
           } else if (result.message) {
             toast.info(result.message);
           }
-
           setRetryAttempt(0);
           return true;
         }
-
         if (result.error === "rate_limit") {
           const waitSeconds = result.retryAfter ?? 30;
           if (attempt < MAX_RETRIES) {
@@ -554,18 +494,15 @@ function CompanionPage() {
           toast.error(result.message ?? "Please wait before trying again.");
           return false;
         }
-
         if (result.error === "forbidden") {
           toast.error(
             result.message ?? "This conversation is private to the care-recipient account.",
           );
           return false;
         }
-
         toast.error(result.message ?? "The AI companion is temporarily unavailable.");
         return false;
       }
-
       return false;
     },
     [
@@ -579,17 +516,14 @@ function CompanionPage() {
       speechSupported,
     ],
   );
-
   const processQueue = useCallback(async () => {
     if (processingQueueRef.current || sending || queue.length === 0 || isRateLimited || isChildView)
       return;
     processingQueueRef.current = true;
     setSending(true);
-
     try {
       const item = queue[0];
       let messageId = item.persistedMessageId;
-
       if (!messageId) {
         const saved = await insertUserMessage(item.text);
         messageId = saved.id;
@@ -599,7 +533,6 @@ function CompanionPage() {
           ),
         );
       }
-
       const success = await sendWithRetry(item.text, [], messageId);
       if (success) {
         setQueue((current) => current.filter((queued) => queued.id !== item.id));
@@ -612,13 +545,11 @@ function CompanionPage() {
       processingQueueRef.current = false;
     }
   }, [insertUserMessage, isChildView, isRateLimited, queue, sendWithRetry, sending]);
-
   useEffect(() => {
     if (!isRateLimited && countdown === 0 && queue.length > 0 && !processingQueueRef.current) {
       void processQueue();
     }
   }, [countdown, isRateLimited, processQueue, queue.length]);
-
   async function send() {
     const text = input.trim();
     if (isChildView) {
@@ -630,7 +561,6 @@ function CompanionPage() {
       toast.error(`Messages must be ${MAX_MESSAGE_LENGTH.toLocaleString()} characters or fewer.`);
       return;
     }
-
     if (isRateLimited) {
       if (attachments.length > 0) {
         toast.warning(
@@ -647,7 +577,6 @@ function CompanionPage() {
       toast.info("Message queued and will be sent automatically.");
       return;
     }
-
     const currentAttachments = attachments.map(({ kind, name, mime, dataUrl }) => ({
       kind,
       name,
@@ -658,12 +587,10 @@ function CompanionPage() {
       .map((attachment) => `${attachment.kind === "image" ? "🖼️" : "📎"} ${attachment.name}`)
       .join("  ");
     const storedText = [text, attachmentLabel].filter(Boolean).join("\n");
-
     setInput("");
     setAttachments([]);
     setSelectedDate(todayKey);
     setSending(true);
-
     try {
       const userMessage = await insertUserMessage(storedText || "Attached document");
       await sendWithRetry(text, currentAttachments, userMessage.id);
@@ -676,7 +603,6 @@ function CompanionPage() {
       setRetryingIn(0);
     }
   }
-
   const deleteMessage = useMutation({
     mutationFn: async (id: string) => {
       if (!activeParentId || isChildView) throw new Error("You cannot delete this message.");
@@ -700,7 +626,6 @@ function CompanionPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   const clearChat = useMutation({
     mutationFn: async () => {
       if (!activeParentId || isChildView) throw new Error("You cannot clear this conversation.");
@@ -729,7 +654,6 @@ function CompanionPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
   if (isChildView) {
     return (
       <AppShell>
@@ -747,7 +671,6 @@ function CompanionPage() {
       </AppShell>
     );
   }
-
   return (
     <AppShell>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
@@ -956,12 +879,13 @@ function CompanionPage() {
                     </Button>
                   )}
                   <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${message.role === "user"
+                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+                      message.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : message.is_urgent
                           ? "border border-red-300 bg-red-50 text-red-950"
                           : "bg-accent text-accent-foreground"
-                      }`}
+                    }`}
                   >
                     {message.is_urgent && (
                       <div className="mb-2 flex items-center gap-2 font-semibold">

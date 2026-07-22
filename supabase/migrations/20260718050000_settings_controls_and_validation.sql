@@ -1,7 +1,7 @@
--- Settings improvements:
--- 1. Adds master controls for appointment and wellbeing reminders.
--- 2. Cleans invalid legacy values before adding validation constraints.
--- 3. Enables realtime updates for elder_settings.
+
+
+
+
 
 ALTER TABLE public.elder_settings
   ADD COLUMN IF NOT EXISTS appointment_reminders_enabled BOOLEAN NOT NULL DEFAULT true,

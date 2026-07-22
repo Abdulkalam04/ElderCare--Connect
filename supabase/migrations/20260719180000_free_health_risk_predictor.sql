@@ -1,9 +1,9 @@
 ALTER TABLE public.elder_settings
   ADD COLUMN IF NOT EXISTS health_risk_alerts_enabled BOOLEAN NOT NULL DEFAULT true;
 
--- -----------------------------------------------------------------------------
--- Store why the rule engine produced the result and which vitals were used.
--- -----------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.health_risk_assessments
   ADD COLUMN IF NOT EXISTS warning_flags TEXT[] NOT NULL DEFAULT '{}'::TEXT[],
   ADD COLUMN IF NOT EXISTS urgent BOOLEAN NOT NULL DEFAULT false,
@@ -33,9 +33,9 @@ ALTER TABLE public.health_risk_assessments
 CREATE INDEX IF NOT EXISTS health_risk_parent_level_created_idx
   ON public.health_risk_assessments(parent_id, risk_level, created_at DESC);
 
--- -----------------------------------------------------------------------------
--- Include high-risk screening alerts in the durable care-alert system.
--- -----------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.care_alerts
   DROP CONSTRAINT IF EXISTS care_alerts_alert_type_check;
 
@@ -51,10 +51,10 @@ ALTER TABLE public.care_alerts
     )
   ) NOT VALID;
 
--- -----------------------------------------------------------------------------
--- Create a family alert after a high or urgent screening.
--- A later low/medium non-urgent assessment resolves older high-risk alerts.
--- -----------------------------------------------------------------------------
+
+
+
+
 CREATE OR REPLACE FUNCTION public.handle_health_risk_assessment_alert()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -145,9 +145,9 @@ AFTER INSERT ON public.health_risk_assessments
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_health_risk_assessment_alert();
 
--- -----------------------------------------------------------------------------
--- Extend the existing care-alert push queue with health-risk alerts.
--- -----------------------------------------------------------------------------
+
+
+
 CREATE OR REPLACE FUNCTION public.queue_care_detection_web_push()
 RETURNS TRIGGER
 LANGUAGE plpgsql

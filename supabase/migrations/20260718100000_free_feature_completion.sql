@@ -1,10 +1,10 @@
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
--- ---------------------------------------------------------------------------
--- App activity heartbeat
--- This measures activity inside ElderCare Connect, not activity across the
--- whole phone, which a normal website cannot access.
--- ---------------------------------------------------------------------------
+
+
+
+
+
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS last_app_activity_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS last_activity_source TEXT;
@@ -49,11 +49,11 @@ GRANT EXECUTE
 ON FUNCTION public.touch_app_activity(TEXT)
 TO authenticated;
 
--- ---------------------------------------------------------------------------
--- Live SOS location fields
--- Coordinates are updated while the care recipient keeps the web app open
--- and grants location permission.
--- ---------------------------------------------------------------------------
+
+
+
+
+
 ALTER TABLE public.sos_alerts
   ADD COLUMN IF NOT EXISTS location_updated_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS location_accuracy NUMERIC,
@@ -63,9 +63,9 @@ CREATE INDEX IF NOT EXISTS idx_sos_alerts_active_parent
   ON public.sos_alerts(parent_id, created_at DESC)
   WHERE status IN ('active', 'acknowledged');
 
--- ---------------------------------------------------------------------------
--- Trusted caregiver directory
--- ---------------------------------------------------------------------------
+
+
+
 CREATE TABLE IF NOT EXISTS public.trusted_caregivers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -171,9 +171,9 @@ USING (
   public.is_linked_child(parent_id)
 );
 
--- ---------------------------------------------------------------------------
--- Deduplicated notification support
--- ---------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.parent_notifications
   ADD COLUMN IF NOT EXISTS dedup_key TEXT;
 
@@ -181,12 +181,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS parent_notifications_recipient_dedup_uidx
   ON public.parent_notifications(parent_id, dedup_key)
   WHERE dedup_key IS NOT NULL;
 
--- ---------------------------------------------------------------------------
--- Notification helper
---
--- Creates one notification for the care recipient and every linked family
--- account, while preventing duplicate notifications.
--- ---------------------------------------------------------------------------
+
+
+
+
+
+
 CREATE OR REPLACE FUNCTION public.create_care_alert_notifications(
   _parent_id UUID,
   _type TEXT,
@@ -269,9 +269,9 @@ ON FUNCTION public.create_care_alert_notifications(
 )
 TO postgres, service_role;
 
--- ---------------------------------------------------------------------------
--- Remove the existing cron schedule before replacing the detector.
--- ---------------------------------------------------------------------------
+
+
+
 DO $$
 BEGIN
   PERFORM cron.unschedule('detect-care-issues');
@@ -281,11 +281,11 @@ EXCEPTION
 END;
 $$;
 
--- ---------------------------------------------------------------------------
--- Important:
--- PostgreSQL cannot use CREATE OR REPLACE when the RETURNS TABLE definition
--- has changed. The old function must be dropped first.
--- ---------------------------------------------------------------------------
+
+
+
+
+
 DROP FUNCTION IF EXISTS public.detect_care_issues();
 
 CREATE FUNCTION public.detect_care_issues()
@@ -513,19 +513,19 @@ GRANT EXECUTE
 ON FUNCTION public.detect_care_issues()
 TO postgres, service_role;
 
--- ---------------------------------------------------------------------------
--- Recreate the scheduled detector.
--- Runs every 15 minutes.
--- ---------------------------------------------------------------------------
+
+
+
+
 SELECT cron.schedule(
   'detect-care-issues',
   '*/15 * * * *',
   $$SELECT public.detect_care_issues();$$
 );
 
--- ---------------------------------------------------------------------------
--- Realtime additions, guarded for repeatable execution
--- ---------------------------------------------------------------------------
+
+
+
 ALTER TABLE public.trusted_caregivers
 REPLICA IDENTITY FULL;
 

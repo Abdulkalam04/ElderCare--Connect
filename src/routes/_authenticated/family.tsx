@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-
 import { AppShell } from "@/components/AppShell";
 import {
   useCurrentUser,
@@ -41,12 +40,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
 export const Route = createFileRoute("/_authenticated/family")({
   ssr: false,
   component: FamilyPage,
 });
-
 type LinkedProfile = {
   id: string;
   full_name: string;
@@ -56,21 +53,20 @@ type LinkedProfile = {
   avatarUrl?: string | null;
   linked_at?: string;
 };
-
 type RemovalTarget = {
   kind: "parent" | "child";
   id: string;
   name: string;
 };
-
 function normalizeInviteCode(value: string) {
-  return value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase();
+  return value
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 8)
+    .toUpperCase();
 }
-
 function friendlyFamilyError(error: unknown, fallback: string) {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const normalized = message.toLowerCase();
-
   if (normalized.includes("invalid family link code")) {
     return "That Family Link Code is invalid or has expired.";
   }
@@ -86,16 +82,13 @@ function friendlyFamilyError(error: unknown, fallback: string) {
   if (normalized.includes("permission") || normalized.includes("row-level security")) {
     return "Supabase permissions blocked this action. Run the Family security migration first.";
   }
-
   return message || fallback;
 }
-
 async function copyText(value: string) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value);
     return;
   }
-
   const textarea = document.createElement("textarea");
   textarea.value = value;
   textarea.style.position = "fixed";
@@ -103,13 +96,10 @@ async function copyText(value: string) {
   document.body.appendChild(textarea);
   textarea.focus();
   textarea.select();
-
   const copied = document.execCommand("copy");
   textarea.remove();
-
   if (!copied) throw new Error("Clipboard access is unavailable.");
 }
-
 function FamilyPage() {
   const qc = useQueryClient();
   const { data: user, isLoading: userLoading } = useCurrentUser();
@@ -119,44 +109,34 @@ function FamilyPage() {
     isError: profileError,
     refetch: refetchProfile,
   } = useProfile();
-
   const linkedParentsQuery = useLinkedParents();
-  const linkedChildrenQuery = useLinkedChildren(
-    profile?.role === "parent" ? user?.id : undefined,
-  );
-
+  const linkedChildrenQuery = useLinkedChildren(profile?.role === "parent" ? user?.id : undefined);
   const [code, setCode] = useState("");
   const [phone, setPhone] = useState("");
   const [search, setSearch] = useState("");
   const [removalTarget, setRemovalTarget] = useState<RemovalTarget | null>(null);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
-
   const isParent = profile?.role === "parent";
   const linkedParents = (linkedParentsQuery.data ?? []) as LinkedProfile[];
   const linkedChildren = (linkedChildrenQuery.data ?? []) as LinkedProfile[];
   const familyQuery = isParent ? linkedChildrenQuery : linkedParentsQuery;
   const familyMembers = isParent ? linkedChildren : linkedParents;
-
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return familyMembers;
-
     return familyMembers.filter((member) =>
       [member.full_name, member.email, member.phone]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(query)),
     );
   }, [familyMembers, search]);
-
   useEffect(() => {
     if (!user?.id) return;
-
     const refreshFamily = () => {
       qc.invalidateQueries({ queryKey: ["linkedParents"] });
       qc.invalidateQueries({ queryKey: ["linkedChildren"] });
       qc.invalidateQueries({ queryKey: ["profile"] });
     };
-
     const channel = supabase
       .channel(`family-page-${user.id}`)
       .on(
@@ -189,23 +169,18 @@ function FamilyPage() {
         refreshFamily,
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [qc, user?.id]);
-
   const link = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Your session is not ready. Please refresh the page.");
-
       const trimmedCode = normalizeInviteCode(code);
       const trimmedPhone = phone.trim();
-
       if (!/^[A-Z0-9]{8}$/.test(trimmedCode)) {
         throw new Error("Enter the complete 8-character Family Link Code.");
       }
-
       if (trimmedPhone) {
         const digitCount = trimmedPhone.replace(/\D/g, "").length;
         const validFormat = /^\+?[0-9\s\-()]{7,30}$/.test(trimmedPhone);
@@ -213,15 +188,12 @@ function FamilyPage() {
           throw new Error("Please enter a valid phone number with at least 7 digits.");
         }
       }
-
       const { data, error } = await supabase.rpc("link_parent_by_invite_code", {
         _code: trimmedCode,
         _phone: trimmedPhone || null,
       });
-
       if (error) throw error;
       if (!data) throw new Error("Unable to create the family connection.");
-
       return data;
     },
     onSuccess: async () => {
@@ -237,18 +209,15 @@ function FamilyPage() {
       toast.error(friendlyFamilyError(error, "Unable to link the family account."));
     },
   });
-
   const unlink = useMutation({
     mutationFn: async (parentId: string) => {
       if (!user) throw new Error("Your session is not ready.");
-
       const { data, error } = await supabase
         .from("parent_child_links")
         .delete()
         .eq("parent_id", parentId)
         .eq("child_id", user.id)
         .select("id");
-
       if (error) throw error;
       if (!data || data.length === 0) {
         throw new Error("The family connection was already removed or could not be deleted.");
@@ -266,18 +235,15 @@ function FamilyPage() {
       toast.error(friendlyFamilyError(error, "Unable to remove the family connection."));
     },
   });
-
   const removeChild = useMutation({
     mutationFn: async (childId: string) => {
       if (!user) throw new Error("Your session is not ready.");
-
       const { data, error } = await supabase
         .from("parent_child_links")
         .delete()
         .eq("parent_id", user.id)
         .eq("child_id", childId)
         .select("id");
-
       if (error) throw error;
       if (!data || data.length === 0) {
         throw new Error("The family member was already removed or could not be deleted.");
@@ -292,7 +258,6 @@ function FamilyPage() {
       toast.error(friendlyFamilyError(error, "Unable to remove the family member."));
     },
   });
-
   const regenerate = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("regenerate_family_invite_code");
@@ -303,7 +268,6 @@ function FamilyPage() {
     onSuccess: async (newCode) => {
       setShowRegenerateConfirm(false);
       await qc.invalidateQueries({ queryKey: ["profile"] });
-
       try {
         await copyText(newCode);
         toast.success("New code generated and copied.");
@@ -315,13 +279,11 @@ function FamilyPage() {
       toast.error(friendlyFamilyError(error, "Failed to regenerate the code."));
     },
   });
-
   async function copyInviteCode() {
     if (!profile?.invite_code) {
       toast.error("No Family Link Code is available.");
       return;
     }
-
     try {
       await copyText(profile.invite_code);
       toast.success("Family Link Code copied.");
@@ -329,15 +291,12 @@ function FamilyPage() {
       toast.error("Unable to copy the code. Please select and copy it manually.");
     }
   }
-
   async function shareInviteCode() {
     if (!profile?.invite_code) {
       toast.error("No Family Link Code is available.");
       return;
     }
-
     const shareText = `Use Family Link Code ${profile.invite_code} to connect with me in ElderCare Connect.`;
-
     if (navigator.share) {
       try {
         await navigator.share({ title: "ElderCare Family Link", text: shareText });
@@ -346,7 +305,6 @@ function FamilyPage() {
         if (error instanceof DOMException && error.name === "AbortError") return;
       }
     }
-
     try {
       await copyText(shareText);
       toast.success("Invitation message copied.");
@@ -354,19 +312,15 @@ function FamilyPage() {
       toast.error("Unable to share the invitation from this browser.");
     }
   }
-
   function confirmRemoval() {
     if (!removalTarget) return;
-
     if (removalTarget.kind === "child") {
       removeChild.mutate(removalTarget.id);
     } else {
       unlink.mutate(removalTarget.id);
     }
   }
-
   const removing = removeChild.isPending || unlink.isPending;
-
   if (userLoading || profileLoading) {
     return (
       <AppShell>
@@ -379,7 +333,6 @@ function FamilyPage() {
       </AppShell>
     );
   }
-
   if (profileError || !profile || !user) {
     return (
       <AppShell>
@@ -398,7 +351,6 @@ function FamilyPage() {
       </AppShell>
     );
   }
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -580,8 +532,8 @@ function FamilyPage() {
             <AlertDialogDescription>
               {removalTarget?.kind === "child"
                 ? `${removalTarget.name} will no longer be able to view or monitor this care account.`
-                : `You will no longer be able to view or monitor ${removalTarget?.name ?? "this care account"}.`}
-              {" "}Health records are not deleted, but access is removed immediately.
+                : `You will no longer be able to view or monitor ${removalTarget?.name ?? "this care account"}.`}{" "}
+              Health records are not deleted, but access is removed immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -628,7 +580,6 @@ function FamilyPage() {
     </AppShell>
   );
 }
-
 function InviteCodeCard({
   inviteCode,
   regeneratePending,
@@ -661,8 +612,9 @@ function InviteCodeCard({
           {inviteCode ?? "————————"}
         </p>
         <p className="mt-5 max-w-md text-sm leading-relaxed text-white/60">
-          Share this private code only with trusted family members. Each account can use it once to connect
-          and monitor your care information. Generating a new code does not disconnect existing members.
+          Share this private code only with trusted family members. Each account can use it once to
+          connect and monitor your care information. Generating a new code does not disconnect
+          existing members.
         </p>
 
         <div className="mt-7 grid grid-cols-2 gap-3">
@@ -700,7 +652,6 @@ function InviteCodeCard({
     </section>
   );
 }
-
 function FamilyMemberRow({
   member,
   label,
@@ -714,7 +665,6 @@ function FamilyMemberRow({
   const initial = (member.full_name?.trim()?.[0] || "?").toUpperCase();
   const linkedDate = member.linked_at ? new Date(member.linked_at) : null;
   const hasValidLinkedDate = linkedDate && !Number.isNaN(linkedDate.getTime());
-
   return (
     <div className="flex items-start gap-4 p-5 sm:items-center">
       <Avatar className="size-11 border border-border">
@@ -752,9 +702,7 @@ function FamilyMemberRow({
               <Phone className="size-3.5" /> {member.phone}
             </a>
           )}
-          {hasValidLinkedDate && (
-            <span>Connected {format(linkedDate, "MMM d, yyyy")}</span>
-          )}
+          {hasValidLinkedDate && <span>Connected {format(linkedDate, "MMM d, yyyy")}</span>}
         </div>
       </div>
 

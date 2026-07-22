@@ -3,7 +3,6 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Smile, Zap, Utensils, Droplets, Moon, ShieldAlert, Pill } from "lucide-react";
-
 interface WellbeingCheck {
   id?: string;
   ate_meals?: boolean | null;
@@ -17,39 +16,31 @@ interface WellbeingCheck {
   meals_logged?: string | null;
   water_intake?: number | null;
 }
-
 interface WellbeingCheckCardProps {
   parentId: string;
   isChild: boolean;
   existing: WellbeingCheck | null | undefined;
 }
-
 export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingCheckCardProps) {
   const qc = useQueryClient();
   const today = format(new Date(), "yyyy-MM-dd");
-
   async function set(field: string, value: any) {
-    // If setting meals_logged, also set ate_meals accordingly
     let additionalPayload = {};
     if (field === "meals_logged") {
       additionalPayload = { ate_meals: value === "Completed" || value === "Partially" };
     }
-    // If setting water_intake, also set drank_water accordingly
     if (field === "water_intake") {
       additionalPayload = { drank_water: value >= 4 };
     }
-
     const payload = {
       parent_id: parentId,
       check_date: today,
       [field]: value,
       ...additionalPayload,
     } as any;
-
     const { error } = await supabase
       .from("wellbeing_checks")
       .upsert(payload, { onConflict: "parent_id,check_date" });
-
     if (error) {
       toast.error(error.message);
     } else {
@@ -58,7 +49,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
       qc.invalidateQueries({ queryKey: ["wellbeing-history"] });
     }
   }
-
   if (isChild) {
     return (
       <section className="bg-secondary/5 border border-secondary/10 rounded-3xl p-8 space-y-6">
@@ -127,12 +117,10 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
       </section>
     );
   }
-
   return (
     <section className="bg-secondary/5 border border-secondary/10 rounded-3xl p-6 sm:p-8 space-y-6">
       <h2 className="text-xl font-display font-bold italic">Daily Wellness Tracker</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Mood / Feeling */}
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
             <Smile className="size-4 text-emerald-500" /> How is your mood?
@@ -154,7 +142,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
           </div>
         </div>
 
-        {/* Energy Level */}
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
             <Zap className="size-4 text-amber-500" /> Energy level?
@@ -176,7 +163,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
           </div>
         </div>
 
-        {/* Meal Status */}
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
             <Utensils className="size-4 text-blue-500" /> Meal status?
@@ -198,7 +184,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
           </div>
         </div>
 
-        {/* Medicine taken */}
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
             <Pill className="size-4 text-violet-500" /> Did you take today's medicine?
@@ -223,7 +208,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
           </div>
         </div>
 
-        {/* Water Intake */}
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
             <Droplets className="size-4 text-cyan-500" /> Water intake?
@@ -245,7 +229,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
           </div>
         </div>
 
-        {/* Sleep Quality */}
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
             <Moon className="size-4 text-indigo-500" /> Sleep quality?
@@ -267,7 +250,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
           </div>
         </div>
 
-        {/* Pain Status */}
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-1.5">
             <ShieldAlert className="size-4 text-red-500" /> Any pain?
@@ -295,7 +277,6 @@ export function WellbeingCheckCard({ parentId, isChild, existing }: WellbeingChe
     </section>
   );
 }
-
 function Stat({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <div className="bg-card border border-border rounded-2xl p-4 flex items-start gap-2.5">

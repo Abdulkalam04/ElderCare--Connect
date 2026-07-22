@@ -1,10 +1,10 @@
--- ============================================================
--- Transport status auto-progression support
--- ============================================================
--- Adds the columns needed to make a booking actually move through
--- pending -> confirmed -> driver_assigned -> en_route -> arrived
--- (and then a manual "completed" confirmation), instead of being
--- created directly in "driver_assigned" and never changing again.
+
+
+
+
+
+
+
 
 ALTER TABLE public.transport_bookings
   ADD COLUMN IF NOT EXISTS next_status_at   TIMESTAMPTZ,

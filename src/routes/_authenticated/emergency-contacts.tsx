@@ -16,7 +16,6 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-
 import { AppShell } from "@/components/AppShell";
 import { EmergencyCallButtons } from "@/components/EmergencyCallButtons";
 import {
@@ -45,12 +44,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActiveParent, useCurrentUser } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-
 export const Route = createFileRoute("/_authenticated/emergency-contacts")({
   ssr: false,
   component: EmergencyContactsPage,
 });
-
 type Contact = {
   id: string;
   parent_id: string;
@@ -63,18 +60,15 @@ type Contact = {
   created_at: string;
   updated_at: string;
 };
-
 function normalizePhone(phone: string): string {
   const trimmed = phone.trim();
   const digits = trimmed.replace(/\D/g, "");
   return `${trimmed.startsWith("+") ? "+" : ""}${digits}`;
 }
-
 function isValidPhone(phone: string): boolean {
   const digitCount = phone.replace(/\D/g, "").length;
   return digitCount >= 7 && digitCount <= 15;
 }
-
 const contactSchema = z
   .object({
     name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
@@ -117,19 +111,15 @@ const contactSchema = z
     message: "Add at least a phone number or an email address",
     path: ["phone"],
   });
-
 type ContactInput = z.infer<typeof contactSchema>;
-
 function EmergencyContactsPage() {
   const { activeParentId, activeParent } = useActiveParent();
   const { data: user } = useCurrentUser();
   const qc = useQueryClient();
-
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [deleting, setDeleting] = useState<Contact | null>(null);
   const [search, setSearch] = useState("");
-
   const contactsQuery = useQuery({
     queryKey: ["emergency_contacts", activeParentId],
     enabled: Boolean(activeParentId),
@@ -140,17 +130,13 @@ function EmergencyContactsPage() {
         .eq("parent_id", activeParentId!)
         .order("priority", { ascending: true })
         .order("created_at", { ascending: true });
-
       if (error) throw error;
       return (data ?? []) as Contact[];
     },
   });
-
   const contacts = contactsQuery.data ?? [];
-
   useEffect(() => {
     if (!activeParentId) return;
-
     const channel = supabase
       .channel(`emergency-contacts-${activeParentId}`)
       .on(
@@ -167,27 +153,26 @@ function EmergencyContactsPage() {
         },
       )
       .subscribe();
-
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [activeParentId, qc]);
-
   const refreshContactQueries = async () => {
     await Promise.all([
       qc.invalidateQueries({ queryKey: ["emergency_contacts", activeParentId] }),
       qc.invalidateQueries({ queryKey: ["global_emergency_contacts", activeParentId] }),
     ]);
   };
-
   const saveMutation = useMutation({
-    mutationFn: async (input: ContactInput & { id?: string }) => {
+    mutationFn: async (
+      input: ContactInput & {
+        id?: string;
+      },
+    ) => {
       if (!activeParentId) throw new Error("No care-recipient account is selected.");
-
       const parsed = contactSchema.parse(input);
       const normalizedPhone = parsed.phone ? normalizePhone(parsed.phone) : null;
       const normalizedEmail = parsed.email ? parsed.email.trim().toLowerCase() : null;
-
       const duplicate = contacts.find((contact) => {
         if (contact.id === input.id) return false;
         const samePhone =
@@ -200,15 +185,12 @@ function EmergencyContactsPage() {
           contact.email?.trim().toLowerCase() === normalizedEmail;
         return samePhone || sameEmail;
       });
-
       if (duplicate) {
         throw new Error(`This phone number or email is already used by ${duplicate.name}.`);
       }
-
       if (!input.id && contacts.length >= 10) {
         throw new Error("You can add a maximum of 10 emergency contacts.");
       }
-
       const payload = {
         parent_id: activeParentId,
         name: parsed.name,
@@ -218,9 +200,7 @@ function EmergencyContactsPage() {
         priority: parsed.priority,
         notes: parsed.notes || null,
       };
-
       let savedId: string;
-
       if (input.id) {
         const { data, error } = await (supabase as any)
           .from("emergency_contacts")
@@ -229,7 +209,6 @@ function EmergencyContactsPage() {
           .eq("parent_id", activeParentId)
           .select("id")
           .maybeSingle();
-
         if (error) throw new Error(error.message ?? "Failed to update contact");
         if (!data)
           throw new Error("The contact was not updated. It may have already been removed.");
@@ -240,29 +219,22 @@ function EmergencyContactsPage() {
           .insert({ ...payload, created_by: user?.id ?? null })
           .select("id")
           .single();
-
         if (error) throw new Error(error.message ?? "Failed to add contact");
         savedId = data.id as string;
       }
-
-      // Keep priorities deterministic and gap-free. The selected priority is
-      // treated as the desired position in the SOS escalation order.
       const remainingIds = contacts
         .filter((contact) => contact.id !== savedId)
         .map((contact) => contact.id);
       const desiredIndex = Math.min(parsed.priority - 1, remainingIds.length);
       remainingIds.splice(desiredIndex, 0, savedId);
-
       for (let index = 0; index < remainingIds.length; index += 1) {
         const { error } = await (supabase as any)
           .from("emergency_contacts")
           .update({ priority: index + 1 })
           .eq("id", remainingIds[index])
           .eq("parent_id", activeParentId);
-
         if (error) throw new Error(error.message ?? "Failed to update the contact order");
       }
-
       return { edited: Boolean(input.id) };
     },
     onSuccess: async ({ edited }) => {
@@ -273,11 +245,9 @@ function EmergencyContactsPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Failed to save contact"),
   });
-
   const deleteMutation = useMutation({
     mutationFn: async (contact: Contact) => {
       if (!activeParentId) throw new Error("No care-recipient account is selected.");
-
       const { data, error } = await (supabase as any)
         .from("emergency_contacts")
         .delete()
@@ -285,10 +255,8 @@ function EmergencyContactsPage() {
         .eq("parent_id", activeParentId)
         .select("id")
         .maybeSingle();
-
       if (error) throw new Error(error.message ?? "Failed to delete contact");
       if (!data) throw new Error("The contact was not deleted. It may have already been removed.");
-
       return contact;
     },
     onSuccess: async (contact) => {
@@ -301,13 +269,10 @@ function EmergencyContactsPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Failed to delete contact"),
   });
-
   const setPrimaryMutation = useMutation({
     mutationFn: async (contact: Contact) => {
       if (!activeParentId) throw new Error("No care-recipient account is selected.");
-
       const ordered = [contact, ...contacts.filter((item) => item.id !== contact.id)];
-
       for (let index = 0; index < ordered.length; index += 1) {
         const { data, error } = await (supabase as any)
           .from("emergency_contacts")
@@ -316,11 +281,9 @@ function EmergencyContactsPage() {
           .eq("parent_id", activeParentId)
           .select("id")
           .maybeSingle();
-
         if (error) throw new Error(error.message ?? "Failed to update the primary contact");
         if (!data) throw new Error("A contact could not be reordered.");
       }
-
       return contact;
     },
     onSuccess: async (contact) => {
@@ -329,24 +292,20 @@ function EmergencyContactsPage() {
     },
     onError: (error: Error) => toast.error(error.message || "Failed to change primary contact"),
   });
-
   const filteredContacts = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return contacts;
-
     return contacts.filter((contact) =>
       [contact.name, contact.relationship, contact.phone, contact.email, contact.notes]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(term)),
     );
   }, [contacts, search]);
-
   const callableCount = contacts.filter(
     (contact) => contact.phone && isValidPhone(contact.phone),
   ).length;
   const emailCount = contacts.filter((contact) => Boolean(contact.email)).length;
   const primaryContact = contacts[0] ?? null;
-
   return (
     <AppShell>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
@@ -485,7 +444,6 @@ function EmergencyContactsPage() {
           {filteredContacts.map((contact) => {
             const actualIndex = contacts.findIndex((item) => item.id === contact.id);
             const isPrimary = actualIndex === 0;
-
             return (
               <article
                 key={contact.id}
@@ -628,7 +586,6 @@ function EmergencyContactsPage() {
     </AppShell>
   );
 }
-
 function ContactDialog({
   initial,
   defaultPriority,
@@ -648,19 +605,15 @@ function ContactDialog({
     priority: initial?.priority ?? defaultPriority,
     notes: initial?.notes ?? "",
   });
-
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const parsed = contactSchema.safeParse(form);
-
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Please check the contact details.");
       return;
     }
-
     onSave(parsed.data);
   }
-
   return (
     <DialogContent className="max-w-lg">
       <DialogHeader>

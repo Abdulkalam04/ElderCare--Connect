@@ -2,7 +2,6 @@ import { Ambulance, Copy, MapPin, PhoneCall, Share2, ShieldAlert } from "lucide-
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { mapsLink } from "@/lib/geolocation";
-
 export function EmergencyServicesCard({
   subjectName,
   latitude,
@@ -13,10 +12,7 @@ export function EmergencyServicesCard({
   longitude?: number | null;
 }) {
   const locationUrl = latitude != null && longitude != null ? mapsLink(latitude, longitude) : null;
-  const shareText = `Emergency assistance is needed for ${subjectName}.${
-    locationUrl ? ` Current location: ${locationUrl}` : ""
-  }`;
-
+  const shareText = `Emergency assistance is needed for ${subjectName}.${locationUrl ? ` Current location: ${locationUrl}` : ""}`;
   async function copyLocation() {
     if (!locationUrl) {
       toast.error("No SOS location is available yet.");
@@ -25,7 +21,6 @@ export function EmergencyServicesCard({
     await navigator.clipboard.writeText(locationUrl);
     toast.success("Emergency location copied.");
   }
-
   async function shareEmergency() {
     try {
       if (navigator.share) {
@@ -43,7 +38,6 @@ export function EmergencyServicesCard({
       toast.error("The emergency message could not be shared.");
     }
   }
-
   return (
     <section className="rounded-3xl border border-red-200 bg-red-50/70 p-5 shadow-sm sm:p-6">
       <div className="flex items-start gap-3">

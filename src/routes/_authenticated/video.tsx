@@ -112,39 +112,39 @@ const STATUS_CONFIG: Record<
 > = {
   scheduled: {
     label: "Scheduled",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    dot: "bg-blue-500",
+    bg: "bg-[#e8f1f4]",
+    text: "text-[#365f73]",
+    dot: "bg-[#4f8198]",
   },
   waiting: {
     label: "Waiting",
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    dot: "bg-amber-400",
+    bg: "bg-[#f7eddf]",
+    text: "text-[#97633c]",
+    dot: "bg-[#c18450]",
   },
   pending: {
     label: "Pending",
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    dot: "bg-amber-400",
+    bg: "bg-[#f4efe4]",
+    text: "text-[#80683f]",
+    dot: "bg-[#ad8d4f]",
   },
   in_progress: {
-    label: "In Progress",
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    dot: "bg-emerald-500",
+    label: "In progress",
+    bg: "bg-[#e2f1ec]",
+    text: "text-[#176c60]",
+    dot: "bg-[#2f8d78]",
   },
   completed: {
     label: "Completed",
-    bg: "bg-stone-100",
-    text: "text-stone-600",
-    dot: "bg-stone-400",
+    bg: "bg-[#edf2f0]",
+    text: "text-[#526a6d]",
+    dot: "bg-[#71898c]",
   },
   cancelled: {
     label: "Cancelled",
-    bg: "bg-red-50",
-    text: "text-red-600",
-    dot: "bg-red-400",
+    bg: "bg-[#f8e8e6]",
+    text: "text-[#a54e49]",
+    dot: "bg-[#bd625b]",
   },
 };
 const CANCELLABLE: ConsultStatus[] = ["scheduled", "waiting", "pending"];
@@ -215,7 +215,7 @@ function StatusBadge({ status }: { status: ConsultStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${cfg.bg} ${cfg.text}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${cfg.bg} ${cfg.text}`}
     >
       <span className={`size-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
@@ -777,130 +777,332 @@ function VideoPage() {
   const getPrescriptions = (consultId: string) =>
     (prescriptions ?? []).filter((p) => p.consultation_id === consultId);
   const isPending = editingConsult ? edit.isPending : book.isPending;
+
+  const statusCounts = {
+    scheduled: (consults ?? []).filter((consult) => consult.status === "scheduled").length,
+    waiting: (consults ?? []).filter(
+      (consult) => consult.status === "waiting" || consult.status === "pending",
+    ).length,
+    inProgress: (consults ?? []).filter((consult) => consult.status === "in_progress").length,
+    completed: historyConsults.filter((consult) => consult.status === "completed").length,
+  };
+
+  const nextConsultation = activeConsults[0] ?? null;
+  const prescriptionCount = prescriptions?.length ?? 0;
+
   return (
     <AppShell>
-      <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Telehealth</h1>
-          <p className="text-muted-foreground mt-1">
-            Video consultations for {activeParent?.full_name ?? "—"}
-          </p>
-        </div>
-        {!isChildView && (
-          <div className="flex items-center gap-2">
-            {activeParentId && consults && consults.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (
-                    confirm(
-                      "Are you sure you want to delete ALL consultations? This action cannot be undone.",
-                    )
-                  ) {
-                    clearAll.mutate();
-                  }
-                }}
-                disabled={clearAll.isPending}
-                className="rounded-xl text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20"
-              >
-                <Trash2 className="size-4 mr-2" />
-                Delete All
-              </Button>
+      <div className="space-y-6 pb-10">
+        <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)]">
+          <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-7">
+            <div className="max-w-2xl">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-[#e7f2ee] px-3 py-1.5 text-xs font-bold text-[#176f69]">
+                  <Video className="size-3.5" />
+                  Secure telehealth
+                </span>
+
+                {isChildView && (
+                  <span className="rounded-full border border-[#d8e5e1] bg-[#f7faf9] px-3 py-1.5 text-xs font-semibold text-[#647b80]">
+                    Family view
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">
+                Video consultations
+              </h1>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[#667d82] sm:text-base">
+                Schedule and manage online doctor visits for{" "}
+                <span className="font-semibold text-[#294b50]">
+                  {activeParent?.full_name ?? "the selected profile"}
+                </span>
+                , join securely and keep prescriptions connected to each consultation.
+              </p>
+            </div>
+
+            {!isChildView && (
+              <div className="flex flex-col gap-3 sm:flex-row">
+                {activeParentId && consults && consults.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={clearAll.isPending}
+                    className="h-11 rounded-xl border-[#e0cbc7] bg-white px-5 font-semibold text-[#a44f49] hover:border-[#dcb9b4] hover:bg-[#fff6f5] hover:text-[#923f3a]"
+                    onClick={() => {
+                      const confirmed = window.confirm(
+                        "Delete every consultation and its prescription records? This action cannot be undone.",
+                      );
+
+                      if (confirmed) {
+                        clearAll.mutate();
+                      }
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                    {clearAll.isPending ? "Deleting…" : "Delete all"}
+                  </Button>
+                )}
+
+                <Button
+                  id="btn-new-consultation"
+                  type="button"
+                  disabled={!activeParentId}
+                  onClick={openNew}
+                  className="h-11 rounded-xl bg-[#0d6665] px-5 font-semibold text-white shadow-[0_14px_30px_-18px_rgba(13,102,101,0.9)] hover:bg-[#0a5958]"
+                >
+                  <Plus className="size-4" />
+                  Schedule consultation
+                </Button>
+              </div>
             )}
-            <Button
-              disabled={!activeParentId}
-              onClick={openNew}
-              className="rounded-xl cursor-pointer"
-              id="btn-new-consultation"
-            >
-              <Plus className="size-4 mr-2" />
-              Schedule Consultation
-            </Button>
           </div>
+
+          <div className="grid border-t border-[#e2ece9] bg-[#f7faf9] sm:grid-cols-2 xl:grid-cols-4">
+            <ConsultMetric
+              icon={CalendarDays}
+              label="Scheduled"
+              value={String(statusCounts.scheduled)}
+              detail="Upcoming appointments"
+              iconClass="bg-[#e8f1f4] text-[#3e687b]"
+            />
+
+            <ConsultMetric
+              icon={Clock}
+              label="Waiting"
+              value={String(statusCounts.waiting)}
+              detail="Checked in or pending"
+              iconClass="bg-[#f6ecdf] text-[#97633c]"
+            />
+
+            <ConsultMetric
+              icon={Video}
+              label="Live now"
+              value={String(statusCounts.inProgress)}
+              detail="Consultations in progress"
+              iconClass="bg-[#e2f1ec] text-[#176c60]"
+            />
+
+            <ConsultMetric
+              icon={FileText}
+              label="Prescriptions"
+              value={String(prescriptionCount)}
+              detail={`${statusCounts.completed} completed visits`}
+              iconClass="bg-[#edf1f5] text-[#536c88]"
+              last
+            />
+          </div>
+        </section>
+
+        {isChildView && (
+          <section className="flex items-start gap-3 rounded-2xl border border-[#ead9be] bg-[#fbf6ec] px-5 py-4 text-sm text-[#795d37]">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="font-bold">Read-only family access</p>
+              <p className="mt-1 leading-5 text-[#8a704e]">
+                You can review consultation details and join available meetings, but only the parent
+                account can schedule, edit, cancel or upload prescriptions.
+              </p>
+            </div>
+          </section>
         )}
-      </div>
 
-      {isChildView && (
-        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-sm text-amber-800">
-          <ShieldAlert className="size-4 shrink-0" />
-          You do not have permission to manage telehealth consultations. Viewing in read-only mode.
-        </div>
-      )}
+        <section className="grid gap-5 lg:grid-cols-[1.18fr_0.82fr]">
+          <div className="rounded-[1.6rem] border border-[#dce8e4] bg-[#0c3f45] p-6 text-white shadow-[0_22px_50px_-38px_rgba(11,55,60,0.75)] sm:p-7">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+              <div className="max-w-xl">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#a7d5cb]">
+                  Next consultation
+                </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        {(["scheduled", "waiting", "in_progress", "completed"] as ConsultStatus[]).map((s) => {
-          const count = (consults ?? []).filter((c) => c.status === s).length;
-          const cfg = STATUS_CONFIG[s];
-          return (
-            <div
-              key={s}
-              className="bg-card border border-border p-4 rounded-2xl flex flex-col gap-1"
-            >
-              <span className={`text-[10px] font-mono uppercase tracking-widest ${cfg.text}`}>
-                {cfg.label}
+                {nextConsultation ? (
+                  <>
+                    <h2 className="mt-3 text-2xl font-bold tracking-[-0.035em]">
+                      {displayDoctorName(nextConsultation.doctor_name)}
+                    </h2>
+
+                    <p className="mt-1 text-sm text-white/65">
+                      {nextConsultation.specialty || "General consultation"}
+                    </p>
+
+                    <div className="mt-5 flex flex-wrap gap-3 text-sm">
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-white/8 px-3 py-2 text-white/85">
+                        <CalendarDays className="size-4 text-[#a7d5cb]" />
+                        {formatDisplayDate(nextConsultation.consultation_date)}
+                      </span>
+
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-white/8 px-3 py-2 text-white/85">
+                        <Clock className="size-4 text-[#a7d5cb]" />
+                        {formatDisplayTime(nextConsultation.consultation_time)}
+                      </span>
+                    </div>
+
+                    {nextConsultation.consultation_reason && (
+                      <p className="mt-5 text-sm leading-6 text-white/70">
+                        {nextConsultation.consultation_reason}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="mt-3 text-2xl font-bold tracking-[-0.035em]">
+                      No upcoming consultation
+                    </h2>
+
+                    <p className="mt-3 max-w-lg text-sm leading-6 text-white/65">
+                      Schedule a secure video visit when medical guidance is needed without an
+                      in-person journey.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="grid size-16 shrink-0 place-items-center rounded-2xl border border-white/12 bg-white/8 text-[#acd9ce]">
+                <Stethoscope className="size-7" />
+              </div>
+            </div>
+
+            {nextConsultation && (
+              <div className="mt-7 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row">
+                <Button
+                  type="button"
+                  onClick={() => handleJoin(nextConsultation)}
+                  disabled={
+                    !JOINABLE.includes(nextConsultation.status) || !nextConsultation.meeting_url
+                  }
+                  className="h-11 rounded-xl bg-white px-5 font-semibold text-[#0c3f45] hover:bg-[#edf6f3]"
+                >
+                  <ExternalLink className="size-4" />
+                  Open consultation
+                </Button>
+
+                {!isChildView && EDITABLE.includes(nextConsultation.status) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => openEdit(nextConsultation)}
+                    className="h-11 rounded-xl border-white/20 bg-transparent px-5 font-semibold text-white hover:bg-white/10 hover:text-white"
+                  >
+                    <Pencil className="size-4" />
+                    Edit details
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-[1.6rem] border border-[#dce8e4] bg-white p-6 shadow-[0_18px_45px_-38px_rgba(18,49,54,0.45)] sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.13em] text-[#7d9094]">
+                  Consultation readiness
+                </p>
+                <h2 className="mt-2 text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                  Prepare before joining
+                </h2>
+              </div>
+
+              <span className="grid size-10 place-items-center rounded-xl bg-[#e7f2ee] text-[#176f69]">
+                <CheckCircle2 className="size-5" />
               </span>
-              <p className="text-2xl font-bold">{count}</p>
             </div>
-          );
-        })}
-      </div>
 
-      <div className="space-y-6">
-        <div>
-          <h2 className="font-display text-xl font-bold mb-4">Upcoming Consultations</h2>
+            <div className="mt-5 space-y-3">
+              {[
+                "Use a stable internet connection",
+                "Keep medicine and recent vital details ready",
+                "Join from a quiet, well-lit place",
+                "Upload the prescription after the visit",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-start gap-3 rounded-xl bg-[#f7faf9] px-4 py-3"
+                >
+                  <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-[#dceee8] text-[#176f69]">
+                    <CheckCircle2 className="size-3" />
+                  </span>
+                  <p className="text-sm leading-5 text-[#5f767a]">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_18px_50px_-40px_rgba(18,49,54,0.45)]">
+          <div className="flex flex-col gap-3 border-b border-[#e3ece9] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                Upcoming consultations
+              </h2>
+              <p className="mt-1 text-sm text-[#72868a]">
+                Review meeting access, reminders and preparation notes.
+              </p>
+            </div>
+
+            <span className="rounded-full bg-[#edf4f2] px-3 py-1.5 text-xs font-bold text-[#5c7478]">
+              {activeConsults.length} active
+            </span>
+          </div>
+
           {isLoading ? (
-            <div className="bg-card border border-border rounded-3xl p-12 text-center text-muted-foreground animate-pulse">
-              Loading consultations…
-            </div>
+            <ConsultLoadingState />
           ) : activeConsults.length === 0 ? (
-            <div className="bg-card border border-dashed border-border rounded-3xl p-14 text-center text-muted-foreground">
-              <Video className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="font-semibold text-base">No consultations found.</p>
-              {!isChildView && (
-                <p className="text-sm mt-1">Click "Schedule Consultation" to get started.</p>
-              )}
-            </div>
+            <ConsultEmptyState isChildView={isChildView} onSchedule={openNew} />
           ) : (
-            <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border">
-              {activeConsults.map((c) => (
+            <div className="divide-y divide-[#e6eeeb]">
+              {activeConsults.map((consult) => (
                 <ConsultRow
-                  key={c.id}
-                  consult={c}
+                  key={consult.id}
+                  consult={consult}
                   isChildView={isChildView}
-                  expanded={expandedId === c.id}
-                  onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
-                  prescriptions={getPrescriptions(c.id)}
-                  onEdit={() => openEdit(c)}
-                  onCheckIn={() => checkInConsult.mutate(c.id)}
+                  expanded={expandedId === consult.id}
+                  onToggle={() => setExpandedId(expandedId === consult.id ? null : consult.id)}
+                  prescriptions={getPrescriptions(consult.id)}
+                  onEdit={() => openEdit(consult)}
+                  onCheckIn={() => checkInConsult.mutate(consult.id)}
                   onCancel={() => {
                     if (isChildView) {
-                      toast.error("You do not have permission to manage telehealth consultations.");
+                      toast.error(
+                        "You do not have permission to manage telehealth consultations.",
+                      );
                       return;
                     }
-                    setCancelConsultTarget(c);
+
+                    setCancelConsultTarget(consult);
                     setCancelReason("");
                   }}
-                  onJoin={() => handleJoin(c)}
+                  onJoin={() => handleJoin(consult)}
                   onComplete={() => {
                     if (isChildView) {
-                      toast.error("You do not have permission to manage telehealth consultations.");
+                      toast.error(
+                        "You do not have permission to manage telehealth consultations.",
+                      );
                       return;
                     }
-                    if (confirm("Mark this consultation as completed?")) {
-                      completeConsult.mutate(c.id);
+
+                    if (window.confirm("Mark this consultation as completed?")) {
+                      completeConsult.mutate(consult.id);
                     }
                   }}
-                  onDelete={() => {}}
+                  onDelete={() => { }}
                   onUploadRx={() => {
                     if (isChildView) {
-                      toast.error("You do not have permission to manage telehealth consultations.");
+                      toast.error(
+                        "You do not have permission to manage telehealth consultations.",
+                      );
                       return;
                     }
-                    setUploadConsult(c);
+
+                    setUploadConsult(consult);
                   }}
                   onOpenRx={openPrescription}
                   onDeleteRx={(prescription) => {
-                    if (confirm(`Delete ${prescription.file_name ?? "this prescription"}?`)) {
+                    if (
+                      window.confirm(
+                        `Delete ${prescription.file_name ?? "this prescription"}?`,
+                      )
+                    ) {
                       deletePrescription.mutate(prescription);
                     }
                   }}
@@ -909,44 +1111,72 @@ function VideoPage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {historyConsults.length > 0 && (
-          <div>
-            <h2 className="font-display text-xl font-bold mb-4 text-muted-foreground">History</h2>
-            <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border opacity-75">
-              {historyConsults.map((c) => (
+          <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_18px_50px_-40px_rgba(18,49,54,0.45)]">
+            <div className="flex items-center justify-between border-b border-[#e3ece9] px-5 py-5 sm:px-6">
+              <div>
+                <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                  Consultation history
+                </h2>
+                <p className="mt-1 text-sm text-[#72868a]">
+                  Completed and cancelled consultations.
+                </p>
+              </div>
+
+              <span className="rounded-full bg-[#f1f4f3] px-3 py-1.5 text-xs font-bold text-[#677c80]">
+                {historyConsults.length} records
+              </span>
+            </div>
+
+            <div className="divide-y divide-[#e6eeeb]">
+              {historyConsults.map((consult) => (
                 <ConsultRow
-                  key={c.id}
-                  consult={c}
+                  key={consult.id}
+                  consult={consult}
                   isChildView={isChildView}
-                  expanded={expandedId === c.id}
-                  onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
-                  prescriptions={getPrescriptions(c.id)}
-                  onEdit={() => openEdit(c)}
-                  onCheckIn={() => {}}
-                  onCancel={() => {}}
-                  onJoin={() => handleJoin(c)}
-                  onComplete={() => {}}
+                  expanded={expandedId === consult.id}
+                  onToggle={() => setExpandedId(expandedId === consult.id ? null : consult.id)}
+                  prescriptions={getPrescriptions(consult.id)}
+                  onEdit={() => openEdit(consult)}
+                  onCheckIn={() => { }}
+                  onCancel={() => { }}
+                  onJoin={() => handleJoin(consult)}
+                  onComplete={() => { }}
                   onDelete={() => {
                     if (isChildView) {
-                      toast.error("You do not have permission to manage telehealth consultations.");
+                      toast.error(
+                        "You do not have permission to manage telehealth consultations.",
+                      );
                       return;
                     }
-                    if (confirm("Permanently delete this consultation and its prescriptions?")) {
-                      deleteConsult.mutate(c);
+
+                    if (
+                      window.confirm(
+                        "Permanently delete this consultation and its prescriptions?",
+                      )
+                    ) {
+                      deleteConsult.mutate(consult);
                     }
                   }}
                   onUploadRx={() => {
                     if (isChildView) {
-                      toast.error("You do not have permission to manage telehealth consultations.");
+                      toast.error(
+                        "You do not have permission to manage telehealth consultations.",
+                      );
                       return;
                     }
-                    setUploadConsult(c);
+
+                    setUploadConsult(consult);
                   }}
                   onOpenRx={openPrescription}
                   onDeleteRx={(prescription) => {
-                    if (confirm(`Delete ${prescription.file_name ?? "this prescription"}?`)) {
+                    if (
+                      window.confirm(
+                        `Delete ${prescription.file_name ?? "this prescription"}?`,
+                      )
+                    ) {
                       deletePrescription.mutate(prescription);
                     }
                   }}
@@ -954,68 +1184,122 @@ function VideoPage() {
                 />
               ))}
             </div>
-          </div>
+          </section>
         )}
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-[#dce8e4] bg-[#f8fbfa] p-6">
+            <div className="flex items-start gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e2f1ec] text-[#176c60]">
+                <ShieldAlert className="size-5" />
+              </span>
+
+              <div>
+                <h2 className="text-base font-bold text-[#29484e]">Private meeting access</h2>
+                <p className="mt-2 text-sm leading-6 text-[#6b8084]">
+                  Meeting links open in a separate browser tab. Share the link only with the doctor
+                  and trusted members of the care circle.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#e4d8ce] bg-[#fbf7f2] p-6">
+            <div className="flex items-start gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#f3e4d7] text-[#9c6338]">
+                <Stethoscope className="size-5" />
+              </span>
+
+              <div>
+                <h2 className="text-base font-bold text-[#3d3c35]">Not for urgent emergencies</h2>
+                <p className="mt-2 text-sm leading-6 text-[#756d64]">
+                  Use emergency services or SOS controls for chest pain, severe breathing trouble,
+                  loss of consciousness or rapidly worsening symptoms.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <Dialog
         open={scheduleOpen}
-        onOpenChange={(v) => {
-          if (!v) closeSchedule();
-          else setScheduleOpen(true);
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            closeSchedule();
+          } else {
+            setScheduleOpen(true);
+          }
         }}
       >
-        <DialogContent className="sm:max-w-[500px] rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-bold">
-              {editingConsult ? "Edit Consultation" : "Schedule Consultation"}
-            </DialogTitle>
+        <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[1.5rem] border-[#dce7e3] p-0 sm:max-w-2xl">
+          <DialogHeader className="border-b border-[#e3ece9] px-6 py-5 text-left">
+            <div className="flex items-start gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e7f2ee] text-[#176f69]">
+                <Video className="size-5" />
+              </span>
+
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">
+                  {editingConsult ? "Edit consultation" : "Schedule consultation"}
+                </DialogTitle>
+                <p className="mt-1.5 text-sm leading-6 text-[#71858a]">
+                  Enter the doctor, reason and meeting details. A private Jitsi room is created when
+                  no meeting link is supplied.
+                </p>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="vc-doctor">
-                Doctor Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="vc-doctor"
-                value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
-                placeholder="e.g. Sharma"
-                maxLength={120}
-              />
+          <div className="space-y-5 px-6 py-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="vc-doctor" className="font-semibold text-[#29484e]">
+                  Doctor name <span className="text-[#b34f49]">*</span>
+                </Label>
+                <Input
+                  id="vc-doctor"
+                  value={doctorName}
+                  onChange={(event) => setDoctorName(event.target.value)}
+                  placeholder="e.g. Sharma"
+                  maxLength={120}
+                  className="h-11 rounded-xl border-[#d8e4e0] bg-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vc-specialty" className="font-semibold text-[#29484e]">
+                  Specialty <span className="font-normal text-[#849599]">(optional)</span>
+                </Label>
+                <Input
+                  id="vc-specialty"
+                  value={specialty}
+                  onChange={(event) => setSpecialty(event.target.value)}
+                  placeholder="e.g. Diabetologist"
+                  maxLength={80}
+                  className="h-11 rounded-xl border-[#d8e4e0] bg-white"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="vc-specialty">
-                Specialty <span className="text-xs text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                id="vc-specialty"
-                value={specialty}
-                onChange={(e) => setSpecialty(e.target.value)}
-                placeholder="e.g. Diabetologist"
-                maxLength={80}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="vc-reason">
-                Consultation Reason <span className="text-destructive">*</span>
+            <div className="space-y-2">
+              <Label htmlFor="vc-reason" className="font-semibold text-[#29484e]">
+                Consultation reason <span className="text-[#b34f49]">*</span>
               </Label>
               <Input
                 id="vc-reason"
                 value={consultReason}
-                onChange={(e) => setConsultReason(e.target.value)}
-                placeholder="e.g. Diabetes Follow-up"
+                onChange={(event) => setConsultReason(event.target.value)}
+                placeholder="e.g. Diabetes follow-up"
                 maxLength={200}
+                className="h-11 rounded-xl border-[#d8e4e0] bg-white"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="vc-date">
-                  Date <span className="text-destructive">*</span>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="vc-date" className="font-semibold text-[#29484e]">
+                  Date <span className="text-[#b34f49]">*</span>
                 </Label>
                 <DateInput
                   id="vc-date"
@@ -1025,9 +1309,10 @@ function VideoPage() {
                   placeholder="YYYY-MM-DD"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="vc-time">
-                  Time <span className="text-destructive">*</span>
+
+              <div className="space-y-2">
+                <Label htmlFor="vc-time" className="font-semibold text-[#29484e]">
+                  Time <span className="text-[#b34f49]">*</span>
                 </Label>
                 <TimeInput
                   id="vc-time"
@@ -1038,35 +1323,39 @@ function VideoPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="vc-meeting-link">
-                Meeting Link <span className="text-xs text-muted-foreground">(optional)</span>
+            <div className="space-y-2">
+              <Label htmlFor="vc-meeting-link" className="font-semibold text-[#29484e]">
+                Meeting link <span className="font-normal text-[#849599]">(optional)</span>
               </Label>
               <Input
                 id="vc-meeting-link"
                 type="url"
                 value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
+                onChange={(event) => setMeetingUrl(event.target.value)}
                 placeholder="https://meet.google.com/... or Zoom link"
                 maxLength={500}
+                className="h-11 rounded-xl border-[#d8e4e0] bg-white"
               />
-              <p className="text-[11px] text-muted-foreground">
-                Paste the link supplied by the doctor. Leave it blank to create a Jitsi meeting
-                room.
+              <p className="text-xs leading-5 text-[#7a8e92]">
+                Paste the doctor&apos;s secure link or leave this blank to generate a Jitsi room.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-border bg-stone-50/70 p-4 space-y-3">
+            <div className="rounded-2xl border border-[#dfe9e6] bg-[#f8fbfa] p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <Label htmlFor="vc-reminder" className="flex items-center gap-2">
-                    <BellRing className="size-4 text-blue-600" />
+                  <Label
+                    htmlFor="vc-reminder"
+                    className="flex items-center gap-2 font-semibold text-[#29484e]"
+                  >
+                    <BellRing className="size-4 text-[#176f69]" />
                     Consultation reminder
                   </Label>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Creates an in-app reminder for the parent and linked children.
+                  <p className="mt-1 text-xs leading-5 text-[#74898d]">
+                    Notify the parent and linked family members before the visit.
                   </p>
                 </div>
+
                 <Switch
                   id="vc-reminder"
                   checked={reminderEnabled}
@@ -1075,10 +1364,18 @@ function VideoPage() {
               </div>
 
               {reminderEnabled && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="vc-reminder-time">Remind family</Label>
-                  <Select value={reminderMinutesBefore} onValueChange={setReminderMinutesBefore}>
-                    <SelectTrigger id="vc-reminder-time">
+                <div className="mt-4 space-y-2 border-t border-[#e2ebe8] pt-4">
+                  <Label htmlFor="vc-reminder-time" className="font-semibold text-[#29484e]">
+                    Reminder time
+                  </Label>
+                  <Select
+                    value={reminderMinutesBefore}
+                    onValueChange={setReminderMinutesBefore}
+                  >
+                    <SelectTrigger
+                      id="vc-reminder-time"
+                      className="h-11 rounded-xl border-[#d8e4e0] bg-white"
+                    >
                       <SelectValue placeholder="Select reminder time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1093,78 +1390,95 @@ function VideoPage() {
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="vc-notes">
-                Notes <span className="text-xs text-muted-foreground">(optional)</span>
+            <div className="space-y-2">
+              <Label htmlFor="vc-notes" className="font-semibold text-[#29484e]">
+                Preparation notes <span className="font-normal text-[#849599]">(optional)</span>
               </Label>
               <Textarea
                 id="vc-notes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(event) => setNotes(event.target.value)}
                 placeholder="e.g. Patient recently switched insulin dosage"
-                rows={3}
+                rows={4}
                 maxLength={400}
-                className="resize-none"
+                className="min-h-24 resize-none rounded-xl border-[#d8e4e0] bg-white"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={closeSchedule} disabled={isPending}>
+          <DialogFooter className="border-t border-[#e5ecea] px-6 py-5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeSchedule}
+              disabled={isPending}
+              className="h-11 rounded-xl border-[#d6e2de] bg-white px-5 text-[#466267] hover:bg-[#f5f9f7]"
+            >
               Cancel
             </Button>
+
             <Button
               id="btn-submit-consultation"
+              type="button"
+              disabled={isPending || !activeParentId}
               onClick={() => {
-                if (!validateConsult()) return;
+                if (!validateConsult()) {
+                  return;
+                }
+
                 if (editingConsult) {
                   edit.mutate(editingConsult.id);
                 } else {
                   book.mutate();
                 }
               }}
-              disabled={isPending || !activeParentId}
+              className="h-11 rounded-xl bg-[#0d6665] px-6 text-white hover:bg-[#0a5958]"
             >
               {isPending
                 ? editingConsult
                   ? "Saving…"
                   : "Scheduling…"
                 : editingConsult
-                  ? "Save Changes"
-                  : "Schedule Consultation"}
+                  ? "Save changes"
+                  : "Schedule consultation"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog
-        open={!!cancelConsultTarget}
-        onOpenChange={(open) => {
-          if (!open) {
+        open={Boolean(cancelConsultTarget)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
             setCancelConsultTarget(null);
             setCancelReason("");
           }
         }}
       >
-        <DialogContent className="sm:max-w-[440px] rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold">
-              Cancel Consultation
+        <DialogContent className="rounded-[1.5rem] border-[#dce7e3] p-0 sm:max-w-md">
+          <DialogHeader className="border-b border-[#e3ece9] px-6 py-5 text-left">
+            <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">
+              Cancel consultation
             </DialogTitle>
+            <p className="mt-1.5 text-sm leading-6 text-[#71858a]">
+              Add a clear reason so linked family members understand the change.
+            </p>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 px-6 py-5">
             {cancelConsultTarget && (
-              <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {displayDoctorName(cancelConsultTarget.doctor_name)} ·{" "}
-                {formatDisplayDate(cancelConsultTarget.consultation_date)} at{" "}
-                {formatDisplayTime(cancelConsultTarget.consultation_time)}
+              <div className="rounded-xl border border-[#ecd8d4] bg-[#fff7f5] px-4 py-3 text-sm text-[#8e4e49]">
+                <p className="font-bold">{displayDoctorName(cancelConsultTarget.doctor_name)}</p>
+                <p className="mt-1 text-xs text-[#9b6661]">
+                  {formatDisplayDate(cancelConsultTarget.consultation_date)} ·{" "}
+                  {formatDisplayTime(cancelConsultTarget.consultation_time)}
+                </p>
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="vc-cancel-reason">
-                Cancellation reason <span className="text-destructive">*</span>
+            <div className="space-y-2">
+              <Label htmlFor="vc-cancel-reason" className="font-semibold text-[#29484e]">
+                Cancellation reason <span className="text-[#b34f49]">*</span>
               </Label>
               <Textarea
                 id="vc-cancel-reason"
@@ -1172,88 +1486,119 @@ function VideoPage() {
                 onChange={(event) => setCancelReason(event.target.value)}
                 placeholder="e.g. Doctor requested a new date"
                 maxLength={300}
-                rows={3}
-                className="resize-none"
+                rows={4}
+                className="min-h-24 resize-none rounded-xl border-[#d8e4e0] bg-white"
               />
-              <p className="text-xs text-muted-foreground">
-                This reason is shared with linked family members.
-              </p>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-[#e5ecea] px-6 py-5">
             <Button
+              type="button"
               variant="outline"
+              disabled={cancelConsult.isPending}
               onClick={() => {
                 setCancelConsultTarget(null);
                 setCancelReason("");
               }}
-              disabled={cancelConsult.isPending}
+              className="h-11 rounded-xl border-[#d6e2de] bg-white px-5"
             >
-              Keep Consultation
+              Keep consultation
             </Button>
+
             <Button
-              variant="destructive"
+              type="button"
+              disabled={cancelConsult.isPending || cancelReason.trim().length < 3}
               onClick={() => {
-                if (!cancelConsultTarget) return;
+                if (!cancelConsultTarget) {
+                  return;
+                }
+
                 if (cancelReason.trim().length < 3) {
                   toast.error("Please enter a cancellation reason.");
                   return;
                 }
+
                 cancelConsult.mutate({
                   id: cancelConsultTarget.id,
                   reason: cancelReason,
                 });
               }}
-              disabled={cancelConsult.isPending || cancelReason.trim().length < 3}
+              className="h-11 rounded-xl bg-[#aa4e48] px-5 text-white hover:bg-[#95413c]"
             >
-              {cancelConsult.isPending ? "Cancelling…" : "Cancel Consultation"}
+              {cancelConsult.isPending ? "Cancelling…" : "Cancel consultation"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog
-        open={!!uploadConsult}
-        onOpenChange={(v) => {
-          if (!v) closeUpload();
+        open={Boolean(uploadConsult)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            closeUpload();
+          }
         }}
       >
-        <DialogContent className="sm:max-w-[440px] rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold">
-              Upload Prescription
+        <DialogContent className="rounded-[1.5rem] border-[#dce7e3] p-0 sm:max-w-md">
+          <DialogHeader className="border-b border-[#e3ece9] px-6 py-5 text-left">
+            <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">
+              Upload prescription
             </DialogTitle>
+            <p className="mt-1.5 text-sm leading-6 text-[#71858a]">
+              Add the prescription or medical instructions received after the consultation.
+            </p>
           </DialogHeader>
 
           {uploadConsult && (
-            <div className="space-y-4 py-2">
-              <div className="bg-stone-50 border border-stone-100 rounded-xl px-3 py-2 text-xs text-stone-600">
-                <span className="font-semibold">For:</span>{" "}
-                {displayDoctorName(uploadConsult.doctor_name)}
-                {uploadConsult.consultation_reason && ` · ${uploadConsult.consultation_reason}`}
+            <div className="space-y-5 px-6 py-5">
+              <div className="rounded-xl border border-[#dfe8e5] bg-[#f8fbfa] px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#7d9094]">
+                  Consultation
+                </p>
+                <p className="mt-1 text-sm font-bold text-[#29484e]">
+                  {displayDoctorName(uploadConsult.doctor_name)}
+                </p>
+                {uploadConsult.consultation_reason && (
+                  <p className="mt-1 text-xs text-[#75898d]">
+                    {uploadConsult.consultation_reason}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-1.5">
-                <Label>
-                  File <span className="text-destructive">*</span>{" "}
-                  <span className="text-xs text-muted-foreground">PDF, JPG, PNG · max 25 MB</span>
+              <div className="space-y-2">
+                <Label className="font-semibold text-[#29484e]">
+                  Prescription file <span className="text-[#b34f49]">*</span>
                 </Label>
+
                 <label
                   htmlFor="rx-file"
-                  className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:bg-stone-50 transition-colors"
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#cbdcd6] bg-[#fbfdfc] px-5 py-8 text-center transition hover:border-[#8eb9ad] hover:bg-[#f4f9f7]"
                 >
-                  <Upload className="size-6 text-muted-foreground mb-2" />
+                  <span className="grid size-11 place-items-center rounded-xl bg-[#e7f2ee] text-[#176f69]">
+                    <Upload className="size-5" />
+                  </span>
+
                   {uploadFile ? (
-                    <span className="text-sm font-medium text-center break-all">
-                      {uploadFile.name}{" "}
-                      <span className="text-muted-foreground font-normal">
-                        ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+                    <>
+                      <span className="mt-4 max-w-full break-all text-sm font-bold text-[#29484e]">
+                        {uploadFile.name}
                       </span>
-                    </span>
+                      <span className="mt-1 text-xs text-[#7a8d91]">
+                        {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </>
                   ) : (
-                    <span className="text-sm text-muted-foreground">Click to choose a file</span>
+                    <>
+                      <span className="mt-4 text-sm font-bold text-[#35565b]">
+                        Select a prescription file
+                      </span>
+                      <span className="mt-1 text-xs text-[#7a8d91]">
+                        PDF, JPG or PNG · maximum 25 MB
+                      </span>
+                    </>
                   )}
+
                   <Input
                     id="rx-file"
                     ref={fileInputRef}
@@ -1266,24 +1611,36 @@ function VideoPage() {
               </div>
 
               {uploading && (
-                <div className="space-y-1.5">
-                  <Label>Uploading…</Label>
+                <div className="space-y-2 rounded-xl border border-[#dfe8e5] bg-[#f8fbfa] p-4">
+                  <div className="flex items-center justify-between text-xs font-semibold text-[#5f777b]">
+                    <span>Uploading securely</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
                   <Progress value={uploadProgress} className="h-2" />
                 </div>
               )}
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={closeUpload} disabled={uploadPrescription.isPending}>
+          <DialogFooter className="border-t border-[#e5ecea] px-6 py-5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeUpload}
+              disabled={uploadPrescription.isPending}
+              className="h-11 rounded-xl border-[#d6e2de] bg-white px-5"
+            >
               Cancel
             </Button>
+
             <Button
               id="btn-submit-prescription"
-              onClick={() => uploadPrescription.mutate()}
+              type="button"
               disabled={!uploadFile || uploadPrescription.isPending}
+              onClick={() => uploadPrescription.mutate()}
+              className="h-11 rounded-xl bg-[#0d6665] px-5 text-white hover:bg-[#0a5958]"
             >
-              {uploadPrescription.isPending ? "Uploading…" : "Upload Prescription"}
+              {uploadPrescription.isPending ? "Uploading…" : "Upload prescription"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1291,6 +1648,94 @@ function VideoPage() {
     </AppShell>
   );
 }
+
+function ConsultMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  iconClass,
+  last = false,
+}: {
+  icon: typeof Video;
+  label: string;
+  value: string;
+  detail: string;
+  iconClass: string;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-4 px-5 py-5 sm:px-6 ${last ? "" : "border-b border-[#e2ebe8] sm:border-r xl:border-b-0"
+        }`}
+    >
+      <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${iconClass}`}>
+        <Icon className="size-5" />
+      </span>
+
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">
+          {label}
+        </p>
+        <p className="mt-1 text-xl font-bold tracking-[-0.035em] text-[#17343a]">{value}</p>
+        <p className="mt-0.5 truncate text-xs text-[#768a8e]">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+function ConsultLoadingState() {
+  return (
+    <div className="space-y-1 p-5 sm:p-6">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="flex animate-pulse items-center gap-4 rounded-xl px-1 py-4">
+          <div className="size-12 rounded-xl bg-[#edf2f0]" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-40 rounded bg-[#e8efed]" />
+            <div className="h-3 w-56 rounded bg-[#f0f4f3]" />
+          </div>
+          <div className="h-9 w-24 rounded-xl bg-[#e8efed]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ConsultEmptyState({
+  isChildView,
+  onSchedule,
+}: {
+  isChildView: boolean;
+  onSchedule: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <span className="grid size-14 place-items-center rounded-2xl bg-[#e7f2ee] text-[#176f69]">
+        <Video className="size-6" />
+      </span>
+
+      <h3 className="mt-5 text-lg font-bold text-[#1c3b41]">No upcoming consultation</h3>
+
+      <p className="mt-2 max-w-md text-sm leading-6 text-[#71868a]">
+        {isChildView
+          ? "No video consultations are currently scheduled for this profile."
+          : "Schedule a secure doctor consultation and keep the meeting, reminders and prescription in one place."}
+      </p>
+
+      {!isChildView && (
+        <Button
+          type="button"
+          onClick={onSchedule}
+          className="mt-6 h-11 rounded-xl bg-[#0d6665] px-5 text-white hover:bg-[#0a5958]"
+        >
+          <Plus className="size-4" />
+          Schedule consultation
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function ConsultRow({
   consult: c,
   isChildView,
@@ -1320,148 +1765,171 @@ function ConsultRow({
   onComplete: () => void;
   onDelete: () => void;
   onUploadRx: () => void;
-  onOpenRx: (p: Prescription) => void;
-  onDeleteRx: (p: Prescription) => void;
+  onOpenRx: (prescription: Prescription) => void;
+  onDeleteRx: (prescription: Prescription) => void;
   nowMs: number;
 }) {
   const canEdit = !isChildView && EDITABLE.includes(c.status);
   const canCheckIn = !isChildView && ["scheduled", "pending"].includes(c.status);
   const canCancel = !isChildView && CANCELLABLE.includes(c.status);
   const canComplete = !isChildView && c.status === "in_progress";
-  const canDelete = !isChildView && (c.status === "completed" || c.status === "cancelled");
+  const canDelete =
+    !isChildView && (c.status === "completed" || c.status === "cancelled");
   const scheduledMs = getConsultTime(c);
   const joinAvailable =
     c.status === "in_progress" ||
     scheduledMs === 0 ||
     nowMs >= scheduledMs - JOIN_EARLY_MINUTES * 60 * 1000;
   const checkInAvailable =
-    scheduledMs === 0 || nowMs >= scheduledMs - JOIN_EARLY_MINUTES * 60 * 1000;
-  const canJoin = JOINABLE.includes(c.status) && !!c.meeting_url;
-  const canUpload = !isChildView && (c.status === "completed" || c.status === "in_progress");
+    scheduledMs === 0 ||
+    nowMs >= scheduledMs - JOIN_EARLY_MINUTES * 60 * 1000;
+  const canJoin = JOINABLE.includes(c.status) && Boolean(c.meeting_url);
+  const canUpload =
+    !isChildView && (c.status === "completed" || c.status === "in_progress");
   const isActive = c.status === "in_progress" || c.status === "waiting";
   const isPastDue =
     !["completed", "cancelled", "in_progress"].includes(c.status) &&
     scheduledMs > 0 &&
     nowMs > scheduledMs;
+
   return (
-    <div
-      className={`hover:bg-stone-50/50 transition-colors ${isActive ? "border-l-4 border-emerald-400" : ""}`}
+    <article
+      className={`px-5 py-5 transition-colors hover:bg-[#fbfdfc] sm:px-6 ${isActive ? "border-l-4 border-l-[#2f8d78]" : ""
+        }`}
     >
-      <div className="p-5 flex items-start gap-5">
-        <div
-          className={`size-12 rounded-2xl flex items-center justify-center shrink-0 ${isActive ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"}`}
-        >
-          <Video className="size-5" />
-        </div>
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
+        <div className="flex min-w-0 flex-1 gap-4">
+          <div
+            className={`grid size-12 shrink-0 place-items-center rounded-xl ${isActive
+                ? "bg-[#e2f1ec] text-[#176c60]"
+                : "bg-[#e8f1f4] text-[#3e687b]"
+              }`}
+          >
+            <Video className="size-5" />
+          </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-base">
-              {displayDoctorName(c.doctor_name)}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-bold tracking-[-0.02em] text-[#203f45]">
+                {displayDoctorName(c.doctor_name)}
+              </h3>
+
               {c.specialty && (
-                <span className="text-muted-foreground font-normal text-sm"> · {c.specialty}</span>
+                <span className="text-sm text-[#71868a]">· {c.specialty}</span>
               )}
-            </p>
-            <StatusBadge status={c.status} />
-            {isPastDue && (
-              <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600">
-                Past due
+
+              <StatusBadge status={c.status} />
+
+              {isPastDue && (
+                <span className="inline-flex items-center rounded-full bg-[#f8e8e6] px-2.5 py-1 text-[11px] font-bold text-[#a54e49]">
+                  Past due
+                </span>
+              )}
+            </div>
+
+            {c.consultation_reason && (
+              <p className="mt-1.5 text-sm leading-5 text-[#60777b]">
+                {c.consultation_reason}
+              </p>
+            )}
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-[#74898d]">
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarDays className="size-3.5 text-[#4e777b]" />
+                {formatDisplayDate(c.consultation_date)}
               </span>
+
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="size-3.5 text-[#4e777b]" />
+                {formatDisplayTime(c.consultation_time)}
+              </span>
+
+              {prescriptions.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-[#426985]">
+                  <FileText className="size-3.5" />
+                  {prescriptions.length} prescription{prescriptions.length === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
+
+            {c.notes && (
+              <div className="mt-3 rounded-xl border border-[#e1e9e7] bg-[#f8fbfa] px-4 py-3 text-xs leading-5 text-[#62797d]">
+                <span className="font-bold text-[#405f64]">Preparation note:</span> {c.notes}
+              </div>
+            )}
+
+            {c.reminder_enabled && !["completed", "cancelled"].includes(c.status) && (
+              <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#3e7180]">
+                <BellRing className="size-3.5" />
+                Family reminder{" "}
+                {c.reminder_minutes_before >= 1440
+                  ? "1 day"
+                  : c.reminder_minutes_before >= 60
+                    ? `${c.reminder_minutes_before / 60} hour${c.reminder_minutes_before === 60 ? "" : "s"
+                    }`
+                    : `${c.reminder_minutes_before} minutes`}{" "}
+                before
+              </p>
+            )}
+
+            {c.status === "cancelled" && c.cancellation_reason && (
+              <div className="mt-3 rounded-xl border border-[#ecd8d4] bg-[#fff7f5] px-4 py-3 text-xs leading-5 text-[#95524d]">
+                <span className="font-bold">Cancellation reason:</span>{" "}
+                {c.cancellation_reason}
+              </div>
             )}
           </div>
-
-          {c.consultation_reason && (
-            <p className="text-sm text-stone-600 mt-0.5">{c.consultation_reason}</p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1.5">
-            <span className="flex items-center gap-1">
-              <CalendarDays className="size-3.5" />
-              {formatDisplayDate(c.consultation_date)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="size-3.5" />
-              {formatDisplayTime(c.consultation_time)}
-            </span>
-            {prescriptions.length > 0 && (
-              <span className="flex items-center gap-1 text-blue-600 font-medium">
-                <FileText className="size-3.5" />
-                {prescriptions.length} prescription{prescriptions.length > 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-
-          {c.notes && (
-            <div className="bg-stone-50 border border-stone-100 rounded-xl px-3 py-2 mt-2 text-xs text-stone-600 italic">
-              {c.notes}
-            </div>
-          )}
-
-          {c.reminder_enabled && !["completed", "cancelled"].includes(c.status) && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-blue-600">
-              <BellRing className="size-3.5" />
-              Family reminder{" "}
-              {c.reminder_minutes_before >= 1440
-                ? "1 day"
-                : c.reminder_minutes_before >= 60
-                  ? `${c.reminder_minutes_before / 60} hour${c.reminder_minutes_before === 60 ? "" : "s"}`
-                  : `${c.reminder_minutes_before} minutes`}{" "}
-              before
-            </p>
-          )}
-
-          {c.status === "cancelled" && c.cancellation_reason && (
-            <div className="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
-              <span className="font-semibold">Cancellation reason:</span> {c.cancellation_reason}
-            </div>
-          )}
         </div>
 
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          {canCheckIn && (
-            <Button
-              size="sm"
-              variant="outline"
-              id={`btn-check-in-${c.id}`}
-              className="rounded-lg text-xs h-8 gap-1.5"
-              onClick={onCheckIn}
-              disabled={!checkInAvailable}
-              title={
-                checkInAvailable
-                  ? "Check in for the consultation"
-                  : `Check-in opens ${JOIN_EARLY_MINUTES} minutes before the consultation`
-              }
-            >
-              <LogIn className="size-3" />
-              Check In
-            </Button>
-          )}
+        <div className="flex shrink-0 flex-col gap-3 border-t border-[#e7eeec] pt-4 xl:min-w-[250px] xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+          <div className="flex flex-col gap-2 sm:flex-row xl:flex-col">
+            {canCheckIn && (
+              <Button
+                id={`btn-check-in-${c.id}`}
+                type="button"
+                variant="outline"
+                disabled={!checkInAvailable}
+                onClick={onCheckIn}
+                title={
+                  checkInAvailable
+                    ? "Check in for the consultation"
+                    : `Check-in opens ${JOIN_EARLY_MINUTES} minutes before the consultation`
+                }
+                className="h-10 flex-1 rounded-xl border-[#cfded9] bg-white px-4 text-sm font-semibold text-[#405f64] hover:bg-[#f4f8f6] xl:w-full"
+              >
+                <LogIn className="size-4" />
+                Check in
+              </Button>
+            )}
 
-          {canJoin && (
-            <Button
-              size="sm"
-              id={`btn-join-${c.id}`}
-              className="rounded-lg text-xs h-8 gap-1.5"
-              onClick={onJoin}
-              disabled={!joinAvailable}
-              title={
-                joinAvailable
-                  ? "Open consultation"
-                  : `Available ${JOIN_EARLY_MINUTES} minutes before the consultation`
-              }
-            >
-              <ExternalLink className="size-3" />
-              {joinAvailable ? "Join" : "Not Open Yet"}
-            </Button>
-          )}
+            {canJoin && (
+              <Button
+                id={`btn-join-${c.id}`}
+                type="button"
+                disabled={!joinAvailable}
+                onClick={onJoin}
+                title={
+                  joinAvailable
+                    ? "Open consultation"
+                    : `Available ${JOIN_EARLY_MINUTES} minutes before the consultation`
+                }
+                className="h-10 flex-1 rounded-xl bg-[#0d6665] px-4 text-sm font-semibold text-white hover:bg-[#0a5958] xl:w-full"
+              >
+                <ExternalLink className="size-4" />
+                {joinAvailable ? "Join consultation" : "Not open yet"}
+              </Button>
+            )}
+          </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1 xl:justify-end">
             {canEdit && (
               <button
                 id={`btn-edit-${c.id}`}
+                type="button"
                 onClick={onEdit}
-                className="p-2 text-stone-400 hover:text-stone-800 transition-colors cursor-pointer rounded-lg hover:bg-stone-100"
+                className="grid size-9 place-items-center rounded-lg text-[#708488] transition hover:bg-[#edf3f1] hover:text-[#294c51]"
                 title="Edit consultation"
+                aria-label="Edit consultation"
               >
                 <Pencil className="size-4" />
               </button>
@@ -1470,9 +1938,11 @@ function ConsultRow({
             {canCancel && (
               <button
                 id={`btn-cancel-${c.id}`}
+                type="button"
                 onClick={onCancel}
-                className="p-2 text-stone-400 hover:text-amber-700 transition-colors cursor-pointer rounded-lg hover:bg-amber-50"
+                className="grid size-9 place-items-center rounded-lg text-[#8a7770] transition hover:bg-[#fbf1e8] hover:text-[#9a5e38]"
                 title="Cancel consultation"
+                aria-label="Cancel consultation"
               >
                 <XCircle className="size-4" />
               </button>
@@ -1481,9 +1951,11 @@ function ConsultRow({
             {canComplete && (
               <button
                 id={`btn-complete-${c.id}`}
+                type="button"
                 onClick={onComplete}
-                className="p-2 text-stone-400 hover:text-emerald-700 transition-colors cursor-pointer rounded-lg hover:bg-emerald-50"
+                className="grid size-9 place-items-center rounded-lg text-[#66827a] transition hover:bg-[#e6f2ed] hover:text-[#176c60]"
                 title="Mark consultation completed"
+                aria-label="Mark consultation completed"
               >
                 <CheckCircle2 className="size-4" />
               </button>
@@ -1492,9 +1964,11 @@ function ConsultRow({
             {canDelete && (
               <button
                 id={`btn-delete-${c.id}`}
+                type="button"
                 onClick={onDelete}
-                className="p-2 text-stone-400 hover:text-destructive transition-colors cursor-pointer rounded-lg hover:bg-destructive/5"
+                className="grid size-9 place-items-center rounded-lg text-[#8c7774] transition hover:bg-[#fff0ee] hover:text-[#a54e49]"
                 title="Delete consultation"
+                aria-label="Delete consultation"
               >
                 <Trash2 className="size-4" />
               </button>
@@ -1503,9 +1977,11 @@ function ConsultRow({
             {canUpload && (
               <button
                 id={`btn-upload-rx-${c.id}`}
+                type="button"
                 onClick={onUploadRx}
-                className="p-2 text-stone-400 hover:text-blue-600 transition-colors cursor-pointer rounded-lg hover:bg-blue-50"
+                className="grid size-9 place-items-center rounded-lg text-[#657d86] transition hover:bg-[#e9f1f4] hover:text-[#3e687b]"
                 title="Upload prescription"
+                aria-label="Upload prescription"
               >
                 <Upload className="size-4" />
               </button>
@@ -1513,11 +1989,17 @@ function ConsultRow({
 
             {prescriptions.length > 0 && (
               <button
+                type="button"
                 onClick={onToggle}
-                className="p-2 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer rounded-lg hover:bg-stone-100"
-                title={expanded ? "Collapse" : "View prescriptions"}
+                className="inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-[#657b80] transition hover:bg-[#edf3f1] hover:text-[#294c51]"
+                title={expanded ? "Hide prescriptions" : "View prescriptions"}
               >
-                {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                {expanded ? (
+                  <ChevronUp className="size-4" />
+                ) : (
+                  <ChevronDown className="size-4" />
+                )}
+                Prescriptions
               </button>
             )}
           </div>
@@ -1525,47 +2007,72 @@ function ConsultRow({
       </div>
 
       {expanded && prescriptions.length > 0 && (
-        <div className="mx-5 mb-4 border border-border rounded-2xl overflow-hidden divide-y divide-border bg-stone-50/50">
-          <div className="px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Prescriptions
+        <div className="mt-5 overflow-hidden rounded-2xl border border-[#dfe8e5] bg-[#f8fbfa]">
+          <div className="border-b border-[#e1e9e7] px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-[#71868a]">
+            Consultation prescriptions
           </div>
-          {prescriptions.map((p) => {
-            const isImg = p.file_type?.startsWith("image/");
-            return (
-              <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+
+          <div className="divide-y divide-[#e1e9e7]">
+            {prescriptions.map((prescription) => {
+              const isImage = prescription.file_type?.startsWith("image/");
+
+              return (
                 <div
-                  className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${isImg ? "bg-blue-50 text-blue-600" : "bg-stone-100 text-stone-600"}`}
+                  key={prescription.id}
+                  className="flex items-center gap-3 px-4 py-3.5"
                 >
-                  {isImg ? <Stethoscope className="size-4" /> : <FileText className="size-4" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{p.file_name ?? "Prescription"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(p.uploaded_at), "MMM d, yyyy")}
-                    {p.file_size && ` · ${(p.file_size / 1024 / 1024).toFixed(2)} MB`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => onOpenRx(p)}
-                  className="p-1.5 text-primary hover:opacity-80 transition-opacity"
-                  title="View prescription"
-                >
-                  <Download className="size-4" />
-                </button>
-                {!isChildView && (
-                  <button
-                    onClick={() => onDeleteRx(p)}
-                    className="p-1.5 text-stone-400 hover:text-destructive transition-colors"
-                    title="Delete prescription"
+                  <span
+                    className={`grid size-9 shrink-0 place-items-center rounded-lg ${isImage
+                        ? "bg-[#e8f1f4] text-[#3e687b]"
+                        : "bg-[#edf2f0] text-[#5d7478]"
+                      }`}
                   >
-                    <Trash2 className="size-4" />
+                    {isImage ? (
+                      <Stethoscope className="size-4" />
+                    ) : (
+                      <FileText className="size-4" />
+                    )}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-[#29484e]">
+                      {prescription.file_name ?? "Prescription"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#7a8d91]">
+                      {format(new Date(prescription.uploaded_at), "MMM d, yyyy")}
+                      {prescription.file_size
+                        ? ` · ${(prescription.file_size / 1024 / 1024).toFixed(2)} MB`
+                        : ""}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenRx(prescription)}
+                    className="grid size-9 place-items-center rounded-lg text-[#3e687b] transition hover:bg-[#e8f1f4]"
+                    title="Open prescription"
+                    aria-label="Open prescription"
+                  >
+                    <Download className="size-4" />
                   </button>
-                )}
-              </div>
-            );
-          })}
+
+                  {!isChildView && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteRx(prescription)}
+                      className="grid size-9 place-items-center rounded-lg text-[#8c7774] transition hover:bg-[#fff0ee] hover:text-[#a54e49]"
+                      title="Delete prescription"
+                      aria-label="Delete prescription"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
-    </div>
+    </article>
   );
 }

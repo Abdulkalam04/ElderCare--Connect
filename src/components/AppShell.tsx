@@ -24,6 +24,8 @@ import {
   HeartHandshake,
   ShieldAlert,
   MapPin,
+  Search,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +37,6 @@ import { useSosLiveLocation } from "@/hooks/useSosLiveLocation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -139,37 +140,21 @@ function NavLink({
       to={to}
       preload="intent"
       onClick={onClick}
-      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors duration-300 ease-in-out ${
-        active
-          ? "text-brand-accent font-semibold"
-          : "text-muted-foreground hover:text-foreground hover:bg-black/5"
-      }`}
+      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 ${active
+          ? "bg-white/[0.12] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+          : "text-emerald-50/[0.72] hover:bg-white/[0.075] hover:text-white"
+        }`}
     >
       <span
-        className={`absolute inset-0 rounded-lg bg-gradient-to-r from-blue-50/80 to-indigo-50/40 transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"}`}
-        style={{ pointerEvents: "none" }}
-      />
-
-      <span
-        className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-brand-accent transition-all duration-300 ease-in-out origin-center ${active ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"}`}
-      />
-
-      <span
-        className="relative size-4 flex items-center justify-center shrink-0 leading-none"
+        className={`grid size-8 shrink-0 place-items-center rounded-lg transition-all duration-200 ${active
+            ? "bg-[#9ed6c7] text-[#073f49] shadow-sm"
+            : "bg-white/[0.055] text-emerald-100/[0.8] group-hover:bg-white/10 group-hover:text-white"
+          }`}
         aria-hidden="true"
       >
-        <span
-          className={`absolute inset-0 rounded-full bg-brand-accent/20 blur-[3px] transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"}`}
-        />
-        <span
-          className="relative z-10 transition-all duration-300 ease-in-out"
-          style={active ? { filter: "drop-shadow(0 0 3px currentColor)" } : undefined}
-        >
-          {icon}
-        </span>
+        {icon}
       </span>
-
-      <span className="relative z-10">{label}</span>
+      <span className="relative z-10 truncate">{label}</span>
     </Link>
   );
 }
@@ -850,29 +835,30 @@ export function AppShell({ children }: { children: ReactNode }) {
       toast.error(e instanceof Error ? e.message : "Failed to sign out");
     }
   }
-  const initials = (profile?.full_name || "?")
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const activePageLabel =
+    [...navItems, ...aiItems, { to: "/sos", label: "SOS Control", icon: null }].find(
+      (item) => item.to === pathname,
+    )?.label ?? "ElderCare";
   const NavContent = ({ onLinkClick }: { onLinkClick?: () => void }) => (
-    <>
-      <nav className="space-y-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            label={item.label}
-            icon={item.icon}
-            active={pathname === item.to}
-            onClick={onLinkClick}
-          />
-        ))}
-        <div className="pt-4 mt-4 border-t border-border">
-          <p className="px-3 pb-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            AI Assist
-          </p>
+    <nav className="space-y-1.5">
+      <p className="px-3 pb-1 pt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/[0.45]">
+        Care workspace
+      </p>
+      {navItems.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          label={item.label}
+          icon={item.icon}
+          active={pathname === item.to}
+          onClick={onLinkClick}
+        />
+      ))}
+      <div className="my-4 border-t border-white/10 pt-4">
+        <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/[0.45]">
+          Smart care
+        </p>
+        <div className="space-y-1.5">
           {aiItems.map((item) => (
             <NavLink
               key={item.to}
@@ -884,27 +870,28 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           ))}
         </div>
-        <div className="pt-4 mt-4 border-t border-border space-y-1">
-          <Link
-            to="/sos"
-            preload="intent"
-            onClick={onLinkClick}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${pathname === "/sos" ? "bg-red-100 text-red-700" : "text-red-600 hover:bg-red-50"}`}
-          >
-            <span
-              className="size-4 flex items-center justify-center shrink-0 leading-none animate-pulse"
-              aria-hidden="true"
-            >
-              <Siren className="size-4" strokeWidth={1.75} />
-            </span>
-            SOS Alerts
-          </Link>
-        </div>
-      </nav>
-    </>
+      </div>
+      <div className="mt-4 border-t border-white/10 pt-4">
+        <Link
+          to="/sos"
+          preload="intent"
+          onClick={onLinkClick}
+          className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all ${pathname === "/sos"
+              ? "bg-rose-500 text-white shadow-lg shadow-rose-950/25"
+              : "bg-rose-500/[0.12] text-rose-100 hover:bg-rose-500/20"
+            }`}
+        >
+          <span className="grid size-8 place-items-center rounded-lg bg-rose-500 text-white shadow-lg shadow-rose-950/25">
+            <Siren className="size-4 animate-pulse" strokeWidth={1.9} />
+          </span>
+          SOS Control
+          <span className="ml-auto size-2 rounded-full bg-rose-300 animate-pulse" />
+        </Link>
+      </div>
+    </nav>
   );
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#f4f8f6] text-[#17343a] flex flex-col">
       <style>{`
         @keyframes alarmWobble { from { transform: rotate(-8deg) scale(1); } to { transform: rotate(8deg) scale(1.08); } }
         @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
@@ -923,7 +910,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           <div
             className="relative flex flex-col items-center justify-center pt-10 pb-8 px-6 text-white"
-            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 60%, #2563eb 100%)" }}
+            style={{ background: "linear-gradient(135deg, #0f8a83 0%, #08727a 58%, #07515e 100%)" }}
           >
             <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span
@@ -958,10 +945,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="px-6 py-5">
             {alarmMed && (
-              <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center gap-4 mb-6">
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 flex items-center gap-4 mb-6">
                 <div
                   className="shrink-0 size-14 rounded-xl flex items-center justify-center text-2xl font-bold"
-                  style={{ background: "linear-gradient(135deg,#ede9fe,#ddd6fe)" }}
+                  style={{ background: "linear-gradient(135deg,#e8f7ef,#d4eee0)" }}
                 >
                   {alarmMed.name[0].toUpperCase()}
                 </div>
@@ -997,7 +984,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Button>
               <Button
                 className="flex-1 rounded-xl gap-2 text-white font-semibold shadow-md"
-                style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+                style={{ background: "linear-gradient(135deg, #0f8a83, #08727a)" }}
                 onClick={handleAlarmTaken}
                 disabled={globalMarkTaken.isPending}
               >
@@ -1026,7 +1013,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           <div
             className="relative flex flex-col items-center justify-center px-6 pb-8 pt-10 text-white"
-            style={{ background: "linear-gradient(135deg, #0284c7 0%, #2563eb 55%, #4f46e5 100%)" }}
+            style={{ background: "linear-gradient(135deg, #1595a0 0%, #08727a 55%, #07515e 100%)" }}
           >
             <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span
@@ -1094,7 +1081,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Button>
               <Button
                 className="flex-1 rounded-xl gap-2 text-white font-semibold shadow-md"
-                style={{ background: "linear-gradient(135deg, #0284c7, #4f46e5)" }}
+                style={{ background: "linear-gradient(135deg, #1595a0, #08727a)" }}
                 onClick={handleAppointmentDismiss}
               >
                 <CheckCircle2 className="size-4" /> Dismiss
@@ -1140,28 +1127,61 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-white/50 backdrop-blur-xl z-20 hidden md:flex flex-col">
-        <div className="px-6 pt-6 pb-4">
-          <div className="flex items-center gap-2.5">
-            <img
-              src="/favicon.svg"
-              alt="ElderCare Connect logo"
-              className="size-8 rounded-lg shrink-0"
-            />
-            <div className="text-xl font-bold tracking-tight">
-              <span className="text-brand">ElderCare</span>
-              <span className="text-brand-accent">Connect</span>
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[272px] flex-col overflow-hidden border-r border-white/10 bg-[linear-gradient(180deg,#0b4a50_0%,#083c43_52%,#062f36_100%)] text-white shadow-[18px_0_50px_-35px_rgba(2,38,45,0.85)] md:flex">
+        <div className="relative px-6 pb-4 pt-6">
+          <div className="flex items-center gap-3" aria-label="ElderCare Connect">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-[#9ed6c7]">
+              <HeartPulse className="size-5" strokeWidth={2} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[17px] font-bold tracking-[-0.035em] text-white">
+                ElderCare <span className="text-[#8ed0be]">Connect</span>
+              </p>
+              <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">
+                Family care platform
+              </p>
             </div>
           </div>
+          <p className="mt-3 max-w-[210px] text-xs leading-relaxed text-emerald-50/[0.48]">
+            Care, health and family connection in one calm place.
+          </p>
         </div>
-        <div className="flex-1 overflow-y-auto px-8 py-4">
+
+        <div className="relative mx-4 mb-3 rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <EditableAvatar size="sm" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{profile?.full_name || "User"}</p>
+              <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-[0.13em] text-emerald-200/[0.65]">
+                {isChildView ? `Monitoring ${activeParent?.full_name ?? "parent"}` : "Care recipient"}
+              </p>
+            </div>
+            <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.85)]" />
+          </div>
+          {isChildView && linkedParents.length > 0 && (
+            <Select value={activeParent?.id ?? undefined} onValueChange={(v) => setSelectedParentId(v)}>
+              <SelectTrigger className="mt-3 h-9 border-white/10 bg-black/10 text-xs text-white hover:bg-white/10">
+                <SelectValue placeholder="Select parent" />
+              </SelectTrigger>
+              <SelectContent>
+                {linkedParents.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        <div className="relative flex-1 overflow-y-auto px-4 pb-5 pt-2 [scrollbar-color:rgba(255,255,255,.15)_transparent] [scrollbar-width:thin]">
           <NavContent />
         </div>
-        <div className="mt-auto p-4 border-t border-border bg-white/50 backdrop-blur-xl">
-          <button
-            onClick={signOut}
-            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2.5 w-full rounded-lg transition-colors"
-          >
+
+        <div className="relative m-4 mt-0 rounded-2xl border border-white/10 bg-white/[0.055] p-3">
+          <div className="mb-3 flex items-start gap-2.5 rounded-xl bg-emerald-300/10 px-3 py-2.5">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-emerald-300" />
+            <p className="text-[11px] leading-relaxed text-emerald-50/[0.65]">Your care data stays private and protected.</p>
+          </div>
+          <button onClick={signOut} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-100 transition-colors hover:bg-rose-500/15 hover:text-white">
             <LogOut className="size-4 shrink-0" /> Sign out
           </button>
         </div>
@@ -1176,137 +1196,108 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <aside
-        className={`fixed left-0 top-0 bottom-0 w-72 max-w-[85vw] border-r border-border bg-white z-50 md:hidden flex flex-col transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-[292px] max-w-[88vw] flex-col overflow-hidden border-r border-white/10 bg-[linear-gradient(180deg,#0b4a50_0%,#062f36_100%)] text-white shadow-2xl transition-transform duration-300 ease-out md:hidden ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}
         aria-label="Mobile navigation"
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <img
-              src="/favicon.svg"
-              alt="ElderCare Connect logo"
-              className="size-8 rounded-lg shrink-0"
-            />
-            <div className="text-lg font-bold tracking-tight">
-              <span className="text-brand">ElderCare</span>
-              <span className="text-brand-accent">Connect</span>
+        <div className="relative flex items-center justify-between border-b border-white/10 px-5 py-5">
+          <div className="flex items-center gap-3" aria-label="ElderCare Connect">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-[#9ed6c7]">
+              <HeartPulse className="size-4.5" strokeWidth={2} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[15px] font-bold tracking-[-0.03em] text-white">
+                ElderCare <span className="text-[#8ed0be]">Connect</span>
+              </p>
             </div>
           </div>
-          <button
-            onClick={() => setDrawerOpen(false)}
-            className="p-2 rounded-lg text-muted-foreground hover:bg-stone-100 transition-colors"
-            aria-label="Close menu"
-          >
+          <button onClick={() => setDrawerOpen(false)} className="grid size-9 place-items-center rounded-xl bg-white/[0.08] text-white/75 hover:bg-white/[0.14] hover:text-white" aria-label="Close menu">
             <X className="size-5" />
           </button>
         </div>
 
-        <div className="px-6 py-4 border-b border-border">
+        <div className="relative mx-4 mt-4 rounded-2xl border border-white/10 bg-white/[0.07] p-3.5">
           <div className="flex items-center gap-3">
             <EditableAvatar size="sm" />
-            <div className="min-w-0">
-              <p className="font-semibold text-sm truncate">{profile?.full_name || "User"}</p>
-              <p className="text-xs text-muted-foreground font-mono uppercase truncate">
-                {isChildView ? "Monitoring" : "Parent"}
-              </p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{profile?.full_name || "User"}</p>
+              <p className="truncate text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-200/[0.6]">{isChildView ? "Family monitoring" : "Care recipient"}</p>
             </div>
           </div>
           {isChildView && linkedParents.length > 0 && (
-            <div className="mt-3">
-              <Select
-                value={activeParent?.id ?? undefined}
-                onValueChange={(v) => setSelectedParentId(v)}
-              >
-                <SelectTrigger className="h-8 rounded-lg border-border bg-stone-50 text-xs font-medium w-full">
-                  <SelectValue placeholder="Select parent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {linkedParents.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={activeParent?.id ?? undefined} onValueChange={(v) => setSelectedParentId(v)}>
+              <SelectTrigger className="mt-3 h-9 border-white/10 bg-black/10 text-xs text-white">
+                <SelectValue placeholder="Select parent" />
+              </SelectTrigger>
+              <SelectContent>
+                {linkedParents.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="relative flex-1 overflow-y-auto px-4 py-4">
           <NavContent onLinkClick={() => setDrawerOpen(false)} />
         </div>
-
-        <div className="p-4 border-t border-border">
-          <button
-            onClick={signOut}
-            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2.5 w-full rounded-lg transition-colors"
-          >
-            <LogOut className="size-4 shrink-0" /> Sign out
+        <div className="relative border-t border-white/10 p-4">
+          <button onClick={signOut} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-100 hover:bg-rose-500/15 hover:text-white">
+            <LogOut className="size-4" /> Sign out
           </button>
         </div>
       </aside>
 
-      <main className="md:pl-64 flex flex-col flex-1">
-        <header className="h-16 sm:h-20 border-b border-border flex items-center gap-3 px-4 sm:px-6 md:px-10 bg-background/70 sticky top-0 backdrop-blur-md z-10">
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="md:hidden p-2 -ml-1 rounded-lg text-muted-foreground hover:bg-stone-100 transition-colors shrink-0"
-            aria-label="Open menu"
-          >
-            <Menu className="size-5" />
-          </button>
+      <main className="flex min-h-screen flex-1 flex-col md:pl-[272px]">
+        <header className="sticky top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-4 lg:px-8">
+          <div className="mx-auto flex min-h-[68px] max-w-[1460px] items-center gap-3 rounded-2xl border border-[#dce8e4] bg-white/95 px-3.5 shadow-[0_16px_40px_-28px_rgba(3,59,68,0.45)] backdrop-blur-xl sm:px-5">
+            <button onClick={() => setDrawerOpen(true)} className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-white text-muted-foreground shadow-sm hover:bg-accent md:hidden" aria-label="Open menu">
+              <Menu className="size-5" />
+            </button>
 
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <EditableAvatar size="md" />
-            <div className="min-w-0 hidden sm:block">
-              <p className="font-display text-base sm:text-lg font-bold leading-none truncate">
-                {profile?.full_name || "Welcome"}
-              </p>
-              <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                {isChildView
-                  ? `Monitoring · ${activeParent?.full_name ?? "No parent linked"}`
-                  : "Active now · Home"}
-              </span>
+            <div className="min-w-0 shrink-0">
+              <p className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-[#789095] sm:block">Care workspace</p>
+              <p className="truncate text-lg font-bold tracking-tight text-foreground sm:text-xl">{activePageLabel}</p>
             </div>
 
-            <p className="font-display text-base font-bold leading-none truncate sm:hidden">
-              {profile?.full_name?.split(" ")[0] || "Welcome"}
-            </p>
+            <div className="mx-auto hidden w-full max-w-xl lg:block">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input type="search" placeholder="Search medicines, appointments, records..." className="h-11 w-full rounded-xl border border-border/90 bg-[#f5f8f7] pl-10 pr-4 text-sm outline-none transition focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10" />
+              </label>
+            </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              {isChildView && linkedParents.length > 0 && (
+                <Select value={activeParent?.id ?? undefined} onValueChange={(v) => setSelectedParentId(v)}>
+                  <SelectTrigger className="hidden h-10 w-auto min-w-[150px] rounded-xl border-border bg-white text-sm shadow-sm sm:flex">
+                    <SelectValue placeholder="Select parent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {linkedParents.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <Link to="/notifications" preload="intent" className="relative grid size-10 place-items-center rounded-xl border border-border bg-white text-muted-foreground shadow-sm transition hover:border-primary/25 hover:bg-accent hover:text-primary" aria-label="Notifications">
+                <Bell className="size-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-[#d97745] px-1 text-[9px] font-bold text-white shadow-sm">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </Link>
+
+              <div className="hidden items-center gap-2 rounded-xl border border-border bg-white py-1.5 pl-1.5 pr-3 shadow-sm sm:flex">
+                <EditableAvatar size="sm" />
+                <div className="max-w-[130px] min-w-0">
+                  <p className="truncate text-xs font-semibold text-foreground">{profile?.full_name || "User"}</p>
+                  <p className="truncate text-[10px] text-muted-foreground">{isChildView ? `Monitoring ${activeParent?.full_name ?? "parent"}` : "Active now"}</p>
+                </div>
+                <ChevronDown className="size-3.5 text-muted-foreground" />
+              </div>
+            </div>
           </div>
-
-          <Link
-            to="/notifications"
-            preload="intent"
-            className="relative p-2 rounded-xl hover:bg-stone-100 transition-colors shrink-0"
-            aria-label="Notifications"
-          >
-            <Bell className="size-5 text-muted-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 shadow">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </Link>
-
-          {isChildView && linkedParents.length > 0 && (
-            <Select
-              value={activeParent?.id ?? undefined}
-              onValueChange={(v) => setSelectedParentId(v)}
-            >
-              <SelectTrigger className="hidden sm:flex h-9 rounded-full border-border bg-stone-100 text-sm font-medium gap-2 px-4 w-auto max-w-[160px]">
-                <SelectValue placeholder="Select parent" />
-              </SelectTrigger>
-              <SelectContent>
-                {linkedParents.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
         </header>
 
-        <div className="p-4 sm:p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
+        <div className="mx-auto w-full max-w-[1460px] flex-1 px-3 pb-8 pt-5 sm:px-5 sm:pb-10 sm:pt-6 lg:px-8 lg:pb-12">
           {children}
         </div>
       </main>

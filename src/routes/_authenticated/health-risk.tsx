@@ -47,22 +47,22 @@ const riskStyles: Record<
   }
 > = {
   low: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-800",
-    border: "border-emerald-200",
-    dot: "bg-emerald-500",
+    bg: "bg-[#edf7f3]",
+    text: "text-[#1b6a5b]",
+    border: "border-[#c6e1d8]",
+    dot: "bg-[#edf7f3]0",
   },
   medium: {
-    bg: "bg-amber-50",
-    text: "text-amber-800",
-    border: "border-amber-200",
-    dot: "bg-amber-500",
+    bg: "bg-[#fbf7f0]",
+    text: "text-[#7c5c3b]",
+    border: "border-[#ead8c4]",
+    dot: "bg-[#fbf7f0]0",
   },
   high: {
-    bg: "bg-red-50",
-    text: "text-red-800",
-    border: "border-red-200",
-    dot: "bg-red-500",
+    bg: "bg-[#fff3f2]",
+    text: "text-[#8f3f3a]",
+    border: "border-[#ebc2bf]",
+    dot: "bg-[#fff3f2]0",
   },
 };
 type RiskAssessment = {
@@ -457,44 +457,54 @@ function HealthRiskPage() {
   });
   return (
     <AppShell>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">
-            AI Health Risk Check
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            A safety-first screening for {activeParent?.full_name ?? "the care recipient"}.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isFetching || !activeParentId}
-            className="rounded-xl"
-          >
-            <RefreshCw className={`mr-2 size-4 ${isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          {!isChildView && history.length > 0 && (
+      <section className="mb-6 overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)]">
+        <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-7">
+          <div className="max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#e8f3ef] px-3 py-1.5 text-xs font-bold text-[#176f69]">
+              <ShieldAlert className="size-3.5" />
+              Decision support
+            </div>
+            <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">
+              AI Risk Check
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#667d82] sm:text-base">
+              A structured safety screening for{" "}
+              <span className="font-semibold text-[#294b50]">
+                {activeParent?.full_name ?? "the care recipient"}
+              </span>
+              , using recent measurements and wellbeing context.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              disabled={clearAll.isPending}
-              onClick={() => {
-                if (confirm("Delete every saved risk assessment? This cannot be undone."))
-                  clearAll.mutate();
-              }}
-              className="rounded-xl border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+              onClick={() => refetch()}
+              disabled={isFetching || !activeParentId}
+              className="rounded-xl"
             >
-              <Trash2 className="mr-2 size-4" />
-              Delete All
+              <RefreshCw className={`mr-2 size-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refresh
             </Button>
-          )}
+            {!isChildView && history.length > 0 && (
+              <Button
+                variant="outline"
+                disabled={clearAll.isPending}
+                onClick={() => {
+                  if (confirm("Delete every saved risk assessment? This cannot be undone."))
+                    clearAll.mutate();
+                }}
+                className="rounded-xl border-[#e9c9c6] text-[#a74742] hover:bg-[#fff5f4] hover:text-[#a74742]"
+              >
+                <Trash2 className="mr-2 size-4" />
+                Delete All
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="mb-8 flex items-start gap-4 rounded-3xl border border-blue-200 bg-blue-50 p-5 text-sm text-blue-900">
-        <ShieldAlert className="mt-0.5 size-6 shrink-0 text-blue-600" />
+      <div className="mb-8 flex items-start gap-4 rounded-[1.5rem] border border-[#cddfda] bg-[#0c3f45] p-5 text-sm text-white">
+        <ShieldAlert className="mt-0.5 size-6 shrink-0 text-[#a9d5ca]" />
         <div>
           <p className="font-bold">This is a screening tool, not a diagnosis.</p>
           <p className="mt-1">
@@ -505,7 +515,7 @@ function HealthRiskPage() {
       </div>
 
       {isChildView && (
-        <div className="mb-8 flex items-start gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+        <div className="mb-8 flex items-start gap-4 rounded-[1.5rem] border border-[#ead8c4] bg-[#fbf7f0] p-5 text-sm text-[#6f563e]">
           <ShieldAlert className="mt-0.5 size-6 shrink-0" />
           <div>
             <p className="font-bold">Read-only family view</p>
@@ -517,17 +527,17 @@ function HealthRiskPage() {
       )}
 
       {historyError && (
-        <div className="mb-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        <div className="mb-6 rounded-xl border border-[#e9c9c6] bg-[#fff5f4] p-4 text-sm text-[#a74742]">
           Could not load assessment history. {(historyError as Error).message}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {!isChildView && (
-          <section className="space-y-6 rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-8 lg:col-span-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-              <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-                <Stethoscope className="size-5 text-primary" />
+          <section className="space-y-6 rounded-[1.5rem] border border-[#dce7e3] bg-white p-5 shadow-[0_20px_50px_-40px_rgba(16,49,54,0.5)] sm:p-8 lg:col-span-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#dce7e3] pb-4">
+              <h2 className="flex items-center gap-2 text-xl font-bold">
+                <Stethoscope className="size-5 text-[#0d7774]" />
                 Health Measurements
               </h2>
               <div className="flex gap-2">
@@ -552,7 +562,7 @@ function HealthRiskPage() {
             </div>
 
             {loadedFromVitals && (
-              <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
+              <div className="rounded-xl border border-[#d2e4df] bg-[#f1f7f6] p-3 text-xs text-[#2c555a]">
                 Values were copied from the latest Vitals records. Confirm every value, especially
                 that blood sugar was measured while fasting.
               </div>
@@ -669,7 +679,7 @@ function HealthRiskPage() {
                   onChange={(event) => setWellnessData(event.target.value)}
                   placeholder="e.g. mild headache, dizziness, daily walks, poor sleep"
                 />
-                <p className="text-right text-[10px] text-muted-foreground">
+                <p className="text-right text-[10px] text-[#6f8388]">
                   {wellnessData.length}/1000
                 </p>
               </Field>
@@ -695,13 +705,13 @@ function HealthRiskPage() {
 
         <section className={`space-y-8 ${isChildView ? "lg:col-span-12" : "lg:col-span-6"}`}>
           {isLoading ? (
-            <div className="rounded-3xl border border-border bg-card p-12 text-center text-muted-foreground">
+            <div className="rounded-[1.5rem] border border-[#dce7e3] bg-white p-12 text-center text-[#6f8388]">
               <Loader2 className="mx-auto mb-3 size-7 animate-spin" /> Loading the latest
               assessment…
             </div>
           ) : latest ? (
             <div
-              className={`relative overflow-hidden rounded-3xl border-2 p-6 shadow-md sm:p-8 ${riskStyles[latest.risk_level].bg} ${riskStyles[latest.risk_level].border} ${riskStyles[latest.risk_level].text}`}
+              className={`relative overflow-hidden rounded-[1.5rem] border-2 p-6 shadow-md sm:p-8 ${riskStyles[latest.risk_level].bg} ${riskStyles[latest.risk_level].border} ${riskStyles[latest.risk_level].text}`}
             >
               <div className="mb-4 flex items-center justify-between">
                 <span className="font-mono text-[10px] font-bold uppercase tracking-widest">
@@ -709,7 +719,7 @@ function HealthRiskPage() {
                 </span>
                 <Activity className="size-5" />
               </div>
-              <p className="font-display text-4xl font-extrabold capitalize leading-none">
+              <p className="text-4xl font-extrabold capitalize leading-none">
                 {latest.risk_level} Risk
               </p>
               {latest.risk_score !== null && (
@@ -732,7 +742,7 @@ function HealthRiskPage() {
               </div>
 
               {latest.comparison?.trend && latest.comparison.trend !== "no_previous" && (
-                <div className="mt-4 rounded-2xl border border-white/60 bg-white/45 p-4 text-sm">
+                <div className="mt-4 rounded-xl border border-white/60 bg-white/45 p-4 text-sm">
                   <p className="font-bold">Change from previous screening</p>
                   <p className="mt-1">
                     {latest.comparison.trend === "increased"
@@ -755,7 +765,7 @@ function HealthRiskPage() {
               )}
 
               {latestSafety?.urgent && (
-                <div className="mt-5 rounded-2xl border border-red-300 bg-white/70 p-4 text-red-900">
+                <div className="mt-5 rounded-xl border border-[#e2aaa5] bg-white/70 p-4 text-[#7b3733]">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="mt-0.5 size-5 shrink-0" />
                     <div>
@@ -787,7 +797,7 @@ function HealthRiskPage() {
                 </div>
               )}
 
-              <p className="mt-5 rounded-2xl border border-white/60 bg-white/45 p-4 text-sm font-medium leading-relaxed">
+              <p className="mt-5 rounded-xl border border-white/60 bg-white/45 p-4 text-sm font-medium leading-relaxed">
                 {latest.summary || "No summary was saved."}
               </p>
 
@@ -838,7 +848,7 @@ function HealthRiskPage() {
               </p>
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-border p-14 text-center text-muted-foreground">
+            <div className="rounded-[1.5rem] border border-dashed border-[#dce7e3] p-14 text-center text-[#6f8388]">
               <Activity className="mx-auto mb-3 size-10 opacity-30" />
               <p className="font-semibold">No saved assessments</p>
               {!isChildView && (
@@ -851,22 +861,22 @@ function HealthRiskPage() {
 
           {history.length > 0 && (
             <div className="space-y-3">
-              <h3 className="px-1 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              <h3 className="px-1 font-mono text-xs uppercase tracking-widest text-[#6f8388]">
                 Assessment History
               </h3>
-              <div className="divide-y divide-border overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+              <div className="divide-y divide-border overflow-hidden rounded-[1.5rem] border border-[#dce7e3] bg-white shadow-[0_18px_45px_-38px_rgba(16,49,54,0.45)]">
                 {history.map((item) => {
                   const style = riskStyles[item.risk_level];
                   return (
                     <div
                       key={item.id}
-                      className="flex flex-col justify-between gap-3 p-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center"
+                      className="flex flex-col justify-between gap-3 p-4 transition-colors hover:bg-[#f5f9f7] sm:flex-row sm:items-center"
                     >
                       <div className="flex items-center gap-3">
                         <span className={`size-2.5 shrink-0 rounded-full ${style.dot}`} />
                         <div>
                           <p className="font-semibold capitalize">{item.risk_level} Risk</p>
-                          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <p className="flex items-center gap-1 text-xs text-[#6f8388]">
                             <CalendarDays className="size-3.5" />
                             {format(new Date(item.created_at), "MMM d, yyyy · h:mm a")}
                           </p>
@@ -880,15 +890,15 @@ function HealthRiskPage() {
                           >
                             Score: {item.risk_score ?? "—"}
                           </Badge>
-                          <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                          <p className="mt-1 font-mono text-[10px] text-[#6f8388]">
                             BP {item.bp_systolic ?? "—"}/{item.bp_diastolic ?? "—"} · Sugar{" "}
                             {item.sugar_level ?? "—"}
                           </p>
                           {item.comparison?.trend && item.comparison.trend !== "no_previous" && (
-                            <p className="mt-1 text-[10px] font-semibold capitalize text-muted-foreground">
+                            <p className="mt-1 text-[10px] font-semibold capitalize text-[#6f8388]">
                               Trend: {item.comparison.trend}
                               {item.comparison.score_delta !== null &&
-                              item.comparison.score_delta !== undefined
+                                item.comparison.score_delta !== undefined
                                 ? ` (${item.comparison.score_delta > 0 ? "+" : ""}${item.comparison.score_delta})`
                                 : ""}
                             </p>
@@ -903,7 +913,7 @@ function HealthRiskPage() {
                               if (confirm("Delete this risk assessment?"))
                                 deleteMutation.mutate(item.id);
                             }}
-                            className="rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            className="rounded-xl text-[#6f8388] hover:bg-[#fdebea] hover:text-[#a74742]"
                             aria-label="Delete assessment"
                           >
                             <Trash2 className="size-4" />
@@ -937,9 +947,9 @@ function Field({
   return (
     <div className={`space-y-1.5 ${className}`}>
       <Label>
-        {label} {required && <span className="text-destructive">*</span>}
+        {label} {required && <span className="text-[#a74742]">*</span>}
         {optional && (
-          <span className="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>
+          <span className="ml-1 text-xs font-normal text-[#6f8388]">(optional)</span>
         )}
       </Label>
       {children}

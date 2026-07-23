@@ -251,46 +251,63 @@ function EmergencyDetectionPage() {
   }
   return (
     <AppShell>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">
-                Rule-based safety monitoring
-              </Badge>
-              {isChildView && <Badge variant="secondary">Family view</Badge>}
+      <div className="space-y-6 pb-10">
+        <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)]">
+          <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-7">
+            <div className="max-w-3xl">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="border-[#e2c4c0] bg-[#f9e9e7] text-[#9f4742]">
+                  Rule-based safety monitoring
+                </Badge>
+                {isChildView && <Badge variant="secondary">Family view</Badge>}
+              </div>
+              <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">AI Emergency Detection</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#667d82] sm:text-base">
+                Automatically checks missed medicines, daily wellbeing check-ins, and activity inside
+                ElderCare Connect for {activeParent?.full_name || "the selected care recipient"}.
+              </p>
             </div>
-            <h1 className="font-display text-4xl font-bold italic">AI Emergency Detection</h1>
-            <p className="mt-1 max-w-3xl text-muted-foreground">
-              Automatically checks missed medicines, daily wellbeing check-ins, and activity inside
-              ElderCare Connect for {activeParent?.full_name || "the selected care recipient"}.
-            </p>
-          </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link to="/settings">
-                <Settings className="mr-2 size-4" /> Detection Settings
-              </Link>
-            </Button>
-            <Button
-              onClick={() => runDetection.mutate()}
-              disabled={runDetection.isPending || !settings.emergency_detection_enabled}
-            >
-              {runDetection.isPending ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 size-4" />
-              )}
-              Run Detection Now
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild variant="outline" className="h-11 rounded-xl border-[#d7e3df] bg-white px-5 font-semibold text-[#49666b] hover:bg-[#f3f8f6]">
+                <Link to="/settings">
+                  <Settings className="mr-2 size-4" /> Detection Settings
+                </Link>
+              </Button>
+              <Button
+                onClick={() => runDetection.mutate()}
+                disabled={runDetection.isPending || !settings.emergency_detection_enabled}
+                className="h-11 rounded-xl bg-[#0d6665] px-5 font-semibold text-white shadow-[0_14px_30px_-18px_rgba(13,102,101,0.9)] hover:bg-[#0a5958]"
+              >
+                {runDetection.isPending ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 size-4" />
+                )}
+                Run Detection Now
+              </Button>
+            </div>
           </div>
-        </div>
+          <div className="grid border-t border-[#e2ece9] bg-[#f7faf9] sm:grid-cols-3">
+            <div className="border-b border-[#e2ebe8] px-5 py-4 sm:border-b-0 sm:border-r">
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">Monitoring</p>
+              <p className="mt-1 text-sm font-semibold text-[#176f69]">{settings.emergency_detection_enabled ? "Active" : "Paused"}</p>
+            </div>
+            <div className="border-b border-[#e2ebe8] px-5 py-4 sm:border-b-0 sm:border-r">
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">Open alerts</p>
+              <p className="mt-1 text-xl font-bold text-[#17343a]">{openAlerts.length}</p>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">Check interval</p>
+              <p className="mt-1 text-sm font-semibold text-[#35565c]">Every 15 minutes</p>
+            </div>
+          </div>
+        </section>
 
-        <Alert className="border-blue-200 bg-blue-50/70">
-          <Info className="size-4 text-blue-700" />
-          <AlertTitle className="text-blue-900">What “activity” means</AlertTitle>
-          <AlertDescription className="text-blue-800">
+        <Alert className="rounded-2xl border-[#cedfe4] bg-[#f2f7f8]">
+          <Info className="size-4 text-[#4f7280]" />
+          <AlertTitle className="text-[#294b53]">What “activity” means</AlertTitle>
+          <AlertDescription className="text-[#60777d]">
             The system measures only activity inside ElderCare Connect. A website cannot inspect
             calls, WhatsApp, screen unlocks, movement, or activity in other phone applications.
           </AlertDescription>
@@ -306,7 +323,7 @@ function EmergencyDetectionPage() {
           </Alert>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             icon={<Siren className="size-5" />}
             label="Open alerts"
@@ -337,15 +354,15 @@ function EmergencyDetectionPage() {
           />
         </div>
 
-        <section className="rounded-2xl border bg-card">
-          <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+        <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_18px_50px_-40px_rgba(18,49,54,0.45)]">
+          <div className="flex flex-col gap-4 border-b border-[#e3ece9] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div>
-              <h2 className="font-semibold">Care Alert History</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">Care alert history</h2>
+              <p className="mt-1 text-sm text-[#72868a]">
                 Alerts automatically resolve when the underlying condition is cleared.
               </p>
             </div>
-            <div className="flex rounded-lg border bg-muted/30 p-1">
+            <div className="flex rounded-xl border border-[#dfe8e5] bg-[#f7faf9] p-1">
               {(
                 [
                   ["open", `Open (${openAlerts.length})`],
@@ -357,11 +374,10 @@ function EmergencyDetectionPage() {
                   key={key}
                   type="button"
                   onClick={() => setFilter(key)}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    filter === key
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${filter === key
+                      ? "bg-white text-[#1d4b50] shadow-sm"
+                      : "text-[#71868a] hover:text-[#1d4b50]"
+                    }`}
                 >
                   {label}
                 </button>
@@ -370,7 +386,7 @@ function EmergencyDetectionPage() {
           </div>
 
           {alertsQuery.isLoading ? (
-            <div className="flex items-center justify-center p-12 text-muted-foreground">
+            <div className="flex items-center justify-center p-12 text-[#71868a]">
               <Loader2 className="mr-2 size-5 animate-spin" /> Loading care alerts…
             </div>
           ) : alertsQuery.isError ? (
@@ -385,11 +401,11 @@ function EmergencyDetectionPage() {
             </div>
           ) : visibleAlerts.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
-              <div className="rounded-full bg-emerald-100 p-3 text-emerald-700">
+              <div className="grid size-14 place-items-center rounded-2xl bg-[#e5f2ed] text-[#19705f]">
                 <CheckCircle2 className="size-7" />
               </div>
               <div>
-                <h3 className="font-semibold">
+                <h3 className="font-bold text-[#1c3b41]">
                   {filter === "resolved" ? "No resolved alerts yet" : "No open care alerts"}
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -398,7 +414,7 @@ function EmergencyDetectionPage() {
               </div>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-[#e7eeec]">
               {visibleAlerts.map((alert) => (
                 <CareAlertRow
                   key={alert.id}
@@ -427,10 +443,10 @@ function EmergencyDetectionPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="rounded-[1.5rem] border-[#dce7e3] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Resolve care alert</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-bold tracking-[-0.025em] text-[#17343a]">Resolve care alert</DialogTitle>
+            <DialogDescription className="leading-6 text-[#6f8387]">
               Confirm that the situation has been checked. The alert may also resolve automatically
               when the medicine is marked taken, the wellbeing check is submitted, or app activity
               resumes.
@@ -440,19 +456,21 @@ function EmergencyDetectionPage() {
             <Label htmlFor="resolution-note">Resolution note (optional)</Label>
             <Textarea
               id="resolution-note"
+              className="rounded-xl border-[#d8e4e0]"
               value={resolutionNote}
               onChange={(event) => setResolutionNote(event.target.value)}
               maxLength={500}
               rows={4}
               placeholder="Example: Spoke with the care recipient and confirmed they are safe."
             />
-            <p className="text-right text-xs text-muted-foreground">{resolutionNote.length}/500</p>
+            <p className="text-right text-xs text-[#7b8e92]">{resolutionNote.length}/500</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResolvingAlert(null)}>
+            <Button variant="outline" className="h-11 rounded-xl border-[#d6e2de]" onClick={() => setResolvingAlert(null)}>
               Cancel
             </Button>
             <Button
+              className="h-11 rounded-xl bg-[#0d6665] text-white hover:bg-[#0a5958]"
               onClick={() => {
                 if (!resolvingAlert) return;
                 updateStatus.mutate({
@@ -486,35 +504,35 @@ function CareAlertRow({
   const config = getAlertConfig(alert.alert_type);
   const recommendedAction = asString(alert.metadata.recommended_action);
   return (
-    <article className="p-4 sm:p-5">
+    <article className="px-5 py-5 transition-colors hover:bg-[#fbfdfc] sm:px-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className={`shrink-0 rounded-xl p-2.5 ${config.iconClass}`}>{config.icon}</div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold">{alert.title}</h3>
+            <h3 className="font-bold text-[#1c3b41]">{alert.title}</h3>
             <StatusBadge status={alert.status} />
             <Badge
               variant="outline"
               className={
                 alert.severity === "high"
-                  ? "border-red-200 bg-red-50 text-red-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
+                  ? "border-[#e2c4c0] bg-[#f9e9e7] text-[#9f4742]"
+                  : "border-[#e4d0bd] bg-[#faf2e9] text-[#906139]"
               }
             >
               {alert.severity === "high" ? "High priority" : "Warning"}
             </Badge>
           </div>
 
-          <p className="mt-1.5 text-sm text-foreground/80">{alert.message}</p>
+          <p className="mt-2 text-sm leading-6 text-[#587075]">{alert.message}</p>
 
           {recommendedAction && (
-            <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-sm text-blue-900">
+            <div className="mt-3 rounded-xl border border-[#d3e2e5] bg-[#f3f7f8] px-4 py-3 text-sm leading-6 text-[#48636a]">
               <span className="font-semibold">Recommended action: </span>
               {recommendedAction}
             </div>
           )}
 
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#7b8e92]">
             <span className="inline-flex items-center gap-1">
               <Clock3 className="size-3.5" />
               Detected {formatDistanceToNow(new Date(alert.detected_at), { addSuffix: true })}
@@ -528,7 +546,7 @@ function CareAlertRow({
           <AlertMetadata alert={alert} />
 
           {alert.resolution_note && (
-            <p className="mt-3 rounded-lg bg-muted/50 px-3 py-2 text-sm">
+            <p className="mt-3 rounded-xl border border-[#dfe8e5] bg-[#f7faf9] px-4 py-3 text-sm text-[#526b70]">
               <span className="font-semibold">Resolution: </span>
               {alert.resolution_note}
             </p>
@@ -538,11 +556,11 @@ function CareAlertRow({
         {alert.status !== "resolved" && (
           <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col">
             {alert.status === "active" && (
-              <Button variant="outline" size="sm" onClick={onAcknowledge} disabled={isPending}>
+              <Button variant="outline" size="sm" className="rounded-xl border-[#d6e2de]" onClick={onAcknowledge} disabled={isPending}>
                 <BellRing className="mr-2 size-4" /> Acknowledge
               </Button>
             )}
-            <Button size="sm" onClick={onResolve} disabled={isPending}>
+            <Button size="sm" className="rounded-xl bg-[#0d6665] text-white hover:bg-[#0a5958]" onClick={onResolve} disabled={isPending}>
               <Check className="mr-2 size-4" /> Resolve
             </Button>
           </div>
@@ -587,9 +605,9 @@ function AlertMetadata({ alert }: { alert: CareAlert }) {
       {badges.map((badge) => (
         <span
           key={badge.label}
-          className="rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
+          className="rounded-full border border-[#dfe8e5] bg-[#f6f9f8] px-2.5 py-1 text-[11px] font-semibold text-[#5f777b]"
         >
-          <span className="text-foreground/50">{badge.label}: </span>
+          <span className="text-[#87999c]">{badge.label}: </span>
           {badge.value}
         </span>
       ))}
@@ -610,18 +628,18 @@ function SummaryCard({
   tone: "red" | "amber" | "pink" | "slate";
 }) {
   const classes = {
-    red: "bg-red-50 text-red-700 border-red-100",
-    amber: "bg-amber-50 text-amber-700 border-amber-100",
-    pink: "bg-pink-50 text-pink-700 border-pink-100",
-    slate: "bg-slate-50 text-slate-700 border-slate-200",
+    red: "border-[#e4c8c4] bg-[#f9e9e7] text-[#a44f49]",
+    amber: "border-[#e5d1bd] bg-[#faf2e9] text-[#95613a]",
+    pink: "border-[#dfcfd4] bg-[#f6edef] text-[#825b68]",
+    slate: "border-[#d4e0e3] bg-[#edf3f4] text-[#536f79]",
   }[tone];
   return (
-    <div className="rounded-2xl border bg-card p-4">
+    <div className="rounded-2xl border border-[#dce7e3] bg-white p-5 shadow-[0_16px_38px_-32px_rgba(16,49,54,0.35)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <p className="mt-1 text-3xl font-bold">{value}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">{label}</p>
+          <p className="mt-2 text-3xl font-bold tracking-[-0.04em] text-[#17343a]">{value}</p>
+          <p className="mt-1 text-xs leading-5 text-[#768a8e]">{detail}</p>
         </div>
         <div className={`rounded-xl border p-2.5 ${classes}`}>{icon}</div>
       </div>
@@ -630,29 +648,29 @@ function SummaryCard({
 }
 function StatusBadge({ status }: { status: AlertStatus }) {
   if (status === "resolved") {
-    return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Resolved</Badge>;
+    return <Badge className="border-0 bg-[#e5f2ed] text-[#19705f] hover:bg-[#e5f2ed]">Resolved</Badge>;
   }
   if (status === "acknowledged") {
-    return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Acknowledged</Badge>;
+    return <Badge className="border-0 bg-[#e7eef5] text-[#4f6f8d] hover:bg-[#e7eef5]">Acknowledged</Badge>;
   }
-  return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Active</Badge>;
+  return <Badge className="border-0 bg-[#f7e7e5] text-[#a74d48] hover:bg-[#f7e7e5]">Active</Badge>;
 }
 function getAlertConfig(type: AlertType) {
   switch (type) {
     case "missed_medicine":
       return {
         icon: <Pill className="size-5" />,
-        iconClass: "bg-amber-100 text-amber-700",
+        iconClass: "bg-[#f5eadf] text-[#9c6637]",
       };
     case "missed_checkin":
       return {
         icon: <HeartPulse className="size-5" />,
-        iconClass: "bg-pink-100 text-pink-700",
+        iconClass: "bg-[#f4e9ec] text-[#8d5b6c]",
       };
     case "no_app_activity":
       return {
         icon: <Activity className="size-5" />,
-        iconClass: "bg-red-100 text-red-700",
+        iconClass: "bg-[#f7e7e5] text-[#a74d48]",
       };
   }
 }

@@ -1,20 +1,34 @@
-import { useRef, useState, useEffect, type InputHTMLAttributes } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type InputHTMLAttributes,
+} from "react";
 import { CalendarDays, Clock } from "lucide-react";
+
 import { cn } from "@/lib/utils";
-const baseClass =
-  "flex h-10 w-full rounded-md border border-input bg-background text-sm ring-offset-background " +
-  "placeholder:text-muted-foreground focus-within:outline-none focus-within:ring-2 " +
-  "focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden";
-const inputClass =
-  "flex-1 min-w-0 px-3 py-2 bg-transparent outline-none border-none " +
-  "placeholder:text-muted-foreground text-sm";
-interface DateInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "onChange"> {
+
+const wrapperClass =
+  "flex h-11 w-full overflow-hidden rounded-xl border border-[#d6e2de] bg-white text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_20px_-20px_rgba(18,49,54,0.5)] transition-[border-color,box-shadow] focus-within:border-[#6da69b] focus-within:ring-4 focus-within:ring-[#0d7774]/10";
+
+const textInputClass =
+  "min-w-0 flex-1 border-none bg-transparent px-3.5 py-2 text-sm text-[#17343a] outline-none placeholder:text-[#92a1a4] disabled:cursor-not-allowed";
+
+const pickerButtonClass =
+  "grid size-10 shrink-0 place-items-center rounded-lg text-[#71868a] transition hover:bg-[#edf5f2] hover:text-[#0d6665] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0d7774]/25 disabled:cursor-not-allowed disabled:opacity-50";
+
+interface BaseInputProps
+  extends Omit<
+    InputHTMLAttributes<HTMLInputElement>,
+    "type" | "onChange"
+  > {
   value?: string;
   onChange?: (value: string) => void;
   min?: string;
   max?: string;
   placeholder?: string;
 }
+
 export function DateInput({
   value = "",
   onChange,
@@ -25,214 +39,252 @@ export function DateInput({
   disabled,
   id,
   ...rest
-}: DateInputProps) {
-  const hiddenRef = useRef<HTMLInputElement>(null);
+}: BaseInputProps) {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState(value);
+
   useEffect(() => {
     setText(value);
   }, [value]);
-  function handleTextChange(raw: string) {
-    setText(raw);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-      onChange?.(raw);
-    } else if (raw === "") {
-      onChange?.("");
+
+  function updateText(nextValue: string) {
+    setText(nextValue);
+
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(nextValue) ||
+      nextValue === ""
+    ) {
+      onChange?.(nextValue);
     }
   }
-  function handlePickerChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value;
-    setText(v);
-    onChange?.(v);
-  }
+
   function openPicker() {
-    hiddenRef.current?.showPicker?.();
-    hiddenRef.current?.click();
+    hiddenInputRef.current?.showPicker?.();
+    hiddenInputRef.current?.click();
   }
+
   return (
-    <div className={cn(baseClass, disabled && "opacity-50 cursor-not-allowed", className)}>
+    <div
+      className={cn(
+        wrapperClass,
+        disabled && "cursor-not-allowed bg-[#f3f6f5] opacity-65",
+        className,
+      )}
+    >
       <input
         id={id}
         type="text"
-        className={inputClass}
+        className={textInputClass}
         value={text}
         placeholder={placeholder}
-        onChange={(e) => handleTextChange(e.target.value)}
         disabled={disabled}
+        onChange={(event) => updateText(event.target.value)}
         {...rest}
       />
 
       <div className="relative flex items-center pr-1">
         <button
           type="button"
-          tabIndex={-1}
-          onClick={openPicker}
+          className={pickerButtonClass}
           disabled={disabled}
           aria-label="Open date picker"
-          className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded"
+          onClick={openPicker}
         >
           <CalendarDays className="size-4" />
         </button>
+
         <input
-          ref={hiddenRef}
+          ref={hiddenInputRef}
           type="date"
           value={value}
           min={min}
           max={max}
-          onChange={handlePickerChange}
+          disabled={disabled}
           tabIndex={-1}
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          style={{ pointerEvents: "none" }}
+          className="pointer-events-none absolute size-px opacity-0"
+          onChange={(event) => {
+            setText(event.target.value);
+            onChange?.(event.target.value);
+          }}
         />
       </div>
     </div>
   );
 }
-interface TimeInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "onChange"> {
-  value?: string;
-  onChange?: (value: string) => void;
-  placeholder?: string;
-}
+
 export function TimeInput({
   value = "",
   onChange,
+  min,
+  max,
   placeholder = "HH:MM",
   className,
   disabled,
   id,
   ...rest
-}: TimeInputProps) {
-  const hiddenRef = useRef<HTMLInputElement>(null);
+}: BaseInputProps) {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState(value);
+
   useEffect(() => {
     setText(value);
   }, [value]);
-  function handleTextChange(raw: string) {
-    setText(raw);
-    if (/^\d{2}:\d{2}$/.test(raw)) {
-      onChange?.(raw);
-    } else if (raw === "") {
-      onChange?.("");
+
+  function updateText(nextValue: string) {
+    setText(nextValue);
+
+    if (
+      /^\d{2}:\d{2}$/.test(nextValue) ||
+      nextValue === ""
+    ) {
+      onChange?.(nextValue);
     }
   }
-  function handlePickerChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value;
-    setText(v);
-    onChange?.(v);
-  }
+
   function openPicker() {
-    hiddenRef.current?.showPicker?.();
-    hiddenRef.current?.click();
+    hiddenInputRef.current?.showPicker?.();
+    hiddenInputRef.current?.click();
   }
+
   return (
-    <div className={cn(baseClass, disabled && "opacity-50 cursor-not-allowed", className)}>
+    <div
+      className={cn(
+        wrapperClass,
+        disabled && "cursor-not-allowed bg-[#f3f6f5] opacity-65",
+        className,
+      )}
+    >
       <input
         id={id}
         type="text"
-        className={inputClass}
+        className={textInputClass}
         value={text}
         placeholder={placeholder}
-        onChange={(e) => handleTextChange(e.target.value)}
         disabled={disabled}
+        onChange={(event) => updateText(event.target.value)}
         {...rest}
       />
+
       <div className="relative flex items-center pr-1">
         <button
           type="button"
-          tabIndex={-1}
-          onClick={openPicker}
+          className={pickerButtonClass}
           disabled={disabled}
           aria-label="Open time picker"
-          className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded"
+          onClick={openPicker}
         >
           <Clock className="size-4" />
         </button>
+
         <input
-          ref={hiddenRef}
+          ref={hiddenInputRef}
           type="time"
           value={value}
-          onChange={handlePickerChange}
+          min={min}
+          max={max}
+          disabled={disabled}
           tabIndex={-1}
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          style={{ pointerEvents: "none" }}
+          className="pointer-events-none absolute size-px opacity-0"
+          onChange={(event) => {
+            setText(event.target.value);
+            onChange?.(event.target.value);
+          }}
         />
       </div>
     </div>
   );
 }
-interface DateTimeInputProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  "type" | "onChange"
-> {
-  value?: string;
-  onChange?: (value: string) => void;
-  placeholder?: string;
-}
+
 export function DateTimeInput({
   value = "",
   onChange,
+  min,
+  max,
   placeholder = "YYYY-MM-DD HH:MM",
   className,
   disabled,
   id,
   ...rest
-}: DateTimeInputProps) {
-  const hiddenRef = useRef<HTMLInputElement>(null);
-  const [text, setText] = useState(value.replace("T", " "));
+}: BaseInputProps) {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState(
+    value ? value.replace("T", " ") : "",
+  );
+
   useEffect(() => {
-    setText(value.replace("T", " "));
+    setText(value ? value.replace("T", " ") : "");
   }, [value]);
-  function handleTextChange(raw: string) {
-    setText(raw);
-    const normalized = raw.replace(" ", "T");
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) {
-      onChange?.(normalized);
-    } else if (raw === "") {
+
+  function updateText(nextValue: string) {
+    setText(nextValue);
+
+    if (nextValue === "") {
       onChange?.("");
+      return;
+    }
+
+    const normalizedValue = nextValue.replace(" ", "T");
+
+    if (
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(
+        normalizedValue,
+      )
+    ) {
+      onChange?.(normalizedValue);
     }
   }
-  function handlePickerChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value;
-    setText(v.replace("T", " "));
-    onChange?.(v);
-  }
+
   function openPicker() {
-    hiddenRef.current?.showPicker?.();
-    hiddenRef.current?.click();
+    hiddenInputRef.current?.showPicker?.();
+    hiddenInputRef.current?.click();
   }
+
   return (
-    <div className={cn(baseClass, disabled && "opacity-50 cursor-not-allowed", className)}>
+    <div
+      className={cn(
+        wrapperClass,
+        disabled && "cursor-not-allowed bg-[#f3f6f5] opacity-65",
+        className,
+      )}
+    >
       <input
         id={id}
         type="text"
-        className={inputClass}
+        className={textInputClass}
         value={text}
         placeholder={placeholder}
-        onChange={(e) => handleTextChange(e.target.value)}
         disabled={disabled}
+        onChange={(event) => updateText(event.target.value)}
         {...rest}
       />
+
       <div className="relative flex items-center pr-1">
         <button
           type="button"
-          tabIndex={-1}
-          onClick={openPicker}
+          className={pickerButtonClass}
           disabled={disabled}
-          aria-label="Open date-time picker"
-          className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded"
+          aria-label="Open date and time picker"
+          onClick={openPicker}
         >
           <CalendarDays className="size-4" />
         </button>
+
         <input
-          ref={hiddenRef}
+          ref={hiddenInputRef}
           type="datetime-local"
           value={value}
-          onChange={handlePickerChange}
+          min={min}
+          max={max}
+          disabled={disabled}
           tabIndex={-1}
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          style={{ pointerEvents: "none" }}
+          className="pointer-events-none absolute size-px opacity-0"
+          onChange={(event) => {
+            setText(event.target.value.replace("T", " "));
+            onChange?.(event.target.value);
+          }}
         />
       </div>
     </div>

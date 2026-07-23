@@ -301,10 +301,10 @@ export function TrustedCaregiverDirectory({
       };
       const query = editing
         ? supabase
-            .from("trusted_caregivers")
-            .update(payload)
-            .eq("id", editing.id)
-            .eq("parent_id", parentId)
+          .from("trusted_caregivers")
+          .update(payload)
+          .eq("id", editing.id)
+          .eq("parent_id", parentId)
         : supabase.from("trusted_caregivers").insert(payload);
       const { data, error } = await query.select("id").maybeSingle();
       if (error) throw error;
@@ -375,19 +375,19 @@ export function TrustedCaregiverDirectory({
     );
   }
   return (
-    <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
+    <section className="rounded-[1.75rem] border border-[#dce8e4] bg-white p-5 shadow-[0_20px_55px_-44px_rgba(18,49,54,0.45)] sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <ShieldCheck className="size-5 text-primary" />
-            <h2 className="font-display text-xl font-bold italic">Trusted caregiver directory</h2>
+            <ShieldCheck className="size-5 text-[#176f69]" />
+            <h2 className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">Trusted caregiver directory</h2>
           </div>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+          <p className="mt-1.5 max-w-3xl text-sm leading-6 text-[#71868a]">
             Save caregivers you already know, define their weekly availability, and assign them to
             internal bookings without a paid marketplace.
           </p>
           {caregivers.length > 0 && (
-            <p className="mt-2 text-xs font-medium text-emerald-700">
+            <p className="mt-2 inline-flex rounded-full bg-[#e4f1ec] px-3 py-1.5 text-xs font-bold text-[#176f5f]">
               {availableCount} of {caregivers.length} caregiver
               {caregivers.length === 1 ? "" : "s"} currently available
             </p>
@@ -395,7 +395,7 @@ export function TrustedCaregiverDirectory({
         </div>
 
         {!readOnly && (
-          <Button onClick={startCreate} className="rounded-xl">
+          <Button onClick={startCreate} className="h-11 rounded-xl bg-[#0d6665] px-5 text-white hover:bg-[#0a5958]">
             <Plus className="mr-2 size-4" />
             Add caregiver
           </Button>
@@ -403,11 +403,11 @@ export function TrustedCaregiverDirectory({
       </div>
 
       {isLoading ? (
-        <div className="grid min-h-32 place-items-center">
+        <div className="grid min-h-36 place-items-center text-[#176f69]">
           <Loader2 className="size-5 animate-spin" />
         </div>
       ) : caregivers.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+        <div className="mt-5 rounded-2xl border border-dashed border-[#cfdeda] bg-[#f8fbfa] p-9 text-center text-sm leading-6 text-[#71868a]">
           No caregiver profiles have been added. Add at least one profile before assigning a
           booking.
         </div>
@@ -417,53 +417,52 @@ export function TrustedCaregiverDirectory({
             const from = formatTime(item.available_from);
             const until = formatTime(item.available_until);
             return (
-              <article key={item.id} className="rounded-2xl border border-border p-4">
+              <article key={item.id} className="professional-card-hover rounded-2xl border border-[#dce7e3] bg-white p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e5f2ed] text-[#176f69]">
                       <UserRound className="size-5" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="truncate font-semibold">{item.name}</h3>
-                      <p className="text-xs capitalize text-muted-foreground">
+                      <h3 className="truncate text-sm font-bold text-[#1d3e44]">{item.name}</h3>
+                      <p className="mt-0.5 text-xs font-medium capitalize text-[#788c90]">
                         {item.caregiver_type.replace("_", " ")}
                       </p>
                     </div>
                   </div>
 
                   <span
-                    className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
-                      item.available
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-stone-100 text-stone-500"
-                    }`}
+                    className={`rounded-full px-2 py-1 text-[10px] font-semibold ${item.available
+                        ? "bg-[#e4f1ec] text-[#176f5f]"
+                        : "bg-[#eef2f1] text-[#6f8185]"
+                      }`}
                   >
                     {item.available ? "Available" : "Unavailable"}
                   </span>
                 </div>
 
-                <div className="mt-4 space-y-2 text-sm">
+                <div className="mt-5 space-y-2.5 text-sm">
                   {item.qualification && (
-                    <p className="flex items-start gap-2 text-muted-foreground">
+                    <p className="flex items-start gap-2 text-[#647a7f]">
                       <Award className="mt-0.5 size-4 shrink-0" />
                       {item.qualification}
                     </p>
                   )}
 
-                  <p className="flex items-center gap-2 text-muted-foreground">
+                  <p className="flex items-center gap-2 text-[#647a7f]">
                     <BriefcaseBusiness className="size-4" />
                     {item.experience_years === 0
                       ? "Experience not specified"
                       : `${item.experience_years} year${item.experience_years === 1 ? "" : "s"} experience`}
                   </p>
 
-                  <p className="flex items-start gap-2 text-muted-foreground">
+                  <p className="flex items-start gap-2 text-[#647a7f]">
                     <CalendarDays className="mt-0.5 size-4 shrink-0" />
                     {formatAvailabilityDays(item.available_days ?? ALL_DAYS)}
                   </p>
 
                   {from && until && (
-                    <p className="flex items-center gap-2 text-muted-foreground">
+                    <p className="flex items-center gap-2 text-[#647a7f]">
                       <Clock3 className="size-4" />
                       {from}–{until}
                     </p>
@@ -471,7 +470,7 @@ export function TrustedCaregiverDirectory({
 
                   {item.phone && (
                     <a
-                      className="flex items-center gap-2 hover:text-primary"
+                      className="flex items-center gap-2 font-medium text-[#48666b] transition hover:text-[#0d7774]"
                       href={`tel:${item.phone}`}
                     >
                       <Phone className="size-4" />
@@ -481,7 +480,7 @@ export function TrustedCaregiverDirectory({
 
                   {item.email && (
                     <a
-                      className="flex items-center gap-2 hover:text-primary"
+                      className="flex items-center gap-2 font-medium text-[#48666b] transition hover:text-[#0d7774]"
                       href={`mailto:${item.email}`}
                     >
                       <Mail className="size-4" />
@@ -490,39 +489,39 @@ export function TrustedCaregiverDirectory({
                   )}
 
                   {item.service_area && (
-                    <p className="flex items-start gap-2 text-muted-foreground">
+                    <p className="flex items-start gap-2 text-[#647a7f]">
                       <MapPin className="mt-0.5 size-4 shrink-0" />
                       Service area: {item.service_area}
                     </p>
                   )}
 
                   {item.address && (
-                    <p className="flex items-start gap-2 text-muted-foreground">
+                    <p className="flex items-start gap-2 text-[#647a7f]">
                       <MapPin className="mt-0.5 size-4 shrink-0" />
                       {item.address}
                     </p>
                   )}
 
                   {item.latitude != null && item.longitude != null && (
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <p className="flex items-center gap-2 text-xs text-[#72878b]">
                       <Crosshair className="size-4" />
                       Coordinates saved for SOS distance sorting
                     </p>
                   )}
 
                   {item.notes && (
-                    <p className="rounded-xl bg-muted/50 p-2 text-xs text-muted-foreground">
+                    <p className="rounded-xl border border-[#e4ece9] bg-[#f8fbfa] p-3 text-xs leading-5 text-[#667c81]">
                       {item.notes}
                     </p>
                   )}
                 </div>
 
                 {!readOnly && (
-                  <div className="mt-4 flex justify-end gap-2">
+                  <div className="mt-5 flex justify-end gap-2 border-t border-[#e6eeeb] pt-4">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="rounded-xl"
+                      className="rounded-xl text-[#61797e] hover:bg-[#eef5f2] hover:text-[#0d7774]"
                       onClick={() => startEdit(item)}
                       aria-label={`Edit ${item.name}`}
                     >
@@ -531,7 +530,7 @@ export function TrustedCaregiverDirectory({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      className="rounded-xl text-[#a44e49] hover:bg-[#fff1ef] hover:text-[#913f3b]"
                       onClick={() =>
                         window.confirm(
                           `Delete ${item.name}? Existing bookings will keep the caregiver name, but the profile link will be removed.`,
@@ -557,14 +556,14 @@ export function TrustedCaregiverDirectory({
           else setOpen(true);
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[1.5rem] border-[#dce7e3] p-0 sm:max-w-2xl">
+          <DialogHeader className="border-b border-[#e3ece9] px-6 py-5 text-left">
+            <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">
               {editing ? "Edit caregiver profile" : "Add caregiver profile"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-4 py-2 sm:grid-cols-2">
+          <div className="grid gap-5 px-6 py-5 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="trusted-caregiver-name">Name *</Label>
               <Input
@@ -604,7 +603,7 @@ export function TrustedCaregiverDirectory({
               </Select>
             </div>
 
-            <div className="flex items-center gap-3 rounded-xl border border-border px-3 py-2">
+            <div className="flex items-center gap-3 rounded-xl border border-[#dce7e3] bg-[#f8fbfa] px-4 py-3">
               <Switch
                 checked={form.available}
                 onCheckedChange={(available) => setForm((current) => ({ ...current, available }))}
@@ -676,11 +675,10 @@ export function TrustedCaregiverDirectory({
                       key={day.value}
                       type="button"
                       onClick={() => toggleDay(day.value)}
-                      className={`rounded-xl border px-2 py-2 text-xs font-semibold transition-colors ${
-                        selected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background text-muted-foreground hover:border-primary/50"
-                      }`}
+                      className={`rounded-xl border px-2 py-2 text-xs font-semibold transition-colors ${selected
+                          ? "border-[#0d6665] bg-[#0d6665] text-white shadow-sm"
+                          : "border-[#d7e3df] bg-white text-[#6c8185] hover:border-[#9fc3b9] hover:bg-[#f2f8f5]"
+                        }`}
                       aria-pressed={selected}
                       title={day.long}
                     >
@@ -732,7 +730,7 @@ export function TrustedCaregiverDirectory({
                 <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
                 <Input
                   id="trusted-caregiver-phone"
-                  className="pl-9"
+                  className="h-11 rounded-xl border-[#d8e4e0] bg-white pl-9"
                   value={form.phone}
                   onChange={(event) =>
                     setForm((current) => ({
@@ -750,7 +748,7 @@ export function TrustedCaregiverDirectory({
                 <AtSign className="absolute left-3 top-3 size-4 text-muted-foreground" />
                 <Input
                   id="trusted-caregiver-email"
-                  className="pl-9"
+                  className="h-11 rounded-xl border-[#d8e4e0] bg-white pl-9"
                   type="email"
                   value={form.email}
                   onChange={(event) =>
@@ -810,7 +808,7 @@ export function TrustedCaregiverDirectory({
             <Button
               type="button"
               variant="outline"
-              className="sm:col-span-2"
+              className="h-11 rounded-xl border-[#d6e2de] bg-white sm:col-span-2"
               onClick={captureCoordinates}
               disabled={locating}
             >
@@ -822,7 +820,7 @@ export function TrustedCaregiverDirectory({
               Use current coordinates
             </Button>
 
-            <p className="text-xs text-amber-700 sm:col-span-2">
+            <p className="rounded-xl border border-[#ead9c9] bg-[#fbf7f2] px-4 py-3 text-xs leading-5 text-[#8b633f] sm:col-span-2">
               Save current coordinates only when the caregiver is physically at the intended
               location. The application does not secretly track caregivers.
             </p>
@@ -844,11 +842,11 @@ export function TrustedCaregiverDirectory({
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDialog} disabled={save.isPending}>
+          <DialogFooter className="border-t border-[#e5ecea] px-6 py-5">
+            <Button variant="outline" className="h-11 rounded-xl border-[#d6e2de] bg-white" onClick={closeDialog} disabled={save.isPending}>
               Cancel
             </Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            <Button className="h-11 rounded-xl bg-[#0d6665] px-6 text-white hover:bg-[#0a5958]" onClick={() => save.mutate()} disabled={save.isPending}>
               {save.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               Save caregiver
             </Button>

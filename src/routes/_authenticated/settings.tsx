@@ -11,6 +11,7 @@ import {
   MessageSquareWarning,
   RefreshCw,
   RotateCcw,
+  Settings,
   ShieldAlert,
   Smartphone,
   UserRound,
@@ -537,22 +538,28 @@ function SettingsPage() {
   const selectedPersonName = activeParent?.full_name || "the selected care recipient";
   return (
     <AppShell>
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-display text-4xl font-bold italic">Settings</h1>
-          <p className="mt-1 text-muted-foreground">
-            Manage your profile and preferences for {selectedPersonName}.
-          </p>
-        </div>
+      <div className="mb-6 overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white px-5 py-6 shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)] sm:px-7 lg:px-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#e8f3ef] px-3 py-1.5 text-xs font-bold text-[#176f69]">
+              <Settings className="size-3.5" />
+              Account and care preferences
+            </div>
+            <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">Settings</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667d82] sm:text-base">
+              Manage your profile and preferences for {selectedPersonName}.
+            </p>
+          </div>
 
-        {(settingsDirty || profileDirty) && (
-          <Badge variant="outline" className="w-fit border-amber-300 bg-amber-50 text-amber-800">
-            Unsaved changes
-          </Badge>
-        )}
+          {(settingsDirty || profileDirty) && (
+            <Badge variant="outline" className="w-fit border-[#e6d0bc] bg-[#fbf3ea] text-[#8e6038]">
+              Unsaved changes
+            </Badge>
+          )}
+        </div>
       </div>
 
-      <div className="max-w-4xl space-y-8">
+      <div className="mx-auto max-w-5xl space-y-6">
         <Section
           icon={<UserRound className="size-5" />}
           title="Your profile"
@@ -565,7 +572,7 @@ function SettingsPage() {
           <div className="flex flex-col items-start gap-6 md:flex-row">
             <div className="flex shrink-0 flex-col items-center gap-2 self-center md:self-start">
               <EditableAvatar size="xl" />
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-xs font-medium text-[#75898d]">
                 Click the photo to change it
               </span>
             </div>
@@ -690,7 +697,7 @@ function SettingsPage() {
               </div>
 
               {profile?.created_at && (
-                <p className="font-mono text-[11px] text-muted-foreground">
+                <p className="text-[11px] font-medium text-[#7b8e92]">
                   Member since {format(new Date(profile.created_at), "MMMM d, yyyy")}
                 </p>
               )}
@@ -719,7 +726,7 @@ function SettingsPage() {
             </AlertDescription>
           </Alert>
         ) : settingsQuery.isLoading || !form ? (
-          <div className="flex items-center gap-2 rounded-2xl border bg-card p-6 text-muted-foreground">
+          <div className="flex items-center gap-2 rounded-2xl border border-[#dce8e4] bg-white p-6 text-[#71868a]">
             <Loader2 className="size-5 animate-spin" /> Loading settings…
           </div>
         ) : settingsQuery.isError ? (
@@ -862,7 +869,7 @@ function SettingsPage() {
                 />
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <div className="rounded-xl border border-[#e5d2bf] bg-[#fbf5ee] p-4 text-sm leading-6 text-[#795d45]">
                 <div className="flex items-start gap-2">
                   <MessageSquareWarning className="mt-0.5 size-4 shrink-0" />
                   <div>
@@ -1063,7 +1070,7 @@ function SettingsPage() {
                 checked={form.companion_emergency_escalation_enabled}
                 onChange={(value) => setSetting("companion_emergency_escalation_enabled", value)}
               />
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <div className="rounded-xl border border-[#e5d2bf] bg-[#fbf5ee] p-4 text-sm leading-6 text-[#795d45]">
                 Emergency phrase detection always shows SOS guidance to the care recipient. Family
                 escalation is optional and is disabled by default.
               </div>
@@ -1218,7 +1225,7 @@ function SettingsPage() {
               />
             </Field>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs leading-5 text-[#71868a]">
             Use at least one uppercase letter, one lowercase letter, and one number.
           </p>
           <div className="flex justify-end">
@@ -1253,12 +1260,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <section className="space-y-5 rounded-[1.5rem] border border-[#dce8e4] bg-white p-5 shadow-[0_18px_48px_-40px_rgba(18,49,54,0.4)] sm:p-6">
       <div className="flex items-start gap-3">
-        {icon && <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">{icon}</div>}
+        {icon && <div className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl bg-[#e6f2ee] text-[#176f69]">{icon}</div>}
         <div>
-          <h2 className="font-display text-xl font-bold italic">{title}</h2>
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+          <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">{title}</h2>
+          {description && <p className="mt-1 text-sm leading-6 text-[#71868a]">{description}</p>}
         </div>
       </div>
       {children}
@@ -1277,8 +1284,8 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={htmlFor}>
+    <div className="space-y-2">
+      <Label htmlFor={htmlFor} className="font-semibold text-[#29484e]">
         {label}
         {required && <span className="ml-1 text-destructive">*</span>}
       </Label>
@@ -1289,10 +1296,10 @@ function Field({
 function ReadOnlyValue({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
-      <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <span className="block text-xs font-bold uppercase tracking-[0.1em] text-[#7b8f93]">
         {label}
       </span>
-      <span className="block select-none rounded-lg border border-border/60 bg-muted/40 px-3 py-2 text-sm font-medium">
+      <span className="block select-none rounded-xl border border-[#dfe8e5] bg-[#f8fbfa] px-3 py-2.5 text-sm font-semibold text-[#425f64]">
         {value}
       </span>
     </div>
@@ -1312,12 +1319,12 @@ function ToggleRow({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-transparent py-1">
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-[#e4ebe9] bg-[#fbfdfc] px-4 py-3.5">
       <div>
-        <Label className={disabled ? "font-normal text-muted-foreground" : "font-normal"}>
+        <Label className={disabled ? "font-semibold text-[#9aa8aa]" : "font-semibold text-[#35565c]"}>
           {label}
         </Label>
-        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+        {description && <p className="mt-1 text-xs leading-5 text-[#7b8e92]">{description}</p>}
       </div>
       <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </div>

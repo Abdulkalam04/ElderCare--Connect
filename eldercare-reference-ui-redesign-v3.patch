@@ -1,0 +1,3115 @@
+diff --git a/public/favicon.svg b/public/favicon.svg
+--- a/public/favicon.svg
++++ b/public/favicon.svg
+@@ -1,11 +1,15 @@
+ <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+   <defs>
+-    <linearGradient id="g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+-      <stop offset="0" stop-color="#1e3a8a"/>
+-      <stop offset="1" stop-color="#3b82f6"/>
++    <linearGradient id="g" x1="8" y1="6" x2="58" y2="60" gradientUnits="userSpaceOnUse">
++      <stop stop-color="#178f91"/>
++      <stop offset="0.62" stop-color="#4ea77b"/>
++      <stop offset="1" stop-color="#ed9349"/>
+     </linearGradient>
+   </defs>
+-  <rect width="64" height="64" rx="16" fill="url(#g)"/>
+-  <path d="M32 48s-13-8.2-13-18a8 8 0 0 1 13-6.2A8 8 0 0 1 45 30c0 9.8-13 18-13 18Z" fill="#fff"/>
+-  <path d="M22 32h5l2.4-4 3.6 8 2.6-5h6.4" stroke="#1e3a8a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
++  <rect width="64" height="64" rx="18" fill="#f7fcf9"/>
++  <path d="M32 56S11 44.5 11 27.5c0-7.3 5.3-12.7 12.2-12.7 3.8 0 7 1.7 8.8 4.7 1.8-3 5.1-4.7 8.8-4.7C47.7 14.8 53 20.2 53 27.5 53 44.5 32 56 32 56Z" stroke="url(#g)" stroke-width="4.8" stroke-linejoin="round"/>
++  <path d="M22 34 32 25l10 9v10H22V34Z" fill="#fff" stroke="#0d7378" stroke-width="2.3" stroke-linejoin="round"/>
++  <path d="M29 44v-7h6v7" fill="#e7f5ed" stroke="#4ea77b" stroke-width="2"/>
++  <circle cx="17.5" cy="13.5" r="5" fill="#178f91"/>
++  <circle cx="46.5" cy="13.5" r="5" fill="#ed9349"/>
+ </svg>
+diff --git a/src/components/AppShell.tsx b/src/components/AppShell.tsx
+--- a/src/components/AppShell.tsx
++++ b/src/components/AppShell.tsx
+@@ -24,6 +24,8 @@
+   HeartHandshake,
+   ShieldAlert,
+   MapPin,
++  Search,
++  ChevronDown,
+ } from "lucide-react";
+ import { toast } from "sonner";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -35,7 +37,6 @@
+ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+ import type { ReactNode } from "react";
+ import { useEffect, useState, useRef, useCallback } from "react";
+-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+ import {
+   Select,
+   SelectContent,
+@@ -47,6 +48,7 @@
+ import { Dialog, DialogContent } from "@/components/ui/dialog";
+ import { Button } from "@/components/ui/button";
+ import { format } from "date-fns";
++import { BrandLogo } from "@/components/BrandLogo";
+ type NavItem = {
+   to: string;
+   label: string;
+@@ -139,37 +141,24 @@
+       to={to}
+       preload="intent"
+       onClick={onClick}
+-      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors duration-300 ease-in-out ${
++      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 ${
+         active
+-          ? "text-brand-accent font-semibold"
+-          : "text-muted-foreground hover:text-foreground hover:bg-black/5"
++          ? "bg-white/[0.12] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
++          : "text-emerald-50/[0.72] hover:bg-white/[0.075] hover:text-white"
+       }`}
+     >
+       <span
+-        className={`absolute inset-0 rounded-lg bg-gradient-to-r from-blue-50/80 to-indigo-50/40 transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"}`}
+-        style={{ pointerEvents: "none" }}
+-      />
+-
+-      <span
+-        className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-brand-accent transition-all duration-300 ease-in-out origin-center ${active ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"}`}
+-      />
+-
+-      <span
+-        className="relative size-4 flex items-center justify-center shrink-0 leading-none"
++        className={`grid size-8 shrink-0 place-items-center rounded-lg transition-all duration-200 ${
++          active
++            ? "bg-gradient-to-br from-emerald-300 to-emerald-500 text-[#073f49] shadow-lg shadow-emerald-950/20"
++            : "bg-white/[0.055] text-emerald-100/[0.8] group-hover:bg-white/10 group-hover:text-white"
++        }`}
+         aria-hidden="true"
+       >
+-        <span
+-          className={`absolute inset-0 rounded-full bg-brand-accent/20 blur-[3px] transition-opacity duration-300 ease-in-out ${active ? "opacity-100" : "opacity-0"}`}
+-        />
+-        <span
+-          className="relative z-10 transition-all duration-300 ease-in-out"
+-          style={active ? { filter: "drop-shadow(0 0 3px currentColor)" } : undefined}
+-        >
+-          {icon}
+-        </span>
++        {icon}
+       </span>
+-
+-      <span className="relative z-10">{label}</span>
++      <span className="relative z-10 truncate">{label}</span>
++      {active && <span className="ml-auto size-1.5 rounded-full bg-orange-300 shadow-[0_0_12px_rgba(253,186,116,0.9)]" />}
+     </Link>
+   );
+ }
+@@ -850,29 +839,30 @@
+       toast.error(e instanceof Error ? e.message : "Failed to sign out");
+     }
+   }
+-  const initials = (profile?.full_name || "?")
+-    .split(" ")
+-    .map((n) => n[0])
+-    .slice(0, 2)
+-    .join("")
+-    .toUpperCase();
++  const activePageLabel =
++    [...navItems, ...aiItems, { to: "/sos", label: "SOS Control", icon: null }].find(
++      (item) => item.to === pathname,
++    )?.label ?? "ElderCare";
+   const NavContent = ({ onLinkClick }: { onLinkClick?: () => void }) => (
+-    <>
+-      <nav className="space-y-1">
+-        {navItems.map((item) => (
+-          <NavLink
+-            key={item.to}
+-            to={item.to}
+-            label={item.label}
+-            icon={item.icon}
+-            active={pathname === item.to}
+-            onClick={onLinkClick}
+-          />
+-        ))}
+-        <div className="pt-4 mt-4 border-t border-border">
+-          <p className="px-3 pb-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+-            AI Assist
+-          </p>
++    <nav className="space-y-1.5">
++      <p className="px-3 pb-1 pt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/[0.45]">
++        Care workspace
++      </p>
++      {navItems.map((item) => (
++        <NavLink
++          key={item.to}
++          to={item.to}
++          label={item.label}
++          icon={item.icon}
++          active={pathname === item.to}
++          onClick={onLinkClick}
++        />
++      ))}
++      <div className="my-4 border-t border-white/10 pt-4">
++        <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/[0.45]">
++          Smart care
++        </p>
++        <div className="space-y-1.5">
+           {aiItems.map((item) => (
+             <NavLink
+               key={item.to}
+@@ -884,27 +874,29 @@
+             />
+           ))}
+         </div>
+-        <div className="pt-4 mt-4 border-t border-border space-y-1">
+-          <Link
+-            to="/sos"
+-            preload="intent"
+-            onClick={onLinkClick}
+-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${pathname === "/sos" ? "bg-red-100 text-red-700" : "text-red-600 hover:bg-red-50"}`}
+-          >
+-            <span
+-              className="size-4 flex items-center justify-center shrink-0 leading-none animate-pulse"
+-              aria-hidden="true"
+-            >
+-              <Siren className="size-4" strokeWidth={1.75} />
+-            </span>
+-            SOS Alerts
+-          </Link>
+-        </div>
+-      </nav>
+-    </>
++      </div>
++      <div className="mt-4 border-t border-white/10 pt-4">
++        <Link
++          to="/sos"
++          preload="intent"
++          onClick={onLinkClick}
++          className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all ${
++            pathname === "/sos"
++              ? "bg-rose-500 text-white shadow-lg shadow-rose-950/25"
++              : "bg-rose-500/[0.12] text-rose-100 hover:bg-rose-500/20"
++          }`}
++        >
++          <span className="grid size-8 place-items-center rounded-lg bg-rose-500 text-white shadow-lg shadow-rose-950/25">
++            <Siren className="size-4 animate-pulse" strokeWidth={1.9} />
++          </span>
++          SOS Control
++          <span className="ml-auto size-2 rounded-full bg-rose-300 animate-pulse" />
++        </Link>
++      </div>
++    </nav>
+   );
+   return (
+-    <div className="min-h-screen bg-background text-foreground flex flex-col">
++    <div className="eldercare-app min-h-screen text-foreground flex flex-col">
+       <style>{`
+         @keyframes alarmWobble { from { transform: rotate(-8deg) scale(1); } to { transform: rotate(8deg) scale(1.08); } }
+         @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+@@ -923,7 +915,7 @@
+         >
+           <div
+             className="relative flex flex-col items-center justify-center pt-10 pb-8 px-6 text-white"
+-            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 60%, #2563eb 100%)" }}
++            style={{ background: "linear-gradient(135deg, #0f8a83 0%, #08727a 58%, #07515e 100%)" }}
+           >
+             <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+               <span
+@@ -958,10 +950,10 @@
+ 
+           <div className="px-6 py-5">
+             {alarmMed && (
+-              <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center gap-4 mb-6">
++              <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 flex items-center gap-4 mb-6">
+                 <div
+                   className="shrink-0 size-14 rounded-xl flex items-center justify-center text-2xl font-bold"
+-                  style={{ background: "linear-gradient(135deg,#ede9fe,#ddd6fe)" }}
++                  style={{ background: "linear-gradient(135deg,#e8f7ef,#d4eee0)" }}
+                 >
+                   {alarmMed.name[0].toUpperCase()}
+                 </div>
+@@ -997,7 +989,7 @@
+               </Button>
+               <Button
+                 className="flex-1 rounded-xl gap-2 text-white font-semibold shadow-md"
+-                style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
++                style={{ background: "linear-gradient(135deg, #0f8a83, #08727a)" }}
+                 onClick={handleAlarmTaken}
+                 disabled={globalMarkTaken.isPending}
+               >
+@@ -1026,7 +1018,7 @@
+         >
+           <div
+             className="relative flex flex-col items-center justify-center px-6 pb-8 pt-10 text-white"
+-            style={{ background: "linear-gradient(135deg, #0284c7 0%, #2563eb 55%, #4f46e5 100%)" }}
++            style={{ background: "linear-gradient(135deg, #1595a0 0%, #08727a 55%, #07515e 100%)" }}
+           >
+             <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+               <span
+@@ -1094,7 +1086,7 @@
+               </Button>
+               <Button
+                 className="flex-1 rounded-xl gap-2 text-white font-semibold shadow-md"
+-                style={{ background: "linear-gradient(135deg, #0284c7, #4f46e5)" }}
++                style={{ background: "linear-gradient(135deg, #1595a0, #08727a)" }}
+                 onClick={handleAppointmentDismiss}
+               >
+                 <CheckCircle2 className="size-4" /> Dismiss
+@@ -1140,28 +1132,52 @@
+         </div>
+       )}
+ 
+-      <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-white/50 backdrop-blur-xl z-20 hidden md:flex flex-col">
+-        <div className="px-6 pt-6 pb-4">
+-          <div className="flex items-center gap-2.5">
+-            <img
+-              src="/favicon.svg"
+-              alt="ElderCare Connect logo"
+-              className="size-8 rounded-lg shrink-0"
+-            />
+-            <div className="text-xl font-bold tracking-tight">
+-              <span className="text-brand">ElderCare</span>
+-              <span className="text-brand-accent">Connect</span>
++      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[282px] flex-col overflow-hidden border-r border-white/10 bg-[linear-gradient(180deg,#073f49_0%,#063540_56%,#052d37_100%)] text-white shadow-[18px_0_50px_-35px_rgba(2,38,45,0.85)] md:flex">
++        <div className="pointer-events-none absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
++        <div className="pointer-events-none absolute -right-24 top-24 size-56 rounded-full bg-emerald-400/15 blur-3xl" />
++
++        <div className="relative px-6 pb-4 pt-6">
++          <BrandLogo tone="light" size="md" />
++          <p className="mt-3 max-w-[210px] text-xs leading-relaxed text-emerald-50/[0.48]">
++            Care, health and family connection in one calm place.
++          </p>
++        </div>
++
++        <div className="relative mx-4 mb-3 rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-md">
++          <div className="flex items-center gap-3">
++            <EditableAvatar size="sm" />
++            <div className="min-w-0 flex-1">
++              <p className="truncate text-sm font-semibold text-white">{profile?.full_name || "User"}</p>
++              <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-[0.13em] text-emerald-200/[0.65]">
++                {isChildView ? `Monitoring ${activeParent?.full_name ?? "parent"}` : "Care recipient"}
++              </p>
+             </div>
++            <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.85)]" />
+           </div>
++          {isChildView && linkedParents.length > 0 && (
++            <Select value={activeParent?.id ?? undefined} onValueChange={(v) => setSelectedParentId(v)}>
++              <SelectTrigger className="mt-3 h-9 border-white/10 bg-black/10 text-xs text-white hover:bg-white/10">
++                <SelectValue placeholder="Select parent" />
++              </SelectTrigger>
++              <SelectContent>
++                {linkedParents.map((p) => (
++                  <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
++                ))}
++              </SelectContent>
++            </Select>
++          )}
+         </div>
+-        <div className="flex-1 overflow-y-auto px-8 py-4">
++
++        <div className="relative flex-1 overflow-y-auto px-4 pb-5 pt-2 [scrollbar-color:rgba(255,255,255,.15)_transparent] [scrollbar-width:thin]">
+           <NavContent />
+         </div>
+-        <div className="mt-auto p-4 border-t border-border bg-white/50 backdrop-blur-xl">
+-          <button
+-            onClick={signOut}
+-            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2.5 w-full rounded-lg transition-colors"
+-          >
++
++        <div className="relative m-4 mt-0 rounded-2xl border border-white/10 bg-white/[0.055] p-3">
++          <div className="mb-3 flex items-start gap-2.5 rounded-xl bg-emerald-300/10 px-3 py-2.5">
++            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-emerald-300" />
++            <p className="text-[11px] leading-relaxed text-emerald-50/[0.65]">Your care data stays private and protected.</p>
++          </div>
++          <button onClick={signOut} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-100 transition-colors hover:bg-rose-500/15 hover:text-white">
+             <LogOut className="size-4 shrink-0" /> Sign out
+           </button>
+         </div>
+@@ -1176,137 +1192,100 @@
+       )}
+ 
+       <aside
+-        className={`fixed left-0 top-0 bottom-0 w-72 max-w-[85vw] border-r border-border bg-white z-50 md:hidden flex flex-col transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}
++        className={`fixed inset-y-0 left-0 z-50 flex w-[292px] max-w-[88vw] flex-col overflow-hidden border-r border-white/10 bg-[linear-gradient(180deg,#073f49_0%,#06333d_100%)] text-white shadow-2xl transition-transform duration-300 ease-out md:hidden ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}
+         aria-label="Mobile navigation"
+       >
+-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
+-          <div className="flex items-center gap-3">
+-            <img
+-              src="/favicon.svg"
+-              alt="ElderCare Connect logo"
+-              className="size-8 rounded-lg shrink-0"
+-            />
+-            <div className="text-lg font-bold tracking-tight">
+-              <span className="text-brand">ElderCare</span>
+-              <span className="text-brand-accent">Connect</span>
+-            </div>
+-          </div>
+-          <button
+-            onClick={() => setDrawerOpen(false)}
+-            className="p-2 rounded-lg text-muted-foreground hover:bg-stone-100 transition-colors"
+-            aria-label="Close menu"
+-          >
++        <div className="pointer-events-none absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
++        <div className="relative flex items-center justify-between border-b border-white/10 px-5 py-5">
++          <BrandLogo tone="light" size="sm" />
++          <button onClick={() => setDrawerOpen(false)} className="grid size-9 place-items-center rounded-xl bg-white/[0.08] text-white/75 hover:bg-white/[0.14] hover:text-white" aria-label="Close menu">
+             <X className="size-5" />
+           </button>
+         </div>
+ 
+-        <div className="px-6 py-4 border-b border-border">
++        <div className="relative mx-4 mt-4 rounded-2xl border border-white/10 bg-white/[0.07] p-3.5">
+           <div className="flex items-center gap-3">
+             <EditableAvatar size="sm" />
+-            <div className="min-w-0">
+-              <p className="font-semibold text-sm truncate">{profile?.full_name || "User"}</p>
+-              <p className="text-xs text-muted-foreground font-mono uppercase truncate">
+-                {isChildView ? "Monitoring" : "Parent"}
+-              </p>
++            <div className="min-w-0 flex-1">
++              <p className="truncate text-sm font-semibold text-white">{profile?.full_name || "User"}</p>
++              <p className="truncate text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-200/[0.6]">{isChildView ? "Family monitoring" : "Care recipient"}</p>
+             </div>
+           </div>
+           {isChildView && linkedParents.length > 0 && (
+-            <div className="mt-3">
+-              <Select
+-                value={activeParent?.id ?? undefined}
+-                onValueChange={(v) => setSelectedParentId(v)}
+-              >
+-                <SelectTrigger className="h-8 rounded-lg border-border bg-stone-50 text-xs font-medium w-full">
+-                  <SelectValue placeholder="Select parent" />
+-                </SelectTrigger>
+-                <SelectContent>
+-                  {linkedParents.map((p) => (
+-                    <SelectItem key={p.id} value={p.id}>
+-                      {p.full_name}
+-                    </SelectItem>
+-                  ))}
+-                </SelectContent>
+-              </Select>
+-            </div>
++            <Select value={activeParent?.id ?? undefined} onValueChange={(v) => setSelectedParentId(v)}>
++              <SelectTrigger className="mt-3 h-9 border-white/10 bg-black/10 text-xs text-white">
++                <SelectValue placeholder="Select parent" />
++              </SelectTrigger>
++              <SelectContent>
++                {linkedParents.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
++              </SelectContent>
++            </Select>
+           )}
+         </div>
+ 
+-        <div className="flex-1 overflow-y-auto px-4 py-4">
++        <div className="relative flex-1 overflow-y-auto px-4 py-4">
+           <NavContent onLinkClick={() => setDrawerOpen(false)} />
+         </div>
+-
+-        <div className="p-4 border-t border-border">
+-          <button
+-            onClick={signOut}
+-            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2.5 w-full rounded-lg transition-colors"
+-          >
+-            <LogOut className="size-4 shrink-0" /> Sign out
++        <div className="relative border-t border-white/10 p-4">
++          <button onClick={signOut} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-100 hover:bg-rose-500/15 hover:text-white">
++            <LogOut className="size-4" /> Sign out
+           </button>
+         </div>
+       </aside>
+ 
+-      <main className="md:pl-64 flex flex-col flex-1">
+-        <header className="h-16 sm:h-20 border-b border-border flex items-center gap-3 px-4 sm:px-6 md:px-10 bg-background/70 sticky top-0 backdrop-blur-md z-10">
+-          <button
+-            onClick={() => setDrawerOpen(true)}
+-            className="md:hidden p-2 -ml-1 rounded-lg text-muted-foreground hover:bg-stone-100 transition-colors shrink-0"
+-            aria-label="Open menu"
+-          >
+-            <Menu className="size-5" />
+-          </button>
+-
+-          <div className="flex items-center gap-3 min-w-0 flex-1">
+-            <EditableAvatar size="md" />
+-            <div className="min-w-0 hidden sm:block">
+-              <p className="font-display text-base sm:text-lg font-bold leading-none truncate">
+-                {profile?.full_name || "Welcome"}
+-              </p>
+-              <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+-                {isChildView
+-                  ? `Monitoring · ${activeParent?.full_name ?? "No parent linked"}`
+-                  : "Active now · Home"}
+-              </span>
++      <main className="flex min-h-screen flex-1 flex-col md:pl-[282px]">
++        <header className="sticky top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-4 lg:px-8">
++          <div className="mx-auto flex min-h-[68px] max-w-[1460px] items-center gap-3 rounded-2xl border border-white/80 bg-white/[0.08]8 px-3.5 shadow-[0_16px_40px_-28px_rgba(3,59,68,0.45)] backdrop-blur-xl sm:px-5">
++            <button onClick={() => setDrawerOpen(true)} className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-white text-muted-foreground shadow-sm hover:bg-accent md:hidden" aria-label="Open menu">
++              <Menu className="size-5" />
++            </button>
++
++            <div className="min-w-0 shrink-0">
++              <p className="care-kicker hidden sm:block">Care workspace</p>
++              <p className="truncate font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">{activePageLabel}</p>
+             </div>
+ 
+-            <p className="font-display text-base font-bold leading-none truncate sm:hidden">
+-              {profile?.full_name?.split(" ")[0] || "Welcome"}
+-            </p>
++            <div className="mx-auto hidden w-full max-w-xl lg:block">
++              <label className="relative block">
++                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
++                <input type="search" placeholder="Search medicines, appointments, records..." className="h-11 w-full rounded-xl border border-border/90 bg-[hsl(150_24%_97%)] pl-10 pr-4 text-sm outline-none transition focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10" />
++              </label>
++            </div>
++
++            <div className="ml-auto flex items-center gap-2">
++              {isChildView && linkedParents.length > 0 && (
++                <Select value={activeParent?.id ?? undefined} onValueChange={(v) => setSelectedParentId(v)}>
++                  <SelectTrigger className="hidden h-10 w-auto min-w-[150px] rounded-xl border-border bg-white text-sm shadow-sm sm:flex">
++                    <SelectValue placeholder="Select parent" />
++                  </SelectTrigger>
++                  <SelectContent>
++                    {linkedParents.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
++                  </SelectContent>
++                </Select>
++              )}
++
++              <Link to="/notifications" preload="intent" className="relative grid size-10 place-items-center rounded-xl border border-border bg-white text-muted-foreground shadow-sm transition hover:border-primary/25 hover:bg-accent hover:text-primary" aria-label="Notifications">
++                <Bell className="size-5" />
++                {unreadCount > 0 && (
++                  <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-[color:var(--brand-orange)] px-1 text-[9px] font-bold text-white shadow-sm">
++                    {unreadCount > 99 ? "99+" : unreadCount}
++                  </span>
++                )}
++              </Link>
++
++              <div className="hidden items-center gap-2 rounded-xl border border-border bg-white py-1.5 pl-1.5 pr-3 shadow-sm sm:flex">
++                <EditableAvatar size="sm" />
++                <div className="max-w-[130px] min-w-0">
++                  <p className="truncate text-xs font-semibold text-foreground">{profile?.full_name || "User"}</p>
++                  <p className="truncate text-[10px] text-muted-foreground">{isChildView ? `Monitoring ${activeParent?.full_name ?? "parent"}` : "Active now"}</p>
++                </div>
++                <ChevronDown className="size-3.5 text-muted-foreground" />
++              </div>
++            </div>
+           </div>
+-
+-          <Link
+-            to="/notifications"
+-            preload="intent"
+-            className="relative p-2 rounded-xl hover:bg-stone-100 transition-colors shrink-0"
+-            aria-label="Notifications"
+-          >
+-            <Bell className="size-5 text-muted-foreground" />
+-            {unreadCount > 0 && (
+-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 shadow">
+-                {unreadCount > 99 ? "99+" : unreadCount}
+-              </span>
+-            )}
+-          </Link>
+-
+-          {isChildView && linkedParents.length > 0 && (
+-            <Select
+-              value={activeParent?.id ?? undefined}
+-              onValueChange={(v) => setSelectedParentId(v)}
+-            >
+-              <SelectTrigger className="hidden sm:flex h-9 rounded-full border-border bg-stone-100 text-sm font-medium gap-2 px-4 w-auto max-w-[160px]">
+-                <SelectValue placeholder="Select parent" />
+-              </SelectTrigger>
+-              <SelectContent>
+-                {linkedParents.map((p) => (
+-                  <SelectItem key={p.id} value={p.id}>
+-                    {p.full_name}
+-                  </SelectItem>
+-                ))}
+-              </SelectContent>
+-            </Select>
+-          )}
+         </header>
+ 
+-        <div className="p-4 sm:p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
++        <div className="eldercare-page mx-auto w-full max-w-[1460px] flex-1 animate-fade-in px-3 pb-8 pt-5 sm:px-5 sm:pb-10 sm:pt-6 lg:px-8 lg:pb-12">
+           {children}
+         </div>
+       </main>
+diff --git a/src/components/BrandLogo.tsx b/src/components/BrandLogo.tsx
+--- a/src/components/BrandLogo.tsx
++++ b/src/components/BrandLogo.tsx
+@@ -1,4 +1,5 @@
+ import { cn } from "@/lib/utils";
++
+ export function BrandIcon({
+   className,
+   rounded = true,
+@@ -8,63 +9,93 @@
+ }) {
+   return (
+     <svg
+-      viewBox="0 0 64 64"
++      viewBox="0 0 72 72"
+       xmlns="http://www.w3.org/2000/svg"
+       className={cn("shrink-0", className)}
+       aria-hidden="true"
+     >
+       <defs>
+-        <linearGradient
+-          id="ec-brand-grad"
+-          x1="0"
+-          y1="0"
+-          x2="64"
+-          y2="64"
+-          gradientUnits="userSpaceOnUse"
+-        >
+-          <stop offset="0" stopColor="hsl(222 47% 22%)" />
+-          <stop offset="1" stopColor="hsl(217 91% 55%)" />
++        <linearGradient id="care-mark" x1="9" y1="6" x2="63" y2="68" gradientUnits="userSpaceOnUse">
++          <stop offset="0" stopColor="#178f91" />
++          <stop offset="0.62" stopColor="#4ea77b" />
++          <stop offset="1" stopColor="#ed9349" />
+         </linearGradient>
++        <linearGradient id="care-mark-soft" x1="12" y1="8" x2="58" y2="65" gradientUnits="userSpaceOnUse">
++          <stop offset="0" stopColor="#ffffff" stopOpacity="0.98" />
++          <stop offset="1" stopColor="#f2fbf6" stopOpacity="0.96" />
++        </linearGradient>
++        <filter id="care-shadow" x="-30%" y="-30%" width="160%" height="160%">
++          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#063f49" floodOpacity="0.18" />
++        </filter>
+       </defs>
+-      <rect width="64" height="64" rx={rounded ? 16 : 0} fill="url(#ec-brand-grad)" />
++
++      {rounded && (
++        <rect x="2" y="2" width="68" height="68" rx="20" fill="url(#care-mark-soft)" filter="url(#care-shadow)" />
++      )}
++
+       <path
+-        d="M32 48s-13-8.2-13-18a8 8 0 0 1 13-6.2A8 8 0 0 1 45 30c0 9.8-13 18-13 18Z"
+-        fill="#ffffff"
++        d="M36 61.5S13.5 49.4 13.5 30.7c0-8 5.7-13.9 13.2-13.9 4 0 7.6 1.9 9.3 5.1 1.8-3.2 5.4-5.1 9.4-5.1 7.4 0 13.1 5.9 13.1 13.9C58.5 49.4 36 61.5 36 61.5Z"
++        fill="none"
++        stroke="url(#care-mark)"
++        strokeWidth="5.2"
++        strokeLinecap="round"
++        strokeLinejoin="round"
+       />
+       <path
+-        d="M22 32h5l2.4-4 3.6 8 2.6-5h6.4"
+-        stroke="hsl(222 47% 22%)"
++        d="M25 37.5 36 28l11 9.5v11H25v-11Z"
++        fill="#ffffff"
++        stroke="#0d7378"
+         strokeWidth="2.4"
+-        strokeLinecap="round"
+         strokeLinejoin="round"
+-        fill="none"
+       />
++      <path d="M32.5 48.5v-7h7v7" fill="#eaf7f0" stroke="#4ea77b" strokeWidth="2" />
++      <circle cx="20.5" cy="18" r="6" fill="#178f91" />
++      <circle cx="51.5" cy="18" r="6" fill="#ed9349" />
++      <path d="M17 25.5c-4.8 1.7-7 5-7.5 9.2" fill="none" stroke="#178f91" strokeWidth="3.5" strokeLinecap="round" />
++      <path d="M55 25.5c4.8 1.7 7 5 7.5 9.2" fill="none" stroke="#ed9349" strokeWidth="3.5" strokeLinecap="round" />
++      <path d="M28.5 18.5c2.2-2.1 4.7-3.1 7.5-3.1 2.8 0 5.3 1 7.5 3.1" fill="none" stroke="#72b78d" strokeWidth="2.8" strokeLinecap="round" strokeDasharray="1.5 4" />
+     </svg>
+   );
+ }
++
+ export function BrandLogo({
+   className,
+   size = "md",
+   tone = "dark",
++  stacked = false,
+ }: {
+   className?: string;
+   size?: "sm" | "md" | "lg";
+   tone?: "dark" | "light";
++  stacked?: boolean;
+ }) {
+-  const iconSize = size === "lg" ? "size-11" : size === "sm" ? "size-7" : "size-9";
+-  const text = size === "lg" ? "text-2xl" : size === "sm" ? "text-base" : "text-lg";
++  const iconSize = size === "lg" ? "size-14" : size === "sm" ? "size-8" : "size-11";
++  const titleSize = size === "lg" ? "text-[2rem]" : size === "sm" ? "text-base" : "text-xl";
++  const subtitleSize = size === "lg" ? "text-base" : size === "sm" ? "text-[10px]" : "text-xs";
++
+   return (
+-    <div className={cn("inline-flex items-center gap-2.5", className)}>
+-      <BrandIcon className={cn(iconSize, "shadow-sm rounded-2xl")} />
+-      <span
+-        className={cn(
+-          "font-display font-bold tracking-tight leading-none",
+-          text,
+-          tone === "light" ? "text-white" : "text-foreground",
+-        )}
+-      >
+-        ElderCare<span className="text-[color:var(--brand-accent)]"> Connect</span>
+-      </span>
++    <div className={cn("inline-flex items-center gap-3", stacked && "items-start", className)}>
++      <BrandIcon className={iconSize} />
++      <div className={cn("leading-none", stacked && "pt-0.5")}>
++        <div
++          className={cn(
++            "font-display font-bold tracking-[-0.035em]",
++            titleSize,
++            tone === "light" ? "text-white" : "text-[color:var(--brand)]",
++          )}
++        >
++          ElderCare
++        </div>
++        <div
++          className={cn(
++            "mt-0.5 font-semibold tracking-[0.08em]",
++            subtitleSize,
++            tone === "light" ? "text-emerald-200" : "text-[color:var(--brand-accent)]",
++          )}
++        >
++          Connect
++        </div>
++      </div>
+     </div>
+   );
+ }
+diff --git a/src/components/brand/FamilyCareIllustration.tsx b/src/components/brand/FamilyCareIllustration.tsx
+new file mode 100644
+--- /dev/null
++++ b/src/components/brand/FamilyCareIllustration.tsx
+@@ -0,0 +1,101 @@
++import { Bell, CalendarDays, HeartPulse, Smartphone } from "lucide-react";
++
++export function FamilyCareIllustration() {
++  return (
++    <div className="relative mx-auto aspect-[0.92] w-full max-w-[510px] select-none" aria-hidden="true">
++      <div className="auth-glow-ring left-[12%] top-[9%] h-[73%] w-[76%]" />
++      <div className="auth-glow-ring left-[19%] top-[15%] h-[60%] w-[63%] opacity-70" />
++
++      <div className="absolute left-[2%] top-[21%] z-20 grid size-16 place-items-center rounded-full border border-white/30 bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-2xl animate-float-care">
++        <Bell className="size-7" />
++      </div>
++      <div className="absolute right-[2%] top-[22%] z-20 grid size-16 place-items-center rounded-full border border-white/25 bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-2xl animate-float-care [animation-delay:-1.4s]">
++        <span className="text-xl font-bold">SOS</span>
++      </div>
++      <div className="absolute right-[28%] top-[1%] z-20 grid size-16 place-items-center rounded-full border border-white/25 bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-2xl animate-float-care [animation-delay:-2.2s]">
++        <CalendarDays className="size-7" />
++      </div>
++
++      <svg viewBox="0 0 520 560" className="absolute inset-x-0 bottom-0 h-[92%] w-full drop-shadow-[0_34px_40px_rgba(2,47,54,0.38)]">
++        <defs>
++          <linearGradient id="elder-shirt" x1="0" y1="0" x2="1" y2="1">
++            <stop stopColor="#fff8e7" />
++            <stop offset="1" stopColor="#e7d9bd" />
++          </linearGradient>
++          <linearGradient id="child-shirt" x1="0" y1="0" x2="1" y2="1">
++            <stop stopColor="#147b80" />
++            <stop offset="1" stopColor="#07545e" />
++          </linearGradient>
++          <linearGradient id="seat" x1="0" y1="0" x2="0" y2="1">
++            <stop stopColor="#0c5961" />
++            <stop offset="1" stopColor="#063c47" />
++          </linearGradient>
++          <radialGradient id="skin" cx="45%" cy="30%" r="75%">
++            <stop stopColor="#f8cda9" />
++            <stop offset="1" stopColor="#d58e64" />
++          </radialGradient>
++          <radialGradient id="skin2" cx="44%" cy="26%" r="75%">
++            <stop stopColor="#f5bd90" />
++            <stop offset="1" stopColor="#c77d53" />
++          </radialGradient>
++          <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
++            <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#002d36" floodOpacity="0.25" />
++          </filter>
++        </defs>
++
++        <ellipse cx="270" cy="510" rx="208" ry="34" fill="#043d47" opacity="0.55" />
++        <path d="M86 431c34-83 103-126 202-126 92 0 151 43 177 126l-4 82H91l-5-82Z" fill="url(#seat)" />
++
++        <g filter="url(#soft-shadow)">
++          <path d="M96 493c0-93 28-155 87-187 55-30 114-16 143 42 19 38 23 88 18 145H96Z" fill="url(#elder-shirt)" />
++          <path d="M284 493c-9-95 9-168 57-208 48-41 115-21 141 42 18 44 22 101 16 166H284Z" fill="url(#child-shirt)" />
++        </g>
++
++        <g>
++          <path d="M152 268c-14-19-13-50 2-72 16-23 43-36 72-33 39 4 64 35 62 74-2 44-28 84-70 88-29 3-51-18-66-57Z" fill="url(#skin)" />
++          <path d="M144 225c-8-30 7-65 34-82 28-17 67-12 88 8 18 17 25 43 19 65-7-15-19-27-34-35-24 20-57 29-90 22-8 8-13 15-17 22Z" fill="#f1eee7" />
++          <path d="M153 210c10-34 34-55 71-61" fill="none" stroke="#ffffff" strokeWidth="17" strokeLinecap="round" opacity="0.92" />
++          <path d="M154 212c-8 16-10 32-7 48" fill="none" stroke="#ddd8ce" strokeWidth="14" strokeLinecap="round" />
++          <ellipse cx="190" cy="235" rx="22" ry="17" fill="none" stroke="#4f3429" strokeWidth="4" />
++          <ellipse cx="244" cy="235" rx="22" ry="17" fill="none" stroke="#4f3429" strokeWidth="4" />
++          <path d="M212 234h10" stroke="#4f3429" strokeWidth="4" strokeLinecap="round" />
++          <circle cx="191" cy="236" r="3.4" fill="#35241d" />
++          <circle cx="243" cy="236" r="3.4" fill="#35241d" />
++          <path d="M205 275c11 11 27 11 39 0" fill="none" stroke="#8c4937" strokeWidth="4" strokeLinecap="round" />
++        </g>
++
++        <g>
++          <path d="M309 217c-2-42 30-75 75-75 46 0 80 33 78 77-2 49-34 91-78 91-43 0-73-41-75-93Z" fill="url(#skin2)" />
++          <path d="M311 198c1-42 31-76 75-78 34-2 66 18 78 49-12-9-29-14-47-13-28 2-49 14-66 38-14 19-26 21-40 4Z" fill="#3d2418" />
++          <path d="M330 151c29-31 86-34 120-3" fill="none" stroke="#4c2c1b" strokeWidth="17" strokeLinecap="round" />
++          <circle cx="356" cy="217" r="3.6" fill="#35241d" />
++          <circle cx="414" cy="216" r="3.6" fill="#35241d" />
++          <path d="M373 255c15 12 34 10 46-3" fill="none" stroke="#8c4937" strokeWidth="4" strokeLinecap="round" />
++        </g>
++
++        <path d="M290 370c43-35 67-43 109-38 20 2 35 14 39 31 5 21-8 37-28 38-29 0-57 7-83 25" fill="none" stroke="url(#skin2)" strokeWidth="31" strokeLinecap="round" />
++        <path d="M291 368c38-28 69-39 109-34" fill="none" stroke="#07545e" strokeWidth="45" strokeLinecap="round" />
++        <path d="M248 360c29 29 43 64 43 103" fill="none" stroke="url(#elder-shirt)" strokeWidth="53" strokeLinecap="round" />
++
++        <g transform="translate(213 337) rotate(-7)">
++          <rect x="0" y="0" width="69" height="119" rx="13" fill="#26333b" />
++          <rect x="7" y="9" width="55" height="91" rx="8" fill="#d9f5e6" />
++          <circle cx="35" cy="108" r="4" fill="#7c8990" />
++          <path d="M17 45h35M17 57h25M17 69h30" stroke="#4ea77b" strokeWidth="5" strokeLinecap="round" />
++          <circle cx="46" cy="28" r="10" fill="#178f91" />
++          <path d="M42 28h8M46 24v8" stroke="white" strokeWidth="2" strokeLinecap="round" />
++        </g>
++
++        <path d="M367 346c-19 24-42 39-70 49" fill="none" stroke="url(#skin2)" strokeWidth="24" strokeLinecap="round" />
++        <circle cx="296" cy="397" r="17" fill="url(#skin2)" />
++      </svg>
++
++      <div className="absolute bottom-[4%] left-[44%] z-30 grid size-12 place-items-center rounded-2xl border border-white/25 bg-white/15 text-white backdrop-blur-md">
++        <Smartphone className="size-5" />
++      </div>
++      <div className="absolute bottom-[12%] right-[8%] z-20 grid size-12 place-items-center rounded-2xl border border-white/20 bg-emerald-400/20 text-emerald-100 backdrop-blur-md animate-pulse-soft">
++        <HeartPulse className="size-5" />
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/ui/alert.tsx b/src/components/ui/alert.tsx
+--- a/src/components/ui/alert.tsx
++++ b/src/components/ui/alert.tsx
+@@ -1,43 +1,30 @@
+ import * as React from "react";
+ import { cva, type VariantProps } from "class-variance-authority";
+ import { cn } from "@/lib/utils";
++
+ const alertVariants = cva(
+-  "relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7",
++  "relative w-full rounded-2xl border px-4 py-3.5 text-sm shadow-sm [&>svg+div]:translate-y-[-2px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg~*]:pl-7",
+   {
+     variants: {
+       variant: {
+-        default: "bg-background text-foreground",
+-        destructive:
+-          "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
++        default: "border-emerald-200/70 bg-emerald-50/80 text-emerald-950 [&>svg]:text-emerald-700",
++        destructive: "border-rose-200 bg-rose-50 text-rose-800 [&>svg]:text-rose-600",
+       },
+     },
+-    defaultVariants: {
+-      variant: "default",
+-    },
++    defaultVariants: { variant: "default" },
+   },
+ );
+-const Alert = React.forwardRef<
+-  HTMLDivElement,
+-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
+->(({ className, variant, ...props }, ref) => (
+-  <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+-));
++
++const Alert = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>>(
++  ({ className, variant, ...props }, ref) => <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />,
++);
+ Alert.displayName = "Alert";
+ const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+-  ({ className, ...props }, ref) => (
+-    <h5
+-      ref={ref}
+-      className={cn("mb-1 font-medium leading-none tracking-tight", className)}
+-      {...props}
+-    />
+-  ),
++  ({ className, ...props }, ref) => <h5 ref={ref} className={cn("mb-1 font-semibold leading-none tracking-tight", className)} {...props} />,
+ );
+ AlertTitle.displayName = "AlertTitle";
+-const AlertDescription = React.forwardRef<
+-  HTMLParagraphElement,
+-  React.HTMLAttributes<HTMLParagraphElement>
+->(({ className, ...props }, ref) => (
+-  <div ref={ref} className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />
+-));
++const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
++  ({ className, ...props }, ref) => <div ref={ref} className={cn("text-sm leading-relaxed [&_p]:leading-relaxed", className)} {...props} />,
++);
+ AlertDescription.displayName = "AlertDescription";
+ export { Alert, AlertTitle, AlertDescription };
+diff --git a/src/components/ui/avatar.tsx b/src/components/ui/avatar.tsx
+--- a/src/components/ui/avatar.tsx
++++ b/src/components/ui/avatar.tsx
+@@ -2,40 +2,16 @@
+ import * as React from "react";
+ import * as AvatarPrimitive from "@radix-ui/react-avatar";
+ import { cn } from "@/lib/utils";
+-const Avatar = React.forwardRef<
+-  React.ElementRef<typeof AvatarPrimitive.Root>,
+-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
+->(({ className, ...props }, ref) => (
+-  <AvatarPrimitive.Root
+-    ref={ref}
+-    className={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full", className)}
+-    {...props}
+-  />
+-));
++const Avatar = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Root>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>>(
++  ({ className, ...props }, ref) => <AvatarPrimitive.Root ref={ref} className={cn("relative flex size-10 shrink-0 overflow-hidden rounded-full border-2 border-white shadow-md ring-1 ring-emerald-200/70", className)} {...props} />,
++);
+ Avatar.displayName = AvatarPrimitive.Root.displayName;
+-const AvatarImage = React.forwardRef<
+-  React.ElementRef<typeof AvatarPrimitive.Image>,
+-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
+->(({ className, ...props }, ref) => (
+-  <AvatarPrimitive.Image
+-    ref={ref}
+-    className={cn("aspect-square h-full w-full", className)}
+-    {...props}
+-  />
+-));
++const AvatarImage = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Image>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>>(
++  ({ className, ...props }, ref) => <AvatarPrimitive.Image ref={ref} className={cn("aspect-square size-full object-cover", className)} {...props} />,
++);
+ AvatarImage.displayName = AvatarPrimitive.Image.displayName;
+-const AvatarFallback = React.forwardRef<
+-  React.ElementRef<typeof AvatarPrimitive.Fallback>,
+-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
+->(({ className, ...props }, ref) => (
+-  <AvatarPrimitive.Fallback
+-    ref={ref}
+-    className={cn(
+-      "flex h-full w-full items-center justify-center rounded-full bg-muted",
+-      className,
+-    )}
+-    {...props}
+-  />
+-));
++const AvatarFallback = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Fallback>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>>(
++  ({ className, ...props }, ref) => <AvatarPrimitive.Fallback ref={ref} className={cn("flex size-full items-center justify-center rounded-full bg-[linear-gradient(135deg,hsl(156_34%_91%),hsl(183_45%_88%))] text-sm font-bold text-primary", className)} {...props} />,
++);
+ AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
+ export { Avatar, AvatarImage, AvatarFallback };
+diff --git a/src/components/ui/badge.tsx b/src/components/ui/badge.tsx
+--- a/src/components/ui/badge.tsx
++++ b/src/components/ui/badge.tsx
+@@ -1,26 +1,23 @@
+ import * as React from "react";
+ import { cva, type VariantProps } from "class-variance-authority";
+ import { cn } from "@/lib/utils";
++
+ const badgeVariants = cva(
+-  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
++  "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold leading-none transition-colors focus:outline-none focus:ring-4 focus:ring-ring/15",
+   {
+     variants: {
+       variant: {
+-        default: "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
+-        secondary:
+-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+-        destructive:
+-          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
+-        outline: "text-foreground",
++        default: "border-transparent bg-primary text-primary-foreground shadow-sm",
++        secondary: "border-emerald-200/70 bg-emerald-50 text-emerald-700",
++        destructive: "border-rose-200 bg-rose-50 text-rose-700",
++        outline: "border-border bg-white/70 text-foreground",
+       },
+     },
+-    defaultVariants: {
+-      variant: "default",
+-    },
++    defaultVariants: { variant: "default" },
+   },
+ );
+-export interface BadgeProps
+-  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
++
++export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+ function Badge({ className, variant, ...props }: BadgeProps) {
+   return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
+ }
+diff --git a/src/components/ui/button.tsx b/src/components/ui/button.tsx
+--- a/src/components/ui/button.tsx
++++ b/src/components/ui/button.tsx
+@@ -2,24 +2,28 @@
+ import { Slot } from "@radix-ui/react-slot";
+ import { cva, type VariantProps } from "class-variance-authority";
+ import { cn } from "@/lib/utils";
++
+ const buttonVariants = cva(
+-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
++  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.985]",
+   {
+     variants: {
+       variant: {
+-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
++        default:
++          "border border-transparent bg-[linear-gradient(135deg,hsl(183_78%_29%),hsl(183_78%_22%))] text-primary-foreground shadow-[0_12px_24px_-16px_hsl(183_78%_20%/.75)] hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-16px_hsl(183_78%_20%/.72)]",
++        destructive:
++          "border border-transparent bg-[linear-gradient(135deg,hsl(6_78%_58%),hsl(6_78%_48%))] text-destructive-foreground shadow-[0_12px_24px_-16px_hsl(6_78%_42%/.65)] hover:-translate-y-0.5",
+         outline:
+-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+-        ghost: "hover:bg-accent hover:text-accent-foreground",
+-        link: "text-primary underline-offset-4 hover:underline",
++          "border border-border bg-white/90 text-foreground shadow-sm hover:-translate-y-0.5 hover:border-primary/25 hover:bg-accent/55 hover:text-primary hover:shadow-md",
++        secondary:
++          "border border-emerald-200/70 bg-[linear-gradient(135deg,hsl(151_42%_92%),hsl(151_36%_88%))] text-[hsl(183_72%_22%)] shadow-sm hover:-translate-y-0.5 hover:bg-[hsl(151_42%_89%)]",
++        ghost: "text-muted-foreground hover:bg-accent hover:text-primary",
++        link: "h-auto rounded-none p-0 text-primary underline-offset-4 hover:underline",
+       },
+       size: {
+-        default: "h-9 px-4 py-2",
+-        sm: "h-8 rounded-md px-3 text-xs",
+-        lg: "h-10 rounded-md px-8",
+-        icon: "h-9 w-9",
++        default: "h-10 px-4 py-2",
++        sm: "h-8 rounded-lg px-3 text-xs",
++        lg: "h-12 rounded-xl px-7 text-sm",
++        icon: "size-10 p-0",
+       },
+     },
+     defaultVariants: {
+@@ -28,17 +32,18 @@
+     },
+   },
+ );
++
+ export interface ButtonProps
+   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+   asChild?: boolean;
+ }
++
+ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+   ({ className, variant, size, asChild = false, ...props }, ref) => {
+     const Comp = asChild ? Slot : "button";
+-    return (
+-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+-    );
++    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+   },
+ );
+ Button.displayName = "Button";
++
+ export { Button, buttonVariants };
+diff --git a/src/components/ui/card.tsx b/src/components/ui/card.tsx
+--- a/src/components/ui/card.tsx
++++ b/src/components/ui/card.tsx
+@@ -1,47 +1,49 @@
+ import * as React from "react";
+ import { cn } from "@/lib/utils";
++
+ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+   ({ className, ...props }, ref) => (
+     <div
+       ref={ref}
+-      className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
++      className={cn(
++        "rounded-2xl border border-border/90 bg-card/96 text-card-foreground shadow-[0_18px_42px_-32px_hsl(188_60%_18%/.35),0_4px_14px_-8px_hsl(188_60%_18%/.15)]",
++        className,
++      )}
+       {...props}
+     />
+   ),
+ );
+ Card.displayName = "Card";
++
+ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+   ({ className, ...props }, ref) => (
+-    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
++    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-5 sm:p-6", className)} {...props} />
+   ),
+ );
+ CardHeader.displayName = "CardHeader";
++
+ const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+   ({ className, ...props }, ref) => (
+-    <div
+-      ref={ref}
+-      className={cn("font-semibold leading-none tracking-tight", className)}
+-      {...props}
+-    />
++    <div ref={ref} className={cn("font-display text-lg font-bold leading-none tracking-tight", className)} {...props} />
+   ),
+ );
+ CardTitle.displayName = "CardTitle";
++
+ const CardDescription = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+   ({ className, ...props }, ref) => (
+-    <div ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
++    <div ref={ref} className={cn("text-sm leading-relaxed text-muted-foreground", className)} {...props} />
+   ),
+ );
+ CardDescription.displayName = "CardDescription";
++
+ const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+-  ({ className, ...props }, ref) => (
+-    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+-  ),
++  ({ className, ...props }, ref) => <div ref={ref} className={cn("p-5 pt-0 sm:p-6 sm:pt-0", className)} {...props} />,
+ );
+ CardContent.displayName = "CardContent";
++
+ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+-  ({ className, ...props }, ref) => (
+-    <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
+-  ),
++  ({ className, ...props }, ref) => <div ref={ref} className={cn("flex items-center p-5 pt-0 sm:p-6 sm:pt-0", className)} {...props} />,
+ );
+ CardFooter.displayName = "CardFooter";
++
+ export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+diff --git a/src/components/ui/checkbox.tsx b/src/components/ui/checkbox.tsx
+--- a/src/components/ui/checkbox.tsx
++++ b/src/components/ui/checkbox.tsx
+@@ -2,22 +2,16 @@
+ import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
+ import { Check } from "lucide-react";
+ import { cn } from "@/lib/utils";
+-const Checkbox = React.forwardRef<
+-  React.ElementRef<typeof CheckboxPrimitive.Root>,
+-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
+->(({ className, ...props }, ref) => (
+-  <CheckboxPrimitive.Root
+-    ref={ref}
+-    className={cn(
+-      "grid place-content-center peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+-      className,
+-    )}
+-    {...props}
+-  >
+-    <CheckboxPrimitive.Indicator className={cn("grid place-content-center text-current")}>
+-      <Check className="h-4 w-4" />
+-    </CheckboxPrimitive.Indicator>
+-  </CheckboxPrimitive.Root>
+-));
++const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>>(
++  ({ className, ...props }, ref) => (
++    <CheckboxPrimitive.Root
++      ref={ref}
++      className={cn("peer grid size-5 shrink-0 cursor-pointer place-content-center rounded-md border border-primary/45 bg-white shadow-sm transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground", className)}
++      {...props}
++    >
++      <CheckboxPrimitive.Indicator className="grid place-content-center text-current"><Check className="size-4" /></CheckboxPrimitive.Indicator>
++    </CheckboxPrimitive.Root>
++  ),
++);
+ Checkbox.displayName = CheckboxPrimitive.Root.displayName;
+ export { Checkbox };
+diff --git a/src/components/ui/dialog.tsx b/src/components/ui/dialog.tsx
+--- a/src/components/ui/dialog.tsx
++++ b/src/components/ui/dialog.tsx
+@@ -3,89 +3,57 @@
+ import * as DialogPrimitive from "@radix-ui/react-dialog";
+ import { X } from "lucide-react";
+ import { cn } from "@/lib/utils";
++
+ const Dialog = DialogPrimitive.Root;
+ const DialogTrigger = DialogPrimitive.Trigger;
+ const DialogPortal = DialogPrimitive.Portal;
+ const DialogClose = DialogPrimitive.Close;
+-const DialogOverlay = React.forwardRef<
+-  React.ElementRef<typeof DialogPrimitive.Overlay>,
+-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+->(({ className, ...props }, ref) => (
+-  <DialogPrimitive.Overlay
+-    ref={ref}
+-    className={cn(
+-      "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+-      className,
+-    )}
+-    {...props}
+-  />
+-));
++
++const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(
++  ({ className, ...props }, ref) => (
++    <DialogPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-[#062f38]/58 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} />
++  ),
++);
+ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
+-const DialogContent = React.forwardRef<
+-  React.ElementRef<typeof DialogPrimitive.Content>,
+-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+->(({ className, children, ...props }, ref) => (
+-  <DialogPortal>
+-    <DialogOverlay />
+-    <DialogPrimitive.Content
+-      ref={ref}
+-      className={cn(
+-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg",
+-        className,
+-      )}
+-      {...props}
+-    >
+-      {children}
+-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+-        <X className="h-4 w-4" />
+-        <span className="sr-only">Close</span>
+-      </DialogPrimitive.Close>
+-    </DialogPrimitive.Content>
+-  </DialogPortal>
+-));
++
++const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(
++  ({ className, children, ...props }, ref) => (
++    <DialogPortal>
++      <DialogOverlay />
++      <DialogPrimitive.Content
++        ref={ref}
++        className={cn(
++          "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-2xl border border-white/80 bg-white/98 p-6 shadow-[0_30px_80px_-32px_rgba(2,43,51,.62)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:p-7",
++          className,
++        )}
++        {...props}
++      >
++        {children}
++        <DialogPrimitive.Close className="absolute right-4 top-4 grid size-9 cursor-pointer place-items-center rounded-xl border border-border bg-white text-muted-foreground shadow-sm transition hover:bg-accent hover:text-primary focus:outline-none focus:ring-4 focus:ring-ring/15 disabled:pointer-events-none">
++          <X className="size-4" />
++          <span className="sr-only">Close</span>
++        </DialogPrimitive.Close>
++      </DialogPrimitive.Content>
++    </DialogPortal>
++  ),
++);
+ DialogContent.displayName = DialogPrimitive.Content.displayName;
++
+ const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
++  <div className={cn("flex flex-col space-y-1.5 pr-10 text-left", className)} {...props} />
+ );
+ DialogHeader.displayName = "DialogHeader";
+ const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+-  <div
+-    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
+-    {...props}
+-  />
++  <div className={cn("mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)} {...props} />
+ );
+ DialogFooter.displayName = "DialogFooter";
+-const DialogTitle = React.forwardRef<
+-  React.ElementRef<typeof DialogPrimitive.Title>,
+-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+->(({ className, ...props }, ref) => (
+-  <DialogPrimitive.Title
+-    ref={ref}
+-    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+-    {...props}
+-  />
+-));
++const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(
++  ({ className, ...props }, ref) => <DialogPrimitive.Title ref={ref} className={cn("font-display text-xl font-bold leading-tight tracking-tight", className)} {...props} />,
++);
+ DialogTitle.displayName = DialogPrimitive.Title.displayName;
+-const DialogDescription = React.forwardRef<
+-  React.ElementRef<typeof DialogPrimitive.Description>,
+-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+->(({ className, ...props }, ref) => (
+-  <DialogPrimitive.Description
+-    ref={ref}
+-    className={cn("text-sm text-muted-foreground", className)}
+-    {...props}
+-  />
+-));
++const DialogDescription = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Description>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>>(
++  ({ className, ...props }, ref) => <DialogPrimitive.Description ref={ref} className={cn("text-sm leading-relaxed text-muted-foreground", className)} {...props} />,
++);
+ DialogDescription.displayName = DialogPrimitive.Description.displayName;
+-export {
+-  Dialog,
+-  DialogPortal,
+-  DialogOverlay,
+-  DialogTrigger,
+-  DialogClose,
+-  DialogContent,
+-  DialogHeader,
+-  DialogFooter,
+-  DialogTitle,
+-  DialogDescription,
+-};
++
++export { Dialog, DialogPortal, DialogOverlay, DialogTrigger, DialogClose, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription };
+diff --git a/src/components/ui/input.tsx b/src/components/ui/input.tsx
+--- a/src/components/ui/input.tsx
++++ b/src/components/ui/input.tsx
+@@ -1,19 +1,18 @@
+ import * as React from "react";
+ import { cn } from "@/lib/utils";
++
+ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+-  ({ className, type, ...props }, ref) => {
+-    return (
+-      <input
+-        type={type}
+-        className={cn(
+-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+-          className,
+-        )}
+-        ref={ref}
+-        {...props}
+-      />
+-    );
+-  },
++  ({ className, type, ...props }, ref) => (
++    <input
++      type={type}
++      className={cn(
++        "flex h-11 w-full rounded-xl border border-input bg-white/90 px-3.5 py-2 text-base text-foreground shadow-sm transition-all file:border-0 file:bg-transparent file:text-sm file:font-semibold file:text-foreground placeholder:text-muted-foreground/75 hover:border-primary/25 focus-visible:border-primary/55 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:bg-muted/60 disabled:opacity-60 md:text-sm",
++        className,
++      )}
++      ref={ref}
++      {...props}
++    />
++  ),
+ );
+ Input.displayName = "Input";
+ export { Input };
+diff --git a/src/components/ui/progress.tsx b/src/components/ui/progress.tsx
+--- a/src/components/ui/progress.tsx
++++ b/src/components/ui/progress.tsx
+@@ -2,20 +2,12 @@
+ import * as React from "react";
+ import * as ProgressPrimitive from "@radix-ui/react-progress";
+ import { cn } from "@/lib/utils";
+-const Progress = React.forwardRef<
+-  React.ElementRef<typeof ProgressPrimitive.Root>,
+-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
+->(({ className, value, ...props }, ref) => (
+-  <ProgressPrimitive.Root
+-    ref={ref}
+-    className={cn("relative h-2 w-full overflow-hidden rounded-full bg-primary/20", className)}
+-    {...props}
+-  >
+-    <ProgressPrimitive.Indicator
+-      className="h-full w-full flex-1 bg-primary transition-all"
+-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+-    />
+-  </ProgressPrimitive.Root>
+-));
++const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>>(
++  ({ className, value, ...props }, ref) => (
++    <ProgressPrimitive.Root ref={ref} className={cn("relative h-2.5 w-full overflow-hidden rounded-full bg-emerald-100", className)} {...props}>
++      <ProgressPrimitive.Indicator className="h-full w-full flex-1 rounded-full bg-[linear-gradient(90deg,hsl(183_78%_29%),hsl(148_31%_49%))] transition-all duration-500" style={{ transform: `translateX(-${100 - (value || 0)}%)` }} />
++    </ProgressPrimitive.Root>
++  ),
++);
+ Progress.displayName = ProgressPrimitive.Root.displayName;
+ export { Progress };
+diff --git a/src/components/ui/select.tsx b/src/components/ui/select.tsx
+--- a/src/components/ui/select.tsx
++++ b/src/components/ui/select.tsx
+@@ -1,11 +1,14 @@
+ "use client";
++
+ import * as React from "react";
+ import * as SelectPrimitive from "@radix-ui/react-select";
+ import { Check, ChevronDown, ChevronUp } from "lucide-react";
+ import { cn } from "@/lib/utils";
++
+ const Select = SelectPrimitive.Root;
+ const SelectGroup = SelectPrimitive.Group;
+ const SelectValue = SelectPrimitive.Value;
++
+ const SelectTrigger = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.Trigger>,
+   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
+@@ -13,44 +16,39 @@
+   <SelectPrimitive.Trigger
+     ref={ref}
+     className={cn(
+-      "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background cursor-pointer data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
++      "flex h-11 w-full cursor-pointer items-center justify-between whitespace-nowrap rounded-xl border border-input bg-white/90 px-3.5 py-2 text-sm text-foreground shadow-sm transition-all data-[placeholder]:text-muted-foreground/75 hover:border-primary/25 focus:outline-none focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+       className,
+     )}
+     {...props}
+   >
+     {children}
+     <SelectPrimitive.Icon asChild>
+-      <ChevronDown className="h-4 w-4 opacity-50" />
++      <ChevronDown className="size-4 text-muted-foreground" />
+     </SelectPrimitive.Icon>
+   </SelectPrimitive.Trigger>
+ ));
+ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
++
+ const SelectScrollUpButton = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
+   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
+ >(({ className, ...props }, ref) => (
+-  <SelectPrimitive.ScrollUpButton
+-    ref={ref}
+-    className={cn("flex cursor-default items-center justify-center py-1", className)}
+-    {...props}
+-  >
+-    <ChevronUp className="h-4 w-4" />
++  <SelectPrimitive.ScrollUpButton ref={ref} className={cn("flex cursor-default items-center justify-center py-1", className)} {...props}>
++    <ChevronUp className="size-4" />
+   </SelectPrimitive.ScrollUpButton>
+ ));
+ SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
++
+ const SelectScrollDownButton = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
+   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
+ >(({ className, ...props }, ref) => (
+-  <SelectPrimitive.ScrollDownButton
+-    ref={ref}
+-    className={cn("flex cursor-default items-center justify-center py-1", className)}
+-    {...props}
+-  >
+-    <ChevronDown className="h-4 w-4" />
++  <SelectPrimitive.ScrollDownButton ref={ref} className={cn("flex cursor-default items-center justify-center py-1", className)} {...props}>
++    <ChevronDown className="size-4" />
+   </SelectPrimitive.ScrollDownButton>
+ ));
+ SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName;
++
+ const SelectContent = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.Content>,
+   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
+@@ -59,9 +57,8 @@
+     <SelectPrimitive.Content
+       ref={ref}
+       className={cn(
+-        "relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-select-content-transform-origin)",
+-        position === "popper" &&
+-          "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
++        "relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-xl border border-border bg-popover/98 text-popover-foreground shadow-[0_20px_50px_-24px_hsl(188_60%_18%/.45)] backdrop-blur-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
++        position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
+         className,
+       )}
+       position={position}
+@@ -70,9 +67,8 @@
+       <SelectScrollUpButton />
+       <SelectPrimitive.Viewport
+         className={cn(
+-          "p-1",
+-          position === "popper" &&
+-            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
++          "p-1.5",
++          position === "popper" && "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
+         )}
+       >
+         {children}
+@@ -82,17 +78,15 @@
+   </SelectPrimitive.Portal>
+ ));
+ SelectContent.displayName = SelectPrimitive.Content.displayName;
++
+ const SelectLabel = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.Label>,
+   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
+ >(({ className, ...props }, ref) => (
+-  <SelectPrimitive.Label
+-    ref={ref}
+-    className={cn("px-2 py-1.5 text-sm font-semibold", className)}
+-    {...props}
+-  />
++  <SelectPrimitive.Label ref={ref} className={cn("px-2 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground", className)} {...props} />
+ ));
+ SelectLabel.displayName = SelectPrimitive.Label.displayName;
++
+ const SelectItem = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.Item>,
+   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
+@@ -100,31 +94,27 @@
+   <SelectPrimitive.Item
+     ref={ref}
+     className={cn(
+-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
++      "relative flex w-full cursor-default select-none items-center rounded-lg py-2 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+       className,
+     )}
+     {...props}
+   >
+-    <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
+-      <SelectPrimitive.ItemIndicator>
+-        <Check className="h-4 w-4" />
+-      </SelectPrimitive.ItemIndicator>
++    <span className="absolute left-2 flex size-4 items-center justify-center">
++      <SelectPrimitive.ItemIndicator><Check className="size-4 text-primary" /></SelectPrimitive.ItemIndicator>
+     </span>
+     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+   </SelectPrimitive.Item>
+ ));
+ SelectItem.displayName = SelectPrimitive.Item.displayName;
++
+ const SelectSeparator = React.forwardRef<
+   React.ElementRef<typeof SelectPrimitive.Separator>,
+   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
+ >(({ className, ...props }, ref) => (
+-  <SelectPrimitive.Separator
+-    ref={ref}
+-    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+-    {...props}
+-  />
++  <SelectPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />
+ ));
+ SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
++
+ export {
+   Select,
+   SelectGroup,
+diff --git a/src/components/ui/skeleton.tsx b/src/components/ui/skeleton.tsx
+--- a/src/components/ui/skeleton.tsx
++++ b/src/components/ui/skeleton.tsx
+@@ -1,5 +1,6 @@
++import type * as React from "react";
+ import { cn } from "@/lib/utils";
+ function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+-  return <div className={cn("animate-pulse rounded-md bg-primary/10", className)} {...props} />;
++  return <div className={cn("animate-pulse rounded-xl bg-[linear-gradient(90deg,hsl(154_24%_92%),hsl(154_28%_96%),hsl(154_24%_92%))] bg-[length:200%_100%]", className)} {...props} />;
+ }
+ export { Skeleton };
+diff --git a/src/components/ui/switch.tsx b/src/components/ui/switch.tsx
+--- a/src/components/ui/switch.tsx
++++ b/src/components/ui/switch.tsx
+@@ -1,24 +1,16 @@
+ import * as React from "react";
+ import * as SwitchPrimitives from "@radix-ui/react-switch";
+ import { cn } from "@/lib/utils";
+-const Switch = React.forwardRef<
+-  React.ElementRef<typeof SwitchPrimitives.Root>,
+-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
+->(({ className, ...props }, ref) => (
+-  <SwitchPrimitives.Root
+-    className={cn(
+-      "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
+-      className,
+-    )}
+-    {...props}
+-    ref={ref}
+-  >
+-    <SwitchPrimitives.Thumb
+-      className={cn(
+-        "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0",
+-      )}
+-    />
+-  </SwitchPrimitives.Root>
+-));
++const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>>(
++  ({ className, ...props }, ref) => (
++    <SwitchPrimitives.Root
++      className={cn("peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-inner transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-slate-300", className)}
++      {...props}
++      ref={ref}
++    >
++      <SwitchPrimitives.Thumb className="pointer-events-none block size-5 rounded-full bg-white shadow-md ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
++    </SwitchPrimitives.Root>
++  ),
++);
+ Switch.displayName = SwitchPrimitives.Root.displayName;
+ export { Switch };
+diff --git a/src/components/ui/table.tsx b/src/components/ui/table.tsx
+--- a/src/components/ui/table.tsx
++++ b/src/components/ui/table.tsx
+@@ -1,84 +1,40 @@
+ import * as React from "react";
+ import { cn } from "@/lib/utils";
++
+ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
+   ({ className, ...props }, ref) => (
+-    <div className="relative w-full overflow-auto">
++    <div className="relative w-full overflow-auto rounded-2xl border border-border bg-white shadow-sm">
+       <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
+     </div>
+   ),
+ );
+ Table.displayName = "Table";
+-const TableHeader = React.forwardRef<
+-  HTMLTableSectionElement,
+-  React.HTMLAttributes<HTMLTableSectionElement>
+->(({ className, ...props }, ref) => (
+-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+-));
++const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
++  ({ className, ...props }, ref) => <thead ref={ref} className={cn("bg-[hsl(154_25%_96%)] [&_tr]:border-b", className)} {...props} />,
++);
+ TableHeader.displayName = "TableHeader";
+-const TableBody = React.forwardRef<
+-  HTMLTableSectionElement,
+-  React.HTMLAttributes<HTMLTableSectionElement>
+->(({ className, ...props }, ref) => (
+-  <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+-));
++const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
++  ({ className, ...props }, ref) => <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />,
++);
+ TableBody.displayName = "TableBody";
+-const TableFooter = React.forwardRef<
+-  HTMLTableSectionElement,
+-  React.HTMLAttributes<HTMLTableSectionElement>
+->(({ className, ...props }, ref) => (
+-  <tfoot
+-    ref={ref}
+-    className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)}
+-    {...props}
+-  />
+-));
++const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
++  ({ className, ...props }, ref) => <tfoot ref={ref} className={cn("border-t bg-muted/55 font-medium [&>tr]:last:border-b-0", className)} {...props} />,
++);
+ TableFooter.displayName = "TableFooter";
+ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
+-  ({ className, ...props }, ref) => (
+-    <tr
+-      ref={ref}
+-      className={cn(
+-        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+-        className,
+-      )}
+-      {...props}
+-    />
+-  ),
++  ({ className, ...props }, ref) => <tr ref={ref} className={cn("border-b border-border/75 transition-colors hover:bg-emerald-50/45 data-[state=selected]:bg-emerald-50", className)} {...props} />,
+ );
+ TableRow.displayName = "TableRow";
+-const TableHead = React.forwardRef<
+-  HTMLTableCellElement,
+-  React.ThHTMLAttributes<HTMLTableCellElement>
+->(({ className, ...props }, ref) => (
+-  <th
+-    ref={ref}
+-    className={cn(
+-      "h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+-      className,
+-    )}
+-    {...props}
+-  />
+-));
++const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
++  ({ className, ...props }, ref) => <th ref={ref} className={cn("h-11 px-4 text-left align-middle text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground [&:has([role=checkbox])]:pr-0", className)} {...props} />,
++);
+ TableHead.displayName = "TableHead";
+-const TableCell = React.forwardRef<
+-  HTMLTableCellElement,
+-  React.TdHTMLAttributes<HTMLTableCellElement>
+->(({ className, ...props }, ref) => (
+-  <td
+-    ref={ref}
+-    className={cn(
+-      "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+-      className,
+-    )}
+-    {...props}
+-  />
+-));
++const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
++  ({ className, ...props }, ref) => <td ref={ref} className={cn("px-4 py-3.5 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />,
++);
+ TableCell.displayName = "TableCell";
+-const TableCaption = React.forwardRef<
+-  HTMLTableCaptionElement,
+-  React.HTMLAttributes<HTMLTableCaptionElement>
+->(({ className, ...props }, ref) => (
+-  <caption ref={ref} className={cn("mt-4 text-sm text-muted-foreground", className)} {...props} />
+-));
++const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttributes<HTMLTableCaptionElement>>(
++  ({ className, ...props }, ref) => <caption ref={ref} className={cn("mt-4 text-sm text-muted-foreground", className)} {...props} />,
++);
+ TableCaption.displayName = "TableCaption";
+ export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption };
+diff --git a/src/components/ui/tabs.tsx b/src/components/ui/tabs.tsx
+--- a/src/components/ui/tabs.tsx
++++ b/src/components/ui/tabs.tsx
+@@ -1,21 +1,21 @@
+ import * as React from "react";
+ import * as TabsPrimitive from "@radix-ui/react-tabs";
+ import { cn } from "@/lib/utils";
++
+ const Tabs = TabsPrimitive.Root;
++
+ const TabsList = React.forwardRef<
+   React.ElementRef<typeof TabsPrimitive.List>,
+   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
+ >(({ className, ...props }, ref) => (
+   <TabsPrimitive.List
+     ref={ref}
+-    className={cn(
+-      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+-      className,
+-    )}
++    className={cn("inline-flex h-11 items-center justify-center rounded-xl border border-border bg-muted/70 p-1 text-muted-foreground", className)}
+     {...props}
+   />
+ ));
+ TabsList.displayName = TabsPrimitive.List.displayName;
++
+ const TabsTrigger = React.forwardRef<
+   React.ElementRef<typeof TabsPrimitive.Trigger>,
+   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
+@@ -23,25 +23,20 @@
+   <TabsPrimitive.Trigger
+     ref={ref}
+     className={cn(
+-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
++      "inline-flex h-9 cursor-pointer items-center justify-center whitespace-nowrap rounded-lg px-3.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm",
+       className,
+     )}
+     {...props}
+   />
+ ));
+ TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
++
+ const TabsContent = React.forwardRef<
+   React.ElementRef<typeof TabsPrimitive.Content>,
+   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
+ >(({ className, ...props }, ref) => (
+-  <TabsPrimitive.Content
+-    ref={ref}
+-    className={cn(
+-      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+-      className,
+-    )}
+-    {...props}
+-  />
++  <TabsPrimitive.Content ref={ref} className={cn("mt-4 focus-visible:outline-none", className)} {...props} />
+ ));
+ TabsContent.displayName = TabsPrimitive.Content.displayName;
++
+ export { Tabs, TabsList, TabsTrigger, TabsContent };
+diff --git a/src/components/ui/textarea.tsx b/src/components/ui/textarea.tsx
+--- a/src/components/ui/textarea.tsx
++++ b/src/components/ui/textarea.tsx
+@@ -1,18 +1,17 @@
+ import * as React from "react";
+ import { cn } from "@/lib/utils";
++
+ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
+-  ({ className, ...props }, ref) => {
+-    return (
+-      <textarea
+-        className={cn(
+-          "flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+-          className,
+-        )}
+-        ref={ref}
+-        {...props}
+-      />
+-    );
+-  },
++  ({ className, ...props }, ref) => (
++    <textarea
++      className={cn(
++        "flex min-h-[96px] w-full rounded-xl border border-input bg-white/90 px-3.5 py-3 text-base text-foreground shadow-sm placeholder:text-muted-foreground/75 hover:border-primary/25 focus-visible:border-primary/55 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:bg-muted/60 disabled:opacity-60 md:text-sm",
++        className,
++      )}
++      ref={ref}
++      {...props}
++    />
++  ),
+ );
+ Textarea.displayName = "Textarea";
+ export { Textarea };
+diff --git a/src/routes/_authenticated/caregivers.tsx b/src/routes/_authenticated/caregivers.tsx
+--- a/src/routes/_authenticated/caregivers.tsx
++++ b/src/routes/_authenticated/caregivers.tsx
+@@ -535,7 +535,7 @@
+     <AppShell>
+       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+         <div>
+-          <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Caregiver Services</h1>
++          <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Caregivers</h1>
+           <p className="text-muted-foreground mt-1">
+             Book and manage care services for {activeParent?.full_name ?? "—"}
+           </p>
+diff --git a/src/routes/_authenticated/dashboard.tsx b/src/routes/_authenticated/dashboard.tsx
+--- a/src/routes/_authenticated/dashboard.tsx
++++ b/src/routes/_authenticated/dashboard.tsx
+@@ -670,6 +670,10 @@
+     ? Math.round((completedMedicineCount / medicines.length) * 100)
+     : 0;
+   const allMedicinesTaken = medicines.length > 0 && completedMedicineCount === medicines.length;
++  const nextMedicine = medicines.find((medicine) => !takenMedicineIds.has(medicine.id)) ?? medicines[0] ?? null;
++  const nextCareEvent = upcomingCareEvents[0] ?? null;
++  const latestHeartRate = latestVitalByType.get("heart_rate");
++  const nextCaregiver = nextCaregiverQuery.data ?? null;
+   const dashboardQueries = [
+     medicinesQuery,
+     medicineLogsQuery,
+@@ -834,6 +838,46 @@
+         </div>
+       </header>
+ 
++      {!isFamilyView && (
++        <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
++          <Link to="/medicines" className="group care-panel flex min-h-[132px] items-center gap-4 p-4 transition-all hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg">
++            <div className="care-icon-tile"><Pill className="size-5" /></div>
++            <div className="min-w-0">
++              <p className="care-kicker">Next medicine</p>
++              <p className="mt-2 truncate text-xl font-bold text-foreground">{nextMedicine?.schedule_time?.slice(0, 5) || "All done"}</p>
++              <p className="mt-1 truncate text-xs text-muted-foreground">{nextMedicine ? `${nextMedicine.name}${nextMedicine.dosage ? ` · ${nextMedicine.dosage}` : ""}` : "No active medicine remaining"}</p>
++            </div>
++          </Link>
++
++          <Link to={(nextCareEvent?.route ?? "/appointments") as any} className="group care-panel flex min-h-[132px] items-center gap-4 p-4 transition-all hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg">
++            <div className="care-icon-tile blue"><CalendarDays className="size-5" /></div>
++            <div className="min-w-0">
++              <p className="care-kicker">Next care event</p>
++              <p className="mt-2 truncate text-lg font-bold text-foreground">{nextCareEvent ? format(new Date(nextCareEvent.scheduledAt), "MMM d · h:mm a") : "No event scheduled"}</p>
++              <p className="mt-1 truncate text-xs text-muted-foreground">{nextCareEvent?.title ?? "Appointments and visits appear here"}</p>
++            </div>
++          </Link>
++
++          <Link to="/vitals" className="group care-panel flex min-h-[132px] items-center gap-4 p-4 transition-all hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg">
++            <div className="care-icon-tile"><HeartPulse className="size-5" /></div>
++            <div className="min-w-0">
++              <p className="care-kicker">Latest heart rate</p>
++              <p className="mt-2 text-xl font-bold text-foreground">{latestHeartRate ? `${formatVitalValue(latestHeartRate)} ${latestHeartRate.unit}` : "Not recorded"}</p>
++              <p className="mt-1 text-xs text-muted-foreground">{latestHeartRate ? formatDistanceToNow(new Date(latestHeartRate.recorded_at), { addSuffix: true }) : "Add a vital record"}</p>
++            </div>
++          </Link>
++
++          <Link to="/caregivers" className="group care-panel flex min-h-[132px] items-center gap-4 p-4 transition-all hover:-translate-y-1 hover:border-primary/25 hover:shadow-lg">
++            <div className="care-icon-tile orange"><Stethoscope className="size-5" /></div>
++            <div className="min-w-0">
++              <p className="care-kicker">Caregiver</p>
++              <p className="mt-2 truncate text-lg font-bold text-foreground">{nextCaregiver?.caregiver_name || (nextCaregiver ? humanize(nextCaregiver.caregiver_type) : "Not assigned")}</p>
++              <p className="mt-1 truncate text-xs text-muted-foreground">{nextCaregiver ? format(new Date(nextCaregiver.scheduled_at), "MMM d · h:mm a") : "Book trusted care support"}</p>
++            </div>
++          </Link>
++        </section>
++      )}
++
+       {dashboardError && (
+         <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 sm:flex-row sm:items-center sm:justify-between">
+           <div className="flex items-start gap-3">
+diff --git a/src/routes/_authenticated/health-risk.tsx b/src/routes/_authenticated/health-risk.tsx
+--- a/src/routes/_authenticated/health-risk.tsx
++++ b/src/routes/_authenticated/health-risk.tsx
+@@ -460,7 +460,7 @@
+       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+         <div>
+           <h1 className="font-display text-3xl font-bold italic sm:text-4xl">
+-            AI Health Risk Check
++            AI Risk Check
+           </h1>
+           <p className="mt-1 text-muted-foreground">
+             A safety-first screening for {activeParent?.full_name ?? "the care recipient"}.
+diff --git a/src/routes/_authenticated/medicines.tsx b/src/routes/_authenticated/medicines.tsx
+--- a/src/routes/_authenticated/medicines.tsx
++++ b/src/routes/_authenticated/medicines.tsx
+@@ -275,7 +275,7 @@
+     <AppShell>
+       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+         <div>
+-          <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Medication Care</h1>
++          <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Medicines</h1>
+           <p className="text-muted-foreground mt-1">
+             Daily medication schedule for {activeParent?.full_name ?? "—"}
+           </p>
+diff --git a/src/routes/_authenticated/sos.tsx b/src/routes/_authenticated/sos.tsx
+--- a/src/routes/_authenticated/sos.tsx
++++ b/src/routes/_authenticated/sos.tsx
+@@ -331,7 +331,7 @@
+     <AppShell>
+       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+         <div>
+-          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">Emergency SOS</h1>
++          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">SOS Control</h1>
+           <p className="mt-1 text-muted-foreground">
+             {isChildView
+               ? `Emergency monitoring for ${activeParent.full_name || "the care recipient"}`
+diff --git a/src/routes/_authenticated/transport.tsx b/src/routes/_authenticated/transport.tsx
+--- a/src/routes/_authenticated/transport.tsx
++++ b/src/routes/_authenticated/transport.tsx
+@@ -711,7 +711,7 @@
+       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+         <div>
+           <h1 className="font-display text-3xl font-bold italic sm:text-4xl">
+-            Transport Request & Coordination
++            Transport
+           </h1>
+           <p className="mt-1 text-muted-foreground">
+             Request and manually coordinate medical travel for {activeParent?.full_name ?? "—"}
+diff --git a/src/routes/_authenticated/video.tsx b/src/routes/_authenticated/video.tsx
+--- a/src/routes/_authenticated/video.tsx
++++ b/src/routes/_authenticated/video.tsx
+@@ -781,7 +781,7 @@
+     <AppShell>
+       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+         <div>
+-          <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Telehealth</h1>
++          <h1 className="font-display text-3xl sm:text-4xl font-bold italic">Video Consult</h1>
+           <p className="text-muted-foreground mt-1">
+             Video consultations for {activeParent?.full_name ?? "—"}
+           </p>
+diff --git a/src/routes/auth.tsx b/src/routes/auth.tsx
+--- a/src/routes/auth.tsx
++++ b/src/routes/auth.tsx
+@@ -5,11 +5,10 @@
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
+-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+ import { BrandIcon, BrandLogo } from "@/components/BrandLogo";
++import { FamilyCareIllustration } from "@/components/brand/FamilyCareIllustration";
+ import { toast } from "sonner";
+ import {
+-  Heart,
+   Eye,
+   EyeOff,
+   ArrowLeft,
+@@ -17,9 +16,10 @@
+   CheckCircle2,
+   ShieldCheck,
+   Pill,
+-  Activity,
+   Users,
+-  Sparkles,
++  UserRound,
++  LockKeyhole,
++  ArrowRight,
+ } from "lucide-react";
+ export const Route = createFileRoute("/auth")({
+   ssr: false,
+@@ -56,123 +56,123 @@
+ function AuthBackdrop() {
+   return (
+     <div className="pointer-events-none absolute inset-0 overflow-hidden">
+-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(220_50%_98%)] via-background to-[hsl(217_91%_96%)]" />
+-      <div className="absolute -top-32 -left-24 size-[28rem] rounded-full bg-[color:var(--brand-accent)]/10 blur-3xl animate-auth-blob" />
+-      <div className="absolute top-1/3 -right-24 size-[24rem] rounded-full bg-primary/10 blur-3xl animate-auth-blob [animation-delay:-6s]" />
+-      <div className="absolute -bottom-32 left-1/3 size-[22rem] rounded-full bg-emerald-400/10 blur-3xl animate-auth-blob [animation-delay:-3s]" />
++      <div className="absolute inset-0 bg-[linear-gradient(155deg,hsl(150_32%_98%),hsl(150_22%_96%))]" />
++      <div className="absolute -right-24 -top-28 size-[28rem] rounded-full bg-emerald-300/18 blur-3xl" />
++      <div className="absolute -bottom-36 left-1/4 size-[28rem] rounded-full bg-orange-200/20 blur-3xl" />
+       <div
+-        className="absolute inset-0 opacity-[0.035]"
++        className="absolute inset-0 opacity-[0.028]"
+         style={{
+-          backgroundImage:
+-            "linear-gradient(hsl(222 47% 18%) 1px, transparent 1px), linear-gradient(90deg, hsl(222 47% 18%) 1px, transparent 1px)",
+-          backgroundSize: "44px 44px",
++          backgroundImage: "radial-gradient(circle at 1px 1px, hsl(183 78% 22%) 1px, transparent 0)",
++          backgroundSize: "25px 25px",
+         }}
+       />
+     </div>
+   );
+ }
++
++function AuthFeature({
++  icon,
++  title,
++  text,
++  tone = "green",
++}: {
++  icon: React.ReactNode;
++  title: string;
++  text: string;
++  tone?: "green" | "blue" | "orange";
++}) {
++  const toneClass =
++    tone === "blue"
++      ? "bg-sky-50 text-sky-700 border-sky-100"
++      : tone === "orange"
++        ? "bg-orange-50 text-orange-600 border-orange-100"
++        : "bg-emerald-50 text-emerald-700 border-emerald-100";
++  return (
++    <div className="flex items-start gap-3.5">
++      <div className={`grid size-12 shrink-0 place-items-center rounded-full border ${toneClass}`}>{icon}</div>
++      <div>
++        <h3 className="font-display text-[1.05rem] font-bold tracking-tight text-slate-900">{title}</h3>
++        <p className="mt-0.5 max-w-[245px] text-sm leading-relaxed text-slate-600">{text}</p>
++      </div>
++    </div>
++  );
++}
++
+ function BrandingPanel() {
+-  const features = [
+-    { Icon: Pill, label: "Medicine\nReminders" },
+-    { Icon: ShieldCheck, label: "Emergency\nSOS" },
+-    { Icon: Activity, label: "Health\nTracking" },
+-  ];
+   return (
+-    <aside className="hidden lg:flex flex-col justify-between p-12 xl:p-14 bg-gradient-to-br from-[hsl(222_47%_14%)] via-[hsl(222_47%_18%)] to-[hsl(217_91%_22%)] text-white relative overflow-hidden">
+-      <div className="absolute inset-0 pointer-events-none">
+-        <div className="absolute -top-24 -right-24 size-96 rounded-full bg-[color:var(--brand-accent)]/20 blur-3xl animate-pulse-slow" />
+-        <div className="absolute bottom-0 -left-16 size-72 rounded-full bg-white/5 blur-2xl" />
+-        <div
+-          className="absolute inset-0 opacity-[0.06]"
+-          style={{
+-            backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+-            backgroundSize: "22px 22px",
+-          }}
+-        />
+-      </div>
+-
+-      <BrandLogo tone="light" />
+-
+-      <div className="relative space-y-7 animate-rise-in">
+-        <div className="grid grid-cols-3 gap-3">
+-          {features.map(({ Icon, label }) => (
+-            <div
+-              key={label}
+-              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 text-center transition-all hover:bg-white/[0.08] hover:-translate-y-0.5"
+-            >
+-              <div className="mx-auto mb-2 grid size-9 place-items-center rounded-xl bg-white/10">
+-                <Icon className="size-4.5 text-white/90" />
+-              </div>
+-              <div className="text-[11px] text-white/70 font-medium leading-tight whitespace-pre-line">
+-                {label}
+-              </div>
+-            </div>
+-          ))}
++    <aside className="relative hidden min-h-screen overflow-hidden lg:block">
++      <div className="auth-wave" />
++      <div className="relative z-10 grid min-h-screen grid-cols-[minmax(310px,0.82fr)_minmax(340px,1.18fr)]">
++        <div className="flex flex-col px-9 py-8 xl:px-12 xl:py-10">
++          <BrandLogo size="lg" />
++
++          <div className="my-auto max-w-[310px] py-10">
++            <h1 className="font-display text-[2.55rem] font-bold leading-[1.08] tracking-[-0.045em] text-slate-950 xl:text-[3.15rem]">
++              Care. Connect.
++              <br />
++              <span className="text-[color:var(--brand-accent)]">Stay Together.</span>
++            </h1>
++            <p className="mt-6 text-[15px] leading-7 text-slate-600">
++              ElderCare Connect helps families stay connected, informed, and prepared for a safer tomorrow.
++            </p>
++
++            <div className="mt-10 space-y-7">
++              <AuthFeature icon={<Users className="size-5" />} title="Stay Connected" text="Real-time updates between parents and children." />
++              <AuthFeature icon={<Pill className="size-5" />} title="Health Reminders" text="Medicine and appointment reminders that care." tone="blue" />
++              <AuthFeature icon={<ShieldCheck className="size-5" />} title="Emergency Support" text="SOS alerts and quick actions when it matters most." tone="orange" />
++            </div>
++
++            <div className="mt-10 inline-flex items-center gap-2.5 rounded-full border border-emerald-100 bg-emerald-50/85 px-4 py-2.5 text-xs font-medium text-slate-600 shadow-sm">
++              <ShieldCheck className="size-4 text-emerald-700" /> Your data is safe, secure, and private with us.
++            </div>
++          </div>
+         </div>
+ 
+-        <div>
+-          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-white/60 mb-4">
+-            <Sparkles className="size-3 text-[color:var(--brand-accent)]" /> For families, with care
+-          </span>
+-          <h1 className="font-display italic text-[2.75rem] xl:text-5xl leading-[1.05]">
+-            Care that travels
+-            <br />
+-            the distance.
+-          </h1>
+-          <p className="text-white/65 max-w-md leading-relaxed mt-4">
+-            Look after the people who looked after you — medicines, daily check-ins, emergencies and
+-            visits, all in one calm place the whole family shares.
+-          </p>
++        <div className="relative flex items-end justify-center px-4 pb-3 pt-12 xl:px-8">
++          <FamilyCareIllustration />
+         </div>
+-      </div>
+-
+-      <div className="relative flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/50">
+-        <Heart className="size-3.5 text-[color:var(--brand-accent)] animate-pulse" />A family-first
+-        health companion
+       </div>
+     </aside>
+   );
+ }
++
+ function AuthCard({ children }: { children: React.ReactNode }) {
+   return (
+-    <div className="w-full max-w-md animate-rise-in">
+-      <div className="lg:hidden mb-6 flex justify-center">
++    <div className="w-full max-w-[610px] animate-rise-in">
++      <div className="mb-6 flex justify-center lg:hidden">
+         <BrandLogo size="md" />
+       </div>
+-      <div className="relative rounded-3xl bg-card/90 backdrop-blur-xl border border-border/70 shadow-[0_20px_50px_-20px_hsl(222_47%_18%/0.25),0_8px_18px_-12px_hsl(222_47%_18%/0.15)] p-7 sm:p-9">
+-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent rounded-t-3xl" />
++      <div className="relative overflow-hidden rounded-[1.75rem] border border-white/90 bg-white/95 p-6 shadow-[0_28px_70px_-38px_rgba(2,54,63,0.48),0_10px_25px_-18px_rgba(2,54,63,0.2)] backdrop-blur-xl sm:p-8 lg:p-10">
++        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent" />
+         {children}
+       </div>
+     </div>
+   );
+ }
++
+ const inputCls =
+-  "h-11 rounded-xl border-border/70 bg-background/70 transition-all duration-200 " +
+-  "placeholder:text-muted-foreground/60 " +
+-  "focus-visible:border-[color:var(--brand-accent)] focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]/25 " +
+-  "hover:border-border";
++  "h-12 rounded-xl border-border bg-white pl-11 pr-4 shadow-none transition-all placeholder:text-slate-400 " +
++  "hover:border-primary/25 focus-visible:border-primary/55 focus-visible:ring-4 focus-visible:ring-primary/10";
+ const primaryBtnCls =
+-  "w-full h-11 rounded-xl font-semibold shadow-sm " +
+-  "bg-gradient-to-b from-[hsl(222_47%_22%)] to-[hsl(222_47%_16%)] text-primary-foreground " +
+-  "hover:shadow-md hover:from-[hsl(222_47%_24%)] hover:to-[hsl(222_47%_18%)] " +
+-  "active:scale-[0.99] transition-all duration-200 " +
+-  "disabled:opacity-60 disabled:cursor-not-allowed";
++  "h-12 w-full rounded-xl bg-[linear-gradient(100deg,#08767d,#06646e)] text-base font-semibold text-white " +
++  "shadow-[0_16px_28px_-18px_rgba(4,101,111,0.7)] hover:-translate-y-0.5 hover:shadow-[0_20px_32px_-18px_rgba(4,101,111,0.72)]";
++
+ function Spinner() {
+-  return (
+-    <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+-  );
+-}
++  return <span className="size-4 rounded-full border-2 border-white/35 border-t-white animate-spin" />;
++}
++
+ function PageShell({ children }: { children: React.ReactNode }) {
+   return (
+-    <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] relative bg-background">
++    <div className="relative min-h-screen bg-background lg:grid lg:grid-cols-[1.12fr_0.88fr]">
+       <BrandingPanel />
+-      <main className="relative flex items-center justify-center p-5 sm:p-10 lg:p-12">
++      <main className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-8 lg:px-10 xl:px-14">
+         <AuthBackdrop />
+-        <div className="relative w-full flex justify-center">{children}</div>
++        <div className="relative z-10 flex w-full justify-center">{children}</div>
+       </main>
+     </div>
+   );
+ }
++
+ function AuthPage() {
+   const navigate = useNavigate();
+   const [screen, setScreen] = useState<Screen>("auth");
+@@ -627,260 +627,220 @@
+   return (
+     <PageShell>
+       <AuthCard>
++        <div className="mb-8 grid grid-cols-2 border-b border-border">
++          {(["signin", "signup"] as const).map((item) => (
++            <button
++              key={item}
++              type="button"
++              onClick={() => {
++                setMode(item);
++                setPassword("");
++                setConfirmPassword("");
++                setShowPassword(false);
++                setShowConfirm(false);
++              }}
++              className={`relative h-12 text-sm font-semibold transition-colors ${
++                mode === item ? "text-primary" : "text-slate-400 hover:text-slate-700"
++              }`}
++            >
++              {item === "signin" ? "Sign In" : "Create Account"}
++              {mode === item && (
++                <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
++              )}
++            </button>
++          ))}
++        </div>
++
++        <div className="mb-7 text-center">
++          <div className="mx-auto mb-4 grid size-12 place-items-center rounded-2xl bg-[color:var(--brand-soft)] text-primary sm:hidden">
++            <BrandIcon className="size-10" />
++          </div>
++          <h2 className="font-display text-3xl font-bold tracking-[-0.04em] text-slate-950">
++            {mode === "signup" ? "Create Your Account" : "Welcome Back!"}
++          </h2>
++          <p className="mt-2 text-sm text-slate-500">
++            {mode === "signup"
++              ? "Create a secure family care account in a few steps."
++              : "Sign in to continue to your account"}
++          </p>
++        </div>
++
+         <div className="mb-6">
+-          <div className="flex items-center gap-3 mb-5">
+-            <BrandIcon className="size-10 rounded-xl shadow-sm" />
+-            <div>
+-              <h2 className="font-display text-2xl sm:text-[1.7rem] font-bold tracking-tight leading-tight">
+-                {mode === "signup" ? "Create your account" : "Welcome back"}
+-              </h2>
+-              <p className="text-sm text-muted-foreground leading-snug">
+-                {mode === "signup"
+-                  ? "Set up care for yourself or a loved one."
+-                  : "Sign in to continue managing care."}
+-              </p>
+-            </div>
+-          </div>
+-
+-          <div className="relative grid grid-cols-2 p-1 rounded-xl bg-muted/70 border border-border/60">
+-            <span
+-              className={`absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-lg bg-card shadow-sm transition-all duration-300 ease-out
+-                ${mode === "signin" ? "left-1" : "left-[calc(50%+0.125rem)]"}`}
+-              aria-hidden="true"
++          <Label className="mb-2.5 block text-sm font-semibold text-slate-800">I am a:</Label>
++          <div className="grid grid-cols-2 gap-3">
++            <RoleTile
++              active={mode === "signup" ? role === "parent" : googleRole === "parent"}
++              onClick={() => {
++                setRole("parent");
++                setGoogleRole("parent");
++              }}
++              icon={<UserRound className="size-5" />}
++              title="Parent"
++              hint="Receiving care"
+             />
+-            {(["signin", "signup"] as const).map((m) => (
+-              <button
+-                key={m}
+-                type="button"
+-                onClick={() => {
+-                  if (mode === m) return;
+-                  setMode(m);
+-                  setPassword("");
+-                  setConfirmPassword("");
+-                  setShowPassword(false);
+-                  setShowConfirm(false);
+-                }}
+-                className={`relative z-10 h-9 text-sm font-semibold transition-colors ${mode === m ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+-              >
+-                {m === "signin" ? "Sign in" : "Sign up"}
+-              </button>
+-            ))}
++            <RoleTile
++              active={mode === "signup" ? role === "child" : googleRole === "child"}
++              onClick={() => {
++                setRole("child");
++                setGoogleRole("child");
++              }}
++              icon={<Users className="size-5" />}
++              title="Child"
++              hint="Supporting family"
++            />
+           </div>
+         </div>
+ 
+-        <div className="space-y-3 p-4 rounded-2xl bg-muted/40 border border-border/60">
+-          <div className="space-y-2">
+-            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+-              I am signing in as
+-            </Label>
+-            <div className="grid grid-cols-2 gap-2">
+-              <RoleTile
+-                active={googleRole === "parent"}
+-                onClick={() => setGoogleRole("parent")}
+-                icon={<Heart className="size-4" />}
+-                title="Parent"
+-                hint="Receiving care"
+-              />
+-              <RoleTile
+-                active={googleRole === "child"}
+-                onClick={() => setGoogleRole("child")}
+-                icon={<Users className="size-4" />}
+-                title="Family"
+-                hint="Monitoring a parent"
+-              />
+-            </div>
+-          </div>
+-          <button
+-            type="button"
+-            onClick={handleGoogle}
+-            disabled={loading}
+-            className="group w-full h-11 flex items-center justify-center gap-3 rounded-xl border border-border/70 bg-card hover:bg-accent/50 hover:border-border transition-all shadow-sm hover:shadow-md active:scale-[0.99] disabled:opacity-60 font-medium text-sm text-foreground"
+-          >
+-            <svg
+-              viewBox="0 0 24 24"
+-              className="size-5 shrink-0 transition-transform group-hover:scale-110"
+-              aria-hidden="true"
+-            >
+-              <path
+-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+-                fill="#4285F4"
+-              />
+-              <path
+-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+-                fill="#34A853"
+-              />
+-              <path
+-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+-                fill="#FBBC05"
+-              />
+-              <path
+-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+-                fill="#EA4335"
+-              />
+-            </svg>
+-            <span>{loading ? "Please wait…" : "Continue with Google"}</span>
+-          </button>
+-        </div>
+-
+-        <div className="flex items-center gap-3 my-5 text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+-          <div className="h-px flex-1 bg-border" />
+-          or with email
+-          <div className="h-px flex-1 bg-border" />
+-        </div>
+-
+-        <form onSubmit={handleSubmit} className="space-y-4">
++        <form onSubmit={handleSubmit} className="space-y-4.5">
+           {mode === "signup" && (
+-            <>
+-              <div className="space-y-1.5 animate-fade-in">
+-                <Label htmlFor="name">Full name</Label>
++            <div className="space-y-2 animate-fade-in">
++              <Label htmlFor="name" className="text-sm font-semibold text-slate-800">Full Name</Label>
++              <div className="relative">
++                <UserRound className="pointer-events-none absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-slate-400" />
+                 <Input
+                   id="name"
+                   aria-label="Full name"
+                   required
+                   value={fullName}
+                   onChange={(e) => setFullName(e.target.value)}
+-                  placeholder="Martha Jennings"
++                  placeholder="Enter your full name"
+                   className={inputCls}
+                 />
+               </div>
+-              <div className="space-y-2 animate-fade-in">
+-                <Label>I am a</Label>
+-                <RadioGroup
+-                  value={role}
+-                  onValueChange={(v) => setRole(v as "parent" | "child")}
+-                  className="grid grid-cols-2 gap-2"
+-                >
+-                  <label
+-                    className={`rounded-xl border-2 p-3 cursor-pointer text-sm transition-all ${role === "parent" ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)]/5 shadow-sm" : "border-border hover:border-[color:var(--brand-accent)]/40"}`}
+-                  >
+-                    <RadioGroupItem value="parent" className="sr-only" />
+-                    <div className="font-semibold flex items-center gap-1.5">
+-                      <Heart className="size-3.5" /> Parent
+-                    </div>
+-                    <div className="text-xs text-muted-foreground mt-0.5">Receiving care</div>
+-                  </label>
+-                  <label
+-                    className={`rounded-xl border-2 p-3 cursor-pointer text-sm transition-all ${role === "child" ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)]/5 shadow-sm" : "border-border hover:border-[color:var(--brand-accent)]/40"}`}
+-                  >
+-                    <RadioGroupItem value="child" className="sr-only" />
+-                    <div className="font-semibold flex items-center gap-1.5">
+-                      <Users className="size-3.5" /> Family
+-                    </div>
+-                    <div className="text-xs text-muted-foreground mt-0.5">Monitoring a parent</div>
+-                  </label>
+-                </RadioGroup>
+-              </div>
+-            </>
++            </div>
+           )}
+ 
+-          <div className="space-y-1.5">
+-            <Label htmlFor="email">Email address</Label>
+-            <Input
+-              id="email"
+-              type="email"
+-              aria-label="Email address"
+-              required
+-              value={email}
+-              onChange={(e) => setEmail(e.target.value)}
+-              className={inputCls}
+-              placeholder="you@example.com"
+-            />
++          <div className="space-y-2">
++            <Label htmlFor="email" className="text-sm font-semibold text-slate-800">Email Address</Label>
++            <div className="relative">
++              <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-slate-400" />
++              <Input
++                id="email"
++                type="email"
++                aria-label="Email address"
++                required
++                value={email}
++                onChange={(e) => setEmail(e.target.value)}
++                placeholder="Enter your email"
++                className={inputCls}
++              />
++            </div>
+           </div>
+ 
+-          <div className="space-y-1.5">
+-            <div className="flex items-center justify-between">
+-              <Label htmlFor="pw">
+-                Password{" "}
+-                {mode === "signup" && (
+-                  <span className="text-xs text-muted-foreground font-normal">(min 6 chars)</span>
+-                )}
+-              </Label>
+-              {mode === "signin" && (
+-                <button
+-                  type="button"
+-                  onClick={() => setScreen("forgot")}
+-                  className="text-xs text-[color:var(--brand-accent)] font-semibold hover:underline underline-offset-4"
+-                >
+-                  Forgot password?
+-                </button>
+-              )}
+-            </div>
++          <div className="space-y-2">
++            <Label htmlFor="password" className="text-sm font-semibold text-slate-800">Password</Label>
+             <div className="relative">
++              <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-slate-400" />
+               <Input
+-                id="pw"
++                id="password"
+                 type={showPassword ? "text" : "password"}
+                 aria-label="Password"
+                 required
+-                minLength={6}
+                 value={password}
+                 onChange={(e) => setPassword(e.target.value)}
++                placeholder="Enter your password"
+                 className={`${inputCls} pr-11`}
+               />
+               <button
+                 type="button"
+                 tabIndex={-1}
+-                onClick={() => setShowPassword((p) => !p)}
++                onClick={() => setShowPassword((current) => !current)}
+                 aria-label={showPassword ? "Hide password" : "Show password"}
+-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
++                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-primary"
+               >
+-                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
++                {showPassword ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
+               </button>
+             </div>
+           </div>
+ 
+           {mode === "signup" && (
+-            <div className="space-y-1.5 animate-fade-in">
+-              <Label htmlFor="pw-confirm">Confirm password</Label>
++            <div className="space-y-2 animate-fade-in">
++              <Label htmlFor="confirm-password" className="text-sm font-semibold text-slate-800">Confirm Password</Label>
+               <div className="relative">
++                <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-slate-400" />
+                 <Input
+-                  id="pw-confirm"
++                  id="confirm-password"
+                   type={showConfirm ? "text" : "password"}
+                   aria-label="Confirm password"
+                   required
+-                  minLength={6}
+                   value={confirmPassword}
+                   onChange={(e) => setConfirmPassword(e.target.value)}
+-                  className={`${inputCls} pr-11`}
++                  placeholder="Repeat your password"
++                  className={`${inputCls} pr-11 ${confirmPassword && confirmPassword !== password ? "border-destructive" : ""}`}
+                 />
+                 <button
+                   type="button"
+                   tabIndex={-1}
+-                  onClick={() => setShowConfirm((p) => !p)}
++                  onClick={() => setShowConfirm((current) => !current)}
+                   aria-label={showConfirm ? "Hide password" : "Show password"}
+-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
++                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-primary"
+                 >
+-                  {showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
++                  {showConfirm ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
+                 </button>
+               </div>
+             </div>
+           )}
+ 
++          {mode === "signin" && (
++            <div className="flex justify-end">
++              <button
++                type="button"
++                onClick={() => {
++                  setForgotEmail(email);
++                  setScreen("forgot");
++                }}
++                className="text-sm font-semibold text-primary hover:underline underline-offset-4"
++              >
++                Forgot Password?
++              </button>
++            </div>
++          )}
++
+           <Button type="submit" disabled={loading} className={primaryBtnCls}>
+             {loading ? (
+-              <span className="flex items-center justify-center gap-2">
+-                <Spinner /> Please wait…
++              <span className="flex items-center gap-2"><Spinner /> Please wait…</span>
++            ) : (
++              <span className="flex items-center gap-2">
++                {mode === "signup" ? "Create Account" : "Sign In"}
++                <ArrowRight className="size-5" />
+               </span>
+-            ) : mode === "signup" ? (
+-              "Create account"
+-            ) : (
+-              "Sign in"
+             )}
+           </Button>
+         </form>
+ 
+-        <p className="text-center text-sm text-muted-foreground mt-6">
+-          {mode === "signup" ? "Already have an account?" : "New to ElderCare Connect?"}{" "}
++        <div className="my-6 flex items-center gap-4 text-xs text-slate-400">
++          <div className="h-px flex-1 bg-border" />
++          <span>or continue with</span>
++          <div className="h-px flex-1 bg-border" />
++        </div>
++
++        <button
++          type="button"
++          onClick={handleGoogle}
++          disabled={loading}
++          className="group flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-white text-sm font-semibold text-slate-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:bg-accent/35 hover:shadow-md disabled:opacity-60"
++        >
++          <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
++            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
++            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
++            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
++            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
++          </svg>
++          Continue with Google
++        </button>
++
++        <p className="mt-6 text-center text-sm text-slate-600">
++          {mode === "signup" ? "Already have an account?" : "Don’t have an account?"}{" "}
+           <button
++            type="button"
+             onClick={() => {
+               setMode(mode === "signup" ? "signin" : "signup");
+               setPassword("");
+               setConfirmPassword("");
+-              setShowPassword(false);
+-              setShowConfirm(false);
+             }}
+-            className="text-[color:var(--brand-accent)] font-semibold hover:underline underline-offset-4"
++            className="font-semibold text-primary hover:underline underline-offset-4"
+           >
+-            {mode === "signup" ? "Sign in" : "Create one"}
++            {mode === "signup" ? "Sign In" : "Create Account"}
+           </button>
+         </p>
+       </AuthCard>
+@@ -904,19 +864,22 @@
+     <button
+       type="button"
+       onClick={onClick}
+-      className={`group rounded-xl border-2 p-3 cursor-pointer text-sm text-left transition-all active:scale-[0.98] ${
++      className={`group relative flex min-h-[72px] items-center gap-3 rounded-xl border p-3.5 text-left transition-all active:scale-[0.985] ${
+         active
+-          ? "border-[color:var(--brand-accent)] bg-[color:var(--brand-accent)]/5 shadow-sm"
+-          : "border-border bg-background/60 hover:border-[color:var(--brand-accent)]/50 hover:bg-background"
++          ? "border-primary bg-emerald-50/65 shadow-[0_10px_24px_-18px_rgba(5,112,119,0.6)]"
++          : "border-border bg-white hover:border-primary/35 hover:bg-emerald-50/30"
+       }`}
+     >
+-      <div
+-        className={`inline-flex items-center justify-center size-7 rounded-lg mb-1.5 transition-colors ${active ? "bg-[color:var(--brand-accent)] text-white" : "bg-muted text-muted-foreground group-hover:text-foreground"}`}
+-      >
++      <span className={`grid size-9 shrink-0 place-items-center rounded-xl transition-colors ${active ? "bg-primary text-white" : "bg-slate-50 text-slate-500 group-hover:bg-emerald-50 group-hover:text-primary"}`}>
+         {icon}
+-      </div>
+-      <div className="font-semibold text-foreground">{title}</div>
+-      <div className="text-xs text-muted-foreground mt-0.5">{hint}</div>
++      </span>
++      <span className="min-w-0">
++        <span className="block text-sm font-semibold text-slate-900">{title}</span>
++        <span className="mt-0.5 block truncate text-[11px] text-slate-500">{hint}</span>
++      </span>
++      <span className={`ml-auto grid size-5 place-items-center rounded-full border ${active ? "border-primary" : "border-slate-300"}`}>
++        {active && <span className="size-2.5 rounded-full bg-primary" />}
++      </span>
+     </button>
+   );
+ }
+diff --git a/src/styles.css b/src/styles.css
+--- a/src/styles.css
++++ b/src/styles.css
+@@ -4,16 +4,16 @@
+ @custom-variant dark (&:is(.dark *));
+ 
+ @theme inline {
+-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+-  --font-display: "Playfair Display", ui-serif, Georgia, serif;
++  --font-sans: "Inter", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
++  --font-display: "Georgia", "Times New Roman", ui-serif, serif;
+   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+ 
+   --radius-sm: calc(var(--radius) - 4px);
+   --radius-md: calc(var(--radius) - 2px);
+   --radius-lg: var(--radius);
+-  --radius-xl: calc(var(--radius) + 4px);
+-  --radius-2xl: calc(var(--radius) + 8px);
+-  --radius-3xl: calc(var(--radius) + 12px);
++  --radius-xl: calc(var(--radius) + 5px);
++  --radius-2xl: calc(var(--radius) + 10px);
++  --radius-3xl: calc(var(--radius) + 16px);
+ 
+   --color-background: var(--background);
+   --color-foreground: var(--foreground);
+@@ -44,50 +44,55 @@
+   --color-sidebar-ring: var(--sidebar-ring);
+   --color-brand: var(--brand);
+   --color-brand-accent: var(--brand-accent);
++  --color-brand-soft: var(--brand-soft);
++  --color-brand-orange: var(--brand-orange);
+ 
+   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+ }
+ 
+ :root {
+-  --radius: 0.75rem;
+-
+-  --background: hsl(220 30% 97%);
+-  --foreground: hsl(222 47% 11%);
++  --radius: 0.9rem;
++
++  --background: hsl(150 22% 97%);
++  --foreground: hsl(208 63% 15%);
+   --card: hsl(0 0% 100%);
+-  --card-foreground: hsl(222 47% 11%);
++  --card-foreground: hsl(208 63% 15%);
+   --popover: hsl(0 0% 100%);
+-  --popover-foreground: hsl(222 47% 11%);
+-
+-  --primary: hsl(222 47% 18%);
++  --popover-foreground: hsl(208 63% 15%);
++
++  --primary: hsl(183 78% 25%);
+   --primary-foreground: hsl(0 0% 100%);
+-
+-  --secondary: hsl(217 91% 60%);
++  --secondary: hsl(148 30% 47%);
+   --secondary-foreground: hsl(0 0% 100%);
+ 
+-  --muted: hsl(220 20% 94%);
+-  --muted-foreground: hsl(220 10% 46%);
+-
+-  --accent: hsl(220 20% 94%);
+-  --accent-foreground: hsl(222 47% 11%);
+-
+-  --destructive: hsl(0 72% 50%);
++  --muted: hsl(155 18% 94%);
++  --muted-foreground: hsl(204 13% 44%);
++  --accent: hsl(156 30% 92%);
++  --accent-foreground: hsl(183 78% 20%);
++
++  --destructive: hsl(6 78% 54%);
+   --destructive-foreground: hsl(0 0% 100%);
+ 
+-  --border: hsl(220 15% 90%);
+-  --input: hsl(220 15% 90%);
+-  --ring: hsl(217 91% 60%);
+-
+-  --brand: hsl(222 47% 22%);
+-  --brand-accent: hsl(217 91% 55%);
+-
+-  --sidebar: hsl(0 0% 100%);
+-  --sidebar-foreground: hsl(220 15% 35%);
+-  --sidebar-primary: hsl(222 47% 22%);
+-  --sidebar-primary-foreground: hsl(0 0% 100%);
+-  --sidebar-accent: hsl(220 20% 94%);
+-  --sidebar-accent-foreground: hsl(222 47% 11%);
+-  --sidebar-border: hsl(220 15% 90%);
+-  --sidebar-ring: hsl(217 91% 60%);
++  --border: hsl(164 18% 87%);
++  --input: hsl(164 18% 84%);
++  --ring: hsl(183 78% 30%);
++
++  --brand: hsl(183 78% 24%);
++  --brand-accent: hsl(148 31% 49%);
++  --brand-soft: hsl(156 34% 93%);
++  --brand-orange: hsl(27 83% 59%);
++
++  --sidebar: hsl(188 73% 14%);
++  --sidebar-foreground: hsl(154 27% 91%);
++  --sidebar-primary: hsl(152 43% 58%);
++  --sidebar-primary-foreground: hsl(188 73% 12%);
++  --sidebar-accent: hsl(185 50% 22%);
++  --sidebar-accent-foreground: hsl(0 0% 100%);
++  --sidebar-border: hsl(185 37% 25%);
++  --sidebar-ring: hsl(152 43% 58%);
++
++  --shadow-soft: 0 20px 60px -42px hsl(188 72% 14% / 0.45), 0 8px 24px -18px hsl(188 72% 14% / 0.24);
++  --shadow-card: 0 18px 42px -32px hsl(188 60% 18% / 0.35), 0 4px 14px -8px hsl(188 60% 18% / 0.15);
+ }
+ 
+ @layer base {
+@@ -95,31 +100,43 @@
+     border-color: var(--color-border);
+     min-width: 0;
+   }
++
++  html {
++    scroll-behavior: smooth;
++  }
++
+   html,
+   body {
++    max-width: 100vw;
+     overflow-x: hidden;
+-    max-width: 100vw;
+-  }
++  }
++
+   body {
+-    background-color: var(--color-background);
++    background:
++      radial-gradient(circle at 8% 4%, hsl(148 38% 92% / 0.7), transparent 28rem),
++      radial-gradient(circle at 94% 6%, hsl(28 100% 94% / 0.7), transparent 24rem),
++      linear-gradient(180deg, hsl(150 28% 98%), hsl(150 20% 96%));
+     color: var(--color-foreground);
+     font-family: var(--font-sans);
+     -webkit-font-smoothing: antialiased;
+-
++    text-rendering: optimizeLegibility;
+     padding-left: env(safe-area-inset-left);
+     padding-right: env(safe-area-inset-right);
+   }
++
+   h1,
+   h2,
+   h3,
+   h4 {
+     font-family: var(--font-display);
+-  }
+-  .font-display {
+-    font-family: var(--font-display);
+-  }
+-  .font-mono {
+-    font-family: var(--font-mono);
++    color: var(--color-foreground);
++  }
++
++  button,
++  input,
++  textarea,
++  select {
++    font: inherit;
+   }
+ 
+   img,
+@@ -127,115 +144,262 @@
+   svg {
+     max-width: 100%;
+   }
+-}
+-
+-@media (max-width: 640px) {
+-  [role="dialog"] {
+-    max-width: min(95vw, 28rem) !important;
+-    margin-left: auto !important;
+-    margin-right: auto !important;
+-  }
+-}
++
++  ::selection {
++    background: hsl(152 43% 58% / 0.25);
++    color: hsl(188 73% 12%);
++  }
++}
++
++.font-display {
++  font-family: var(--font-display);
++}
++
++.font-mono {
++  font-family: var(--font-mono);
++}
++
++/* Full application canvas */
++.eldercare-app {
++  min-height: 100vh;
++  background:
++    radial-gradient(circle at 88% -5%, hsl(27 85% 94% / 0.85), transparent 25rem),
++    radial-gradient(circle at 14% 10%, hsl(152 43% 92% / 0.9), transparent 26rem),
++    linear-gradient(180deg, hsl(150 30% 98%), hsl(150 22% 96%));
++}
++
++.eldercare-page {
++  position: relative;
++}
++
++.eldercare-page::before {
++  content: "";
++  position: absolute;
++  inset: -2rem -2rem auto;
++  height: 12rem;
++  pointer-events: none;
++  opacity: 0.38;
++  background-image: radial-gradient(circle at 1px 1px, hsl(183 55% 42% / 0.16) 1px, transparent 0);
++  background-size: 20px 20px;
++  mask-image: linear-gradient(to bottom, black, transparent);
++  z-index: -1;
++}
++
++/* Make every existing page feel like one product, even where legacy markup remains. */
++.eldercare-page > div:first-child:has(h1),
++.eldercare-page > header:first-child {
++  position: relative;
++  overflow: hidden;
++  margin-bottom: 1.5rem !important;
++  padding: 1.25rem 1.4rem !important;
++  border: 1px solid hsl(164 20% 85% / 0.9);
++  border-radius: 1.5rem;
++  background:
++    linear-gradient(110deg, hsl(0 0% 100% / 0.97), hsl(154 30% 96% / 0.96)),
++    white;
++  box-shadow: var(--shadow-card);
++}
++
++.eldercare-page > div:first-child:has(h1)::after,
++.eldercare-page > header:first-child::after {
++  content: "";
++  position: absolute;
++  width: 11rem;
++  height: 11rem;
++  right: -3rem;
++  top: -5.5rem;
++  border-radius: 999px;
++  background: radial-gradient(circle, hsl(27 83% 59% / 0.16), transparent 68%);
++  pointer-events: none;
++}
++
++.eldercare-page h1 {
++  letter-spacing: -0.035em;
++  font-style: normal !important;
++}
++
++.eldercare-page h2 {
++  letter-spacing: -0.018em;
++}
++
++.eldercare-page [class~="bg-card"] {
++  border-color: hsl(164 20% 87% / 0.95);
++  box-shadow: var(--shadow-card);
++}
++
++.eldercare-page [class~="rounded-3xl"] {
++  border-radius: 1.35rem;
++}
++
++.eldercare-page [class~="rounded-2xl"] {
++  border-radius: 1rem;
++}
++
++.eldercare-page [class*="hover:shadow"] {
++  transition-duration: 260ms;
++  transition-timing-function: var(--ease-out-expo);
++}
++
++.eldercare-page table {
++  border-collapse: separate;
++  border-spacing: 0;
++}
++
++.eldercare-page tbody tr {
++  transition: background-color 180ms ease, transform 180ms ease;
++}
++
++.eldercare-page tbody tr:hover {
++  background: hsl(156 34% 96%);
++}
++
++.eldercare-page a[class*="text-brand-accent"],
++.eldercare-page button[class*="text-brand-accent"] {
++  color: hsl(183 78% 27%);
++}
++
++/* Soft utility surfaces inspired by the supplied reference */
++.care-panel {
++  border: 1px solid hsl(164 20% 86%);
++  border-radius: 1.4rem;
++  background: hsl(0 0% 100% / 0.94);
++  box-shadow: var(--shadow-card);
++}
++
++.care-panel-muted {
++  border: 1px solid hsl(160 24% 88%);
++  border-radius: 1.25rem;
++  background: linear-gradient(135deg, hsl(154 28% 96%), hsl(0 0% 100%));
++}
++
++.care-kicker {
++  font-size: 0.68rem;
++  font-weight: 800;
++  letter-spacing: 0.16em;
++  text-transform: uppercase;
++  color: hsl(183 62% 29%);
++}
++
++.care-icon-tile {
++  display: grid;
++  width: 2.75rem;
++  height: 2.75rem;
++  place-items: center;
++  border-radius: 1rem;
++  color: hsl(183 73% 27%);
++  background: hsl(156 34% 92%);
++  box-shadow: inset 0 0 0 1px hsl(164 25% 84%);
++}
++
++.care-icon-tile.orange {
++  color: hsl(27 76% 47%);
++  background: hsl(30 100% 94%);
++  box-shadow: inset 0 0 0 1px hsl(30 72% 87%);
++}
++
++.care-icon-tile.blue {
++  color: hsl(205 74% 46%);
++  background: hsl(205 100% 95%);
++  box-shadow: inset 0 0 0 1px hsl(205 68% 88%);
++}
++
++/* Auth artwork */
++.auth-wave {
++  position: absolute;
++  inset: 0;
++  overflow: hidden;
++  background:
++    radial-gradient(circle at 65% 48%, hsl(145 46% 49% / 0.38), transparent 20rem),
++    radial-gradient(circle at 86% 12%, hsl(184 76% 24% / 0.9), transparent 31rem),
++    linear-gradient(142deg, hsl(187 77% 15%), hsl(183 76% 23%) 50%, hsl(183 65% 17%));
++}
++
++.auth-wave::before {
++  content: "";
++  position: absolute;
++  width: 58%;
++  min-width: 34rem;
++  height: 120%;
++  left: -17%;
++  top: -10%;
++  border-radius: 48% 52% 44% 56% / 40% 50% 50% 60%;
++  background: hsl(0 0% 100%);
++  box-shadow: 30px 0 80px hsl(188 70% 11% / 0.16);
++}
++
++.auth-wave::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  opacity: 0.08;
++  background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0);
++  background-size: 28px 28px;
++  mask-image: linear-gradient(90deg, transparent 35%, black);
++}
++
++.auth-glow-ring {
++  position: absolute;
++  border: 1px solid hsl(152 49% 69% / 0.58);
++  border-radius: 999px;
++  box-shadow: 0 0 50px hsl(152 49% 62% / 0.13);
++}
++
++/* Small interaction details */
++@keyframes fade-in {
++  from { opacity: 0; transform: translateY(8px); }
++  to { opacity: 1; transform: translateY(0); }
++}
++.animate-fade-in { animation: fade-in 0.45s var(--ease-out-expo) both; }
++
++@keyframes rise-in {
++  from { opacity: 0; transform: translateY(16px) scale(0.99); }
++  to { opacity: 1; transform: translateY(0) scale(1); }
++}
++.animate-rise-in { animation: rise-in 0.62s var(--ease-out-expo) both; }
++
++@keyframes auth-blob {
++  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
++  50% { transform: translate3d(14px, -18px, 0) scale(1.06); }
++}
++.animate-auth-blob { animation: auth-blob 13s var(--ease-out-expo) infinite; }
++
++@keyframes pulse-soft {
++  0%, 100% { transform: scale(1); opacity: 0.82; }
++  50% { transform: scale(1.05); opacity: 1; }
++}
++.animate-pulse-soft { animation: pulse-soft 3.6s ease-in-out infinite; }
++
++@keyframes float-care {
++  0%, 100% { transform: translateY(0); }
++  50% { transform: translateY(-8px); }
++}
++.animate-float-care { animation: float-care 4.5s ease-in-out infinite; }
++
++@keyframes flash-highlight {
++  0% { background-color: var(--color-accent); }
++  100% { background-color: transparent; }
++}
++.animate-flash { animation: flash-highlight 2s ease-out; }
++
++@keyframes slide-in-left {
++  from { transform: translateX(-100%); opacity: 0; }
++  to { transform: translateX(0); opacity: 1; }
++}
++.animate-slide-in-left { animation: slide-in-left 0.25s var(--ease-out-expo) both; }
++
++@keyframes spin-slow {
++  from { transform: rotate(0deg); }
++  to { transform: rotate(360deg); }
++}
++.animate-spin-slow { animation: spin-slow 3s linear infinite; }
++.animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+ 
+ .recharts-wrapper {
+   max-width: 100% !important;
+   overflow: hidden;
+ }
+ 
+-@keyframes fade-in {
+-  from {
+-    opacity: 0;
+-    transform: translateY(8px);
+-  }
+-  to {
+-    opacity: 1;
+-    transform: translateY(0);
+-  }
+-}
+-.animate-fade-in {
+-  animation: fade-in 0.5s var(--ease-out-expo) both;
+-}
+-
+-@keyframes auth-blob {
+-  0%,
+-  100% {
+-    transform: translate3d(0, 0, 0) scale(1);
+-  }
+-  50% {
+-    transform: translate3d(20px, -30px, 0) scale(1.08);
+-  }
+-}
+-.animate-auth-blob {
+-  animation: auth-blob 14s var(--ease-out-expo) infinite;
+-}
+-
+-@keyframes rise-in {
+-  from {
+-    opacity: 0;
+-    transform: translateY(14px);
+-  }
+-  to {
+-    opacity: 1;
+-    transform: translateY(0);
+-  }
+-}
+-.animate-rise-in {
+-  animation: rise-in 0.6s var(--ease-out-expo) both;
+-}
+-
+-@keyframes flash-highlight {
+-  0% {
+-    background-color: var(--color-accent);
+-  }
+-  100% {
+-    background-color: transparent;
+-  }
+-}
+-.animate-flash {
+-  animation: flash-highlight 2s ease-out;
+-}
+-
+-@keyframes slide-in-left {
+-  from {
+-    transform: translateX(-100%);
+-    opacity: 0;
+-  }
+-  to {
+-    transform: translateX(0);
+-    opacity: 1;
+-  }
+-}
+-.animate-slide-in-left {
+-  animation: slide-in-left 0.25s var(--ease-out-expo) both;
+-}
+-
+-@keyframes siren-pulse {
+-  0%,
+-  100% {
+-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+-  }
+-  50% {
+-    box-shadow: 0 0 0 20px rgba(220, 38, 38, 0);
+-  }
+-}
+-@keyframes spin-slow {
+-  from {
+-    transform: rotate(0deg);
+-  }
+-  to {
+-    transform: rotate(360deg);
+-  }
+-}
+-.animate-spin-slow {
+-  animation: spin-slow 3s linear infinite;
+-}
+-.animate-pulse-slow {
+-  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+-}
+-
+-:root.large-text {
+-  font-size: 118%;
+-}
++:root.large-text { font-size: 118%; }
+ 
+ :root.high-contrast {
+   --background: hsl(0 0% 100%);
+@@ -246,7 +410,7 @@
+   --popover-foreground: hsl(0 0% 0%);
+   --primary: hsl(0 0% 0%);
+   --primary-foreground: hsl(0 0% 100%);
+-  --secondary: hsl(240 100% 50%);
++  --secondary: hsl(172 100% 20%);
+   --secondary-foreground: hsl(0 0% 100%);
+   --muted: hsl(0 0% 90%);
+   --muted-foreground: hsl(0 0% 0%);
+@@ -256,25 +420,51 @@
+   --destructive-foreground: hsl(0 0% 100%);
+   --border: hsl(0 0% 0%);
+   --input: hsl(0 0% 0%);
+-  --ring: hsl(240 100% 50%);
++  --ring: hsl(172 100% 20%);
+   --brand: hsl(0 0% 0%);
+-  --brand-accent: hsl(240 100% 50%);
+-  --sidebar: hsl(0 0% 100%);
+-  --sidebar-foreground: hsl(0 0% 0%);
+-  --sidebar-primary: hsl(0 0% 0%);
+-  --sidebar-primary-foreground: hsl(0 0% 100%);
+-  --sidebar-accent: hsl(0 0% 90%);
+-  --sidebar-accent-foreground: hsl(0 0% 0%);
+-  --sidebar-border: hsl(0 0% 0%);
+-  --sidebar-ring: hsl(240 100% 50%);
+-}
+-
+-:root.high-contrast * {
+-  border-color: hsl(0 0% 0%) !important;
+-}
+-
+-:root.high-contrast a:hover,
+-:root.high-contrast button:hover {
+-  text-decoration: underline !important;
+-  outline: 2px solid hsl(240 100% 50%) !important;
+-}
++  --brand-accent: hsl(172 100% 20%);
++}
++
++@media (max-width: 1023px) {
++  .auth-wave::before {
++    width: 68%;
++    left: -32%;
++  }
++}
++
++@media (max-width: 767px) {
++  .eldercare-page > div:first-child:has(h1),
++  .eldercare-page > header:first-child {
++    padding: 1rem !important;
++    border-radius: 1.2rem;
++  }
++}
++
++@media (max-width: 640px) {
++  [role="dialog"] {
++    max-width: min(95vw, 30rem) !important;
++    margin-left: auto !important;
++    margin-right: auto !important;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *, *::before, *::after {
++    animation-duration: 0.01ms !important;
++    animation-iteration-count: 1 !important;
++    scroll-behavior: auto !important;
++    transition-duration: 0.01ms !important;
++  }
++}
++
++.eldercare-page > div:first-child:has(h1) > div:first-child::before,
++.eldercare-page > header:first-child > div:first-child::before {
++  content: "ElderCare Connect";
++  display: block;
++  margin-bottom: 0.35rem;
++  font-size: 0.65rem;
++  font-weight: 800;
++  letter-spacing: 0.16em;
++  text-transform: uppercase;
++  color: hsl(183 66% 31%);
++}

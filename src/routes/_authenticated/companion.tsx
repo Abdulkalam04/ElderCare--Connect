@@ -81,13 +81,13 @@ type HistoryMessage = {
 };
 type CompanionAction = {
   to:
-    | "/dashboard"
-    | "/medicines"
-    | "/appointments"
-    | "/video"
-    | "/wellbeing"
-    | "/emergency-contacts"
-    | "/sos";
+  | "/dashboard"
+  | "/medicines"
+  | "/appointments"
+  | "/video"
+  | "/wellbeing"
+  | "/emergency-contacts"
+  | "/sos";
   label: string;
 };
 function getCompanionAction(intent: string | null, urgent: boolean): CompanionAction | null {
@@ -658,9 +658,9 @@ function CompanionPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-2xl py-12">
-          <div className="rounded-3xl border border-blue-200 bg-blue-50 p-8 text-center text-blue-950 shadow-sm">
-            <ShieldAlert className="mx-auto mb-4 size-10 text-blue-600" />
-            <h1 className="font-display text-3xl font-bold italic">AI Companion is private</h1>
+          <div className="rounded-[1.5rem] border border-[#d4e3df] bg-white p-8 text-center text-[#23474d] shadow-[0_20px_50px_-40px_rgba(16,49,54,0.5)]">
+            <ShieldAlert className="mx-auto mb-4 size-10 text-[#176f69]" />
+            <h1 className="text-3xl font-bold">AI Companion is private</h1>
             <p className="mt-3 text-sm leading-relaxed">
               Companion conversations may contain personal feelings, symptoms, photos, and medical
               documents. They are available only from the care-recipient account and are not shared
@@ -673,47 +673,58 @@ function CompanionPage() {
   }
   return (
     <AppShell>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">AI Companion</h1>
-          <p className="mt-1 text-muted-foreground">
-            A private, friendly chat helper for {activeParent?.full_name ?? "you"}. Medicines,
-            appointments, wellbeing, daily planning, voice input, and read-aloud work for free.
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="rounded-xl"
-            >
-              <RefreshCw className={`mr-2 size-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowHistory((current) => !current)}
-              className="rounded-xl"
-            >
-              <History className="mr-2 size-4" /> {showHistory ? "Hide History" : "Chat History"}
-            </Button>
+      <section className="mb-5 overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)]">
+        <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-7">
+          <div className="max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#e8f3ef] px-3 py-1.5 text-xs font-bold text-[#176f69]">
+              <MessageCircleHeart className="size-3.5" />
+              Private support
+            </div>
+            <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">
+              AI Companion
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#667d82] sm:text-base">
+              A private assistant for{" "}
+              <span className="font-semibold text-[#294b50]">
+                {activeParent?.full_name ?? "you"}
+              </span>
+              —supporting medicines, appointments, wellbeing, planning, voice input and read-aloud.
+            </p>
           </div>
-          <div className="flex flex-wrap justify-end gap-1.5">
-            <Badge variant="secondary">Free local mode</Badge>
-            {companionSettings?.autoRead && <Badge variant="outline">Auto read-aloud</Badge>}
-            {companionSettings?.safetyEscalation && (
-              <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">
-                Family safety alerts enabled
-              </Badge>
-            )}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="rounded-xl"
+              >
+                <RefreshCw className={`mr-2 size-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowHistory((current) => !current)}
+                className="rounded-xl"
+              >
+                <History className="mr-2 size-4" /> {showHistory ? "Hide History" : "Chat History"}
+              </Button>
+            </div>
+            <div className="flex flex-wrap justify-end gap-1.5">
+              <Badge variant="secondary">Free local mode</Badge>
+              {companionSettings?.autoRead && <Badge variant="outline">Auto read-aloud</Badge>}
+              {companionSettings?.safetyEscalation && (
+                <Badge variant="outline" className="border-[#ebc2bf] bg-[#fff3f2] text-[#a14843]">
+                  Family safety alerts enabled
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+      <div className="mb-4 flex items-start gap-3 rounded-xl border border-[#ead8c4] bg-[#fbf7f0] p-4 text-sm text-[#54453a]">
         <ShieldAlert className="mt-0.5 size-5 shrink-0" />
         <p>
           The companion can make mistakes and cannot contact emergency services. For chest pain,
@@ -724,7 +735,7 @@ function CompanionPage() {
       </div>
 
       {chatError && (
-        <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        <div className="mb-4 rounded-xl border border-[#e9c9c6] bg-[#fff5f4] p-4 text-sm text-[#a74742]">
           Chat history could not be loaded. {(chatError as Error).message}
         </div>
       )}
@@ -732,9 +743,9 @@ function CompanionPage() {
       <div className={`flex gap-4 ${showHistory ? "flex-col md:flex-row" : ""}`}>
         {showHistory && (
           <aside className="w-full shrink-0 md:w-60">
-            <div className="overflow-hidden rounded-2xl border border-border bg-card">
-              <div className="border-b border-border p-3">
-                <p className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <div className="overflow-hidden rounded-xl border border-[#dce7e3] bg-white">
+              <div className="border-b border-[#dce7e3] p-3">
+                <p className="font-mono text-xs font-semibold uppercase tracking-widest text-[#6f8388]">
                   Conversations
                 </p>
               </div>
@@ -743,7 +754,7 @@ function CompanionPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedDate(todayKey)}
-                    className={`w-full px-3 py-2.5 text-left text-sm ${isViewingToday ? "bg-primary/5 font-medium text-primary" : "text-muted-foreground hover:bg-muted/40"}`}
+                    className={`w-full px-3 py-2.5 text-left text-sm ${isViewingToday ? "bg-[#eaf4f1] font-medium text-[#0d7774]" : "text-[#6f8388] hover:bg-[#f2f7f5]"}`}
                   >
                     <span className="flex items-center gap-2">
                       <CalendarDays className="size-3.5" /> Today (new)
@@ -751,7 +762,7 @@ function CompanionPage() {
                   </button>
                 )}
                 {historyDates.length === 0 ? (
-                  <p className="p-4 text-center text-xs text-muted-foreground">
+                  <p className="p-4 text-center text-xs text-[#6f8388]">
                     No conversations yet
                   </p>
                 ) : (
@@ -760,7 +771,7 @@ function CompanionPage() {
                       key={date}
                       type="button"
                       onClick={() => setSelectedDate(date)}
-                      className={`w-full px-3 py-2.5 text-left text-sm ${date === selectedDate ? "bg-primary/5 font-medium text-primary" : "text-muted-foreground hover:bg-muted/40"}`}
+                      className={`w-full px-3 py-2.5 text-left text-sm ${date === selectedDate ? "bg-[#eaf4f1] font-medium text-[#0d7774]" : "text-[#6f8388] hover:bg-[#f2f7f5]"}`}
                     >
                       <span className="flex items-center gap-2">
                         <CalendarDays className="size-3.5" /> {formatDateLabel(date)}
@@ -774,26 +785,26 @@ function CompanionPage() {
               </div>
             </div>
             {allMessages.length === 500 && (
-              <p className="mt-2 px-2 text-[10px] text-muted-foreground">
+              <p className="mt-2 px-2 text-[10px] text-[#6f8388]">
                 Showing the newest 500 messages.
               </p>
             )}
           </aside>
         )}
 
-        <div className="flex h-[68vh] flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-card">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex h-[72vh] flex-1 flex-col overflow-hidden rounded-[1.5rem] border border-[#dce7e3] bg-white shadow-[0_22px_55px_-42px_rgba(16,49,54,0.55)]">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#dce7e3] px-4 py-2">
+            <div className="flex items-center gap-2 text-sm text-[#6f8388]">
               {showHistory && <ChevronLeft className="size-4 md:hidden" />}
               <CalendarDays className="size-4" />
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-[#17343a]">
                 {isViewingToday ? "Today" : formatDateLabel(selectedDate)}
               </span>
               {!isViewingToday && (
                 <button
                   type="button"
                   onClick={() => setSelectedDate(todayKey)}
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-[#0d7774] hover:underline"
                 >
                   Back to today
                 </button>
@@ -808,7 +819,7 @@ function CompanionPage() {
                   if (confirm(`Clear ${isViewingToday ? "today's" : "this day's"} conversation?`))
                     clearChat.mutate();
                 }}
-                className="h-8 rounded-lg text-xs text-muted-foreground hover:text-destructive"
+                className="h-8 rounded-lg text-xs text-[#6f8388] hover:text-[#a74742]"
               >
                 <Trash2 className="mr-1.5 size-3.5" />{" "}
                 {clearChat.isPending ? "Clearing…" : "Clear chat"}
@@ -818,14 +829,14 @@ function CompanionPage() {
 
           <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
             {isLoading ? (
-              <div className="grid h-full place-items-center text-muted-foreground">
+              <div className="grid h-full place-items-center text-[#6f8388]">
                 <Loader2 className="size-7 animate-spin" />
               </div>
             ) : messages.length === 0 && !sending ? (
-              <div className="grid h-full place-items-center text-center text-muted-foreground">
+              <div className="grid h-full place-items-center text-center text-[#6f8388]">
                 <div className="max-w-md">
                   <MessageCircleHeart className="mx-auto mb-3 size-10 text-secondary" />
-                  <p className="font-medium text-foreground">
+                  <p className="font-medium text-[#17343a]">
                     {isViewingToday ? "Say hello to your companion" : "No messages on this day"}
                   </p>
                   {isViewingToday ? (
@@ -840,7 +851,7 @@ function CompanionPage() {
                           key={prompt}
                           type="button"
                           onClick={() => setInput(prompt)}
-                          className="rounded-full border border-border bg-background px-3 py-1.5 text-xs hover:border-primary/40 hover:text-primary"
+                          className="rounded-full border border-[#dce7e3] bg-background px-3 py-1.5 text-xs hover:border-[#0d7774]/40 hover:text-[#0d7774]"
                         >
                           {prompt}
                         </button>
@@ -850,7 +861,7 @@ function CompanionPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedDate(todayKey)}
-                      className="mt-2 text-sm text-primary hover:underline"
+                      className="mt-2 text-sm text-[#0d7774] hover:underline"
                     >
                       Go to today's chat
                     </button>
@@ -872,20 +883,19 @@ function CompanionPage() {
                       onClick={() => {
                         if (confirm("Delete this message?")) deleteMessage.mutate(message.id);
                       }}
-                      className="mt-1 size-7 shrink-0 rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-destructive"
+                      className="mt-1 size-7 shrink-0 rounded-lg text-[#6f8388] opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-[#a74742]"
                       aria-label="Delete message"
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
                   )}
                   <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
+                    className={`rounded-xl px-4 py-2.5 text-sm leading-relaxed shadow-[0_18px_45px_-38px_rgba(16,49,54,0.45)] ${message.role === "user"
+                        ? "bg-[#0d6665] text-[#0d7774]-foreground"
                         : message.is_urgent
-                          ? "border border-red-300 bg-red-50 text-red-950"
-                          : "bg-accent text-accent-foreground"
-                    }`}
+                          ? "border border-[#e2aaa5] bg-[#fff3f2] text-[#5f312e]"
+                          : "bg-[#eaf4f1] text-[#24545a]"
+                      }`}
                   >
                     {message.is_urgent && (
                       <div className="mb-2 flex items-center gap-2 font-semibold">
@@ -907,7 +917,7 @@ function CompanionPage() {
                         </Button>
                       )}
                     <div
-                      className={`mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] ${message.role === "user" ? "text-primary-foreground/60" : "opacity-60"}`}
+                      className={`mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] ${message.role === "user" ? "text-[#0d7774]-foreground/60" : "opacity-60"}`}
                     >
                       <span>{format(new Date(message.created_at), "h:mm a")}</span>
                       {message.role === "assistant" && sourceLabel(message.response_source) && (
@@ -927,7 +937,7 @@ function CompanionPage() {
                             if (isSpeaking) stopSpeaking();
                             else speak(message.content);
                           }}
-                          className="size-7 rounded-lg text-muted-foreground hover:text-primary"
+                          className="size-7 rounded-lg text-[#6f8388] hover:text-[#0d7774]"
                           aria-label={isSpeaking ? "Stop reading message" : "Read message aloud"}
                           title={isSpeaking ? "Stop reading" : "Read aloud"}
                         >
@@ -944,7 +954,7 @@ function CompanionPage() {
                         onClick={() => {
                           if (confirm("Delete this message?")) deleteMessage.mutate(message.id);
                         }}
-                        className="size-7 rounded-lg text-muted-foreground hover:text-destructive"
+                        className="size-7 rounded-lg text-[#6f8388] hover:text-[#a74742]"
                         aria-label="Delete message"
                       >
                         <Trash2 className="size-3.5" />
@@ -959,7 +969,7 @@ function CompanionPage() {
               .filter((item) => !item.persistedMessageId)
               .map((item) => (
                 <div key={item.id} className="flex justify-end">
-                  <div className="max-w-[78%] rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-950">
+                  <div className="max-w-[78%] rounded-xl border border-[#ead8c4] bg-[#fbf7f0] px-4 py-2.5 text-sm text-[#54453a]">
                     <p className="whitespace-pre-wrap">{item.text}</p>
                     <p className="mt-1 flex items-center justify-end gap-1 text-[9px] opacity-60">
                       <Clock className="size-3" /> Queued
@@ -970,7 +980,7 @@ function CompanionPage() {
 
             {sending && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-2 rounded-2xl bg-accent px-4 py-2.5 text-sm text-accent-foreground">
+                <div className="flex items-center gap-2 rounded-xl bg-[#eaf4f1] px-4 py-2.5 text-sm text-[#24545a]">
                   {retryingIn > 0 ? (
                     <Clock className="size-4 animate-pulse" />
                   ) : (
@@ -986,7 +996,7 @@ function CompanionPage() {
           </div>
 
           {isRateLimited && (
-            <div className="shrink-0 space-y-1 border-t border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="shrink-0 space-y-1 border-t border-[#ead8c4] bg-[#fbf7f0] px-4 py-3 text-sm text-[#6f563e]">
               <div className="flex items-center gap-2 font-medium">
                 <Clock className="size-4" /> Please wait {countdown}s before another request.
               </div>
@@ -999,13 +1009,13 @@ function CompanionPage() {
             </div>
           )}
 
-          <div className="shrink-0 space-y-2 border-t border-border p-3 sm:p-4">
+          <div className="shrink-0 space-y-2 border-t border-[#dce7e3] p-3 sm:p-4">
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {attachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="relative flex max-w-[220px] items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 py-1 pl-1 pr-7 text-xs text-blue-950"
+                    className="relative flex max-w-[220px] items-center gap-2 rounded-lg border border-[#cfe1dc] bg-[#f0f6f5] py-1 pl-1 pr-7 text-xs text-[#23474d]"
                   >
                     {attachment.kind === "image" ? (
                       <img
@@ -1014,7 +1024,7 @@ function CompanionPage() {
                         className="size-8 rounded object-cover"
                       />
                     ) : (
-                      <FileText className="ml-1 size-5 text-blue-600" />
+                      <FileText className="ml-1 size-5 text-[#0d7774]" />
                     )}
                     <span className="truncate">{attachment.name}</span>
                     <button
@@ -1123,7 +1133,7 @@ function CompanionPage() {
                   disabled={!activeParentId || !isViewingToday || (sending && !isRateLimited)}
                   className="min-h-[54px] resize-none"
                 />
-                <p className="mt-1 text-right text-[9px] text-muted-foreground">
+                <p className="mt-1 text-right text-[9px] text-[#6f8388]">
                   {input.length}/{MAX_MESSAGE_LENGTH}
                 </p>
               </div>

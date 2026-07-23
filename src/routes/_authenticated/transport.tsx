@@ -110,45 +110,45 @@ const STATUS_CONFIG: Record<
 > = {
   pending: {
     label: "Pending",
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    dot: "bg-amber-400",
+    bg: "bg-[#f7eddf]",
+    text: "text-[#9b6638]",
+    dot: "bg-[#c98b4d]",
   },
   confirmed: {
     label: "Confirmed",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    dot: "bg-blue-500",
+    bg: "bg-[#e8eff5]",
+    text: "text-[#4b6d8e]",
+    dot: "bg-[#e8eff5]0",
   },
   driver_assigned: {
     label: "Driver Assigned",
-    bg: "bg-violet-50",
-    text: "text-violet-700",
-    dot: "bg-violet-500",
+    bg: "bg-[#eeebf4]",
+    text: "text-[#6f6388]",
+    dot: "bg-[#eeebf4]0",
   },
   en_route: {
     label: "En Route",
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    dot: "bg-emerald-500",
+    bg: "bg-[#e6f2ed]",
+    text: "text-[#1b725f]",
+    dot: "bg-[#e6f2ed]0",
   },
   arrived: {
     label: "Arrived",
-    bg: "bg-teal-50",
-    text: "text-teal-700",
-    dot: "bg-teal-500",
+    bg: "bg-[#e2f1ed]",
+    text: "text-[#176f69]",
+    dot: "bg-[#e2f1ed]0",
   },
   completed: {
     label: "Completed",
-    bg: "bg-stone-100",
-    text: "text-stone-600",
-    dot: "bg-stone-400",
+    bg: "bg-[#edf2f0]",
+    text: "text-[#60777b]",
+    dot: "bg-[#8aa09f]",
   },
   cancelled: {
     label: "Cancelled",
-    bg: "bg-red-50",
-    text: "text-red-600",
-    dot: "bg-red-400",
+    bg: "bg-[#f8e7e5]",
+    text: "text-[#aa4e49]",
+    dot: "bg-[#c8655f]",
   },
 };
 const PURPOSE_CONFIG: Record<
@@ -158,9 +158,9 @@ const PURPOSE_CONFIG: Record<
     className: string;
   }
 > = {
-  hospital: { label: "Hospital Visit", className: "bg-rose-50 text-rose-700 border-rose-200" },
-  checkup: { label: "Medical Checkup", className: "bg-sky-50 text-sky-700 border-sky-200" },
-  emergency: { label: "Emergency", className: "bg-red-50 text-red-700 border-red-200" },
+  hospital: { label: "Hospital Visit", className: "bg-[#f8e9e6] text-[#a95850] border-[#edceca]" },
+  checkup: { label: "Medical Checkup", className: "bg-[#e8f1f4] text-[#4a7280] border-[#cddfe4]" },
+  emergency: { label: "Emergency", className: "bg-[#f8e7e5] text-red-700 border-red-200" },
 };
 const CANCELLABLE_STATUSES: TransportStatus[] = [
   "pending",
@@ -248,11 +248,10 @@ function TripTypeBadge({ tripType }: { tripType: TripType }) {
   const isRoundTrip = tripType === "round_trip";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${
-        isRoundTrip
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${isRoundTrip
           ? "border-sky-200 bg-sky-50 text-sky-700"
-          : "border-stone-200 bg-stone-50 text-stone-600"
-      }`}
+          : "border-stone-200 bg-stone-50 text-[#60777b]"
+        }`}
     >
       {isRoundTrip ? <ArrowLeftRight className="size-2.5" /> : <ArrowRight className="size-2.5" />}
       {isRoundTrip ? "Round-Trip" : "One-Way"}
@@ -706,119 +705,306 @@ function TransportPage() {
     deleteRide.isPending ||
     updateStatus.isPending ||
     assignDriver.isPending;
+  const nextRide = activeRides[0] ?? null;
+  const pendingCount = (rides ?? []).filter((ride) => ride.status === "pending").length;
+  const assignedCount = (rides ?? []).filter((ride) =>
+    ["driver_assigned", "en_route", "arrived"].includes(ride.status),
+  ).length;
+  const completedCount = (rides ?? []).filter((ride) => ride.status === "completed").length;
   return (
     <AppShell>
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">
-            Transport Request & Coordination
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Request and manually coordinate medical travel for {activeParent?.full_name ?? "—"}
-          </p>
-        </div>
+      <div className="space-y-6 pb-10">
+        <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)]">
+          <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-7">
+            <div className="max-w-2xl">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-[#e7f2ee] px-3 py-1.5 text-xs font-bold text-[#176f69]">
+                  <Car className="size-3.5" />
+                  Care transport
+                </span>
+
+                {isChildView && (
+                  <span className="rounded-full border border-[#d8e5e1] bg-[#f7faf9] px-3 py-1.5 text-xs font-semibold text-[#647b80]">
+                    Read-only family view
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">
+                Medical transport
+              </h1>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[#667d82] sm:text-base">
+                Plan and coordinate safe medical travel for{" "}
+                <span className="font-semibold text-[#294b50]">
+                  {activeParent?.full_name ?? "the selected profile"}
+                </span>
+                , from pickup details through driver assignment and trip completion.
+              </p>
+            </div>
+
+            {!isChildView && (
+              <Button
+                id="btn-new-transport"
+                type="button"
+                disabled={!activeParentId}
+                onClick={() => openNew()}
+                className="h-11 rounded-xl bg-[#0d6665] px-5 font-semibold text-white shadow-[0_14px_30px_-18px_rgba(13,102,101,0.9)] hover:bg-[#0a5958]"
+              >
+                <Plus className="size-4" />
+                Book transport
+              </Button>
+            )}
+          </div>
+
+          <div className="grid border-t border-[#e2ece9] bg-[#f7faf9] sm:grid-cols-2 lg:grid-cols-4">
+            <SummaryMetric
+              label="Active bookings"
+              value={String(activeRides.length)}
+              detail="Current transport plans"
+              icon={Car}
+              iconBackground="bg-[#e5f2ed]"
+              iconClass="text-[#19705f]"
+            />
+
+            <SummaryMetric
+              label="Awaiting confirmation"
+              value={String(pendingCount)}
+              detail="Requests requiring action"
+              icon={Clock}
+              iconBackground="bg-[#f7eddf]"
+              iconClass="text-[#996337]"
+            />
+
+            <SummaryMetric
+              label="Assigned or travelling"
+              value={String(assignedCount)}
+              detail="Trips currently coordinated"
+              icon={Navigation}
+              iconBackground="bg-[#e8eff5]"
+              iconClass="text-[#4d6f8e]"
+            />
+
+            <SummaryMetric
+              label="Completed"
+              value={String(completedCount)}
+              detail="Finished transport journeys"
+              icon={CheckCircle2}
+              iconBackground="bg-[#edf2f0]"
+              iconClass="text-[#60777b]"
+              last
+            />
+          </div>
+        </section>
+
+        {isChildView && (
+          <section className="flex items-start gap-3 rounded-2xl border border-[#ead8c5] bg-[#fbf6f0] p-4 text-sm text-[#806247]">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+            <p>
+              You can review transport details, route links and driver information, but only the
+              parent account can create or manage bookings.
+            </p>
+          </section>
+        )}
+
+        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-[1.5rem] border border-[#dce8e4] bg-white p-5 shadow-[0_18px_45px_-38px_rgba(18,49,54,0.45)] sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.13em] text-[#758b8f]">
+                  Next scheduled journey
+                </p>
+
+                {nextRide ? (
+                  <>
+                    <h2 className="mt-2 text-xl font-bold tracking-[-0.03em] text-[#17343a]">
+                      {nextRide.pickup_address} to {nextRide.destination}
+                    </h2>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <PurposeBadge purpose={nextRide.purpose ?? "checkup"} />
+                      <TripTypeBadge tripType={nextRide.trip_type ?? "one_way"} />
+                      <StatusBadge status={nextRide.status} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="mt-2 text-xl font-bold tracking-[-0.03em] text-[#17343a]">
+                      No journey scheduled
+                    </h2>
+                    <p className="mt-2 text-sm text-[#71868a]">
+                      Create a booking when medical travel is required.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#e7f2ee] text-[#176f69]">
+                <Navigation className="size-5" />
+              </span>
+            </div>
+
+            {nextRide && (
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <JourneyDetail
+                  icon={CalendarDays}
+                  label="Date"
+                  value={formatDisplayDate(nextRide.transport_date)}
+                />
+                <JourneyDetail
+                  icon={Clock}
+                  label="Pickup time"
+                  value={formatDisplayTime(nextRide.transport_time)}
+                />
+                <JourneyDetail
+                  icon={UserCheck}
+                  label="Driver"
+                  value={
+                    driverMap.get(nextRide.driver_id ?? "") ??
+                    nextRide.driver_name ??
+                    "Not assigned"
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-[1.5rem] border border-[#dce8e4] bg-[#0c3f45] p-5 text-white shadow-[0_18px_45px_-38px_rgba(18,49,54,0.55)] sm:p-6">
+            <div className="flex items-start gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/10 text-[#a8d7cb]">
+                <ShieldAlert className="size-5" />
+              </span>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.13em] text-[#a9cbc5]">
+                  Coordination notice
+                </p>
+                <h2 className="mt-2 text-lg font-bold">Manual booking workflow</h2>
+                <p className="mt-2 text-sm leading-6 text-white/70">
+                  This module records and coordinates travel. It does not automatically reserve an
+                  Uber, Ola, ambulance or commercial medical cab. The family coordinator updates
+                  driver details and ride progress manually.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {!isChildView && (
-          <Button
-            id="btn-new-transport"
-            disabled={!activeParentId}
-            onClick={() => openNew()}
-            className="cursor-pointer rounded-xl"
-          >
-            <Plus className="mr-2 size-4" />
-            Book Transport
-          </Button>
-        )}
-      </div>
-
-      {isChildView && (
-        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          <ShieldAlert className="size-4 shrink-0" />
-          You do not have permission to manage transport bookings. Viewing in read-only mode.
-        </div>
-      )}
-
-      <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
-        This free module records and coordinates a transport request. It does not automatically book
-        Uber, Ola, an ambulance, or a commercial medical cab. Driver details and ride statuses must
-        be updated manually by the family or coordinator.
-      </div>
-
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {kpiStatuses.map((status) => {
-          const count = (rides ?? []).filter((ride) => ride.status === status).length;
-          const config = STATUS_CONFIG[status];
-          return (
-            <div
-              key={status}
-              className="flex flex-col gap-1 rounded-2xl border border-border bg-card p-4"
-            >
-              <span className={`font-mono text-[10px] uppercase tracking-widest ${config.text}`}>
-                {config.label}
-              </span>
-              <p className="text-2xl font-bold">{count}</p>
+          <section>
+            <div className="mb-4">
+              <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                Quick booking
+              </h2>
+              <p className="mt-1 text-sm text-[#71868a]">
+                Start with the journey type and complete the travel details in the booking form.
+              </p>
             </div>
-          );
-        })}
-      </div>
 
-      {!isChildView && (
-        <div className="mb-8">
-          <h2 className="mb-4 font-display text-xl font-bold">Quick Book</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <button
-              id="btn-book-one-way"
-              type="button"
-              disabled={!activeParentId}
-              onClick={() => openNew("one_way")}
-              className="group cursor-pointer rounded-3xl border border-border bg-card p-6 text-left transition-all duration-200 hover:border-primary hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <div className="mb-3 flex size-11 items-center justify-center rounded-2xl bg-stone-50 text-stone-600 transition-transform group-hover:scale-110">
-                <ArrowRight className="size-5" />
-              </div>
-              <p className="font-display text-lg font-bold">One-Way Trip</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Single journey to your destination
-              </p>
-            </button>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <button
+                id="btn-book-one-way"
+                type="button"
+                disabled={!activeParentId}
+                onClick={() => openNew("one_way")}
+                className="group rounded-2xl border border-[#dce7e3] bg-white p-5 text-left shadow-[0_16px_38px_-32px_rgba(16,49,54,0.45)] transition duration-200 hover:-translate-y-0.5 hover:border-[#b8d1c9] hover:shadow-[0_22px_42px_-30px_rgba(16,49,54,0.35)] disabled:cursor-not-allowed disabled:opacity-50 sm:p-6"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <span className="grid size-11 place-items-center rounded-xl bg-[#edf2f0] text-[#587277]">
+                    <ArrowRight className="size-5" />
+                  </span>
+                  <span className="text-xs font-bold text-[#7c9094] transition-colors group-hover:text-[#0d7774]">
+                    New booking
+                  </span>
+                </div>
 
-            <button
-              id="btn-book-round-trip"
-              type="button"
-              disabled={!activeParentId}
-              onClick={() => openNew("round_trip")}
-              className="group cursor-pointer rounded-3xl border border-border bg-card p-6 text-left transition-all duration-200 hover:border-primary hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <div className="mb-3 flex size-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 transition-transform group-hover:scale-110">
-                <ArrowLeftRight className="size-5" />
-              </div>
-              <p className="font-display text-lg font-bold">Round-Trip</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Schedule the outbound and return journey
+                <h3 className="mt-5 text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                  One-way journey
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[#71868a]">
+                  Coordinate a single pickup and drop-off for an appointment or hospital visit.
+                </p>
+              </button>
+
+              <button
+                id="btn-book-round-trip"
+                type="button"
+                disabled={!activeParentId}
+                onClick={() => openNew("round_trip")}
+                className="group rounded-2xl border border-[#dce7e3] bg-white p-5 text-left shadow-[0_16px_38px_-32px_rgba(16,49,54,0.45)] transition duration-200 hover:-translate-y-0.5 hover:border-[#b8d1c9] hover:shadow-[0_22px_42px_-30px_rgba(16,49,54,0.35)] disabled:cursor-not-allowed disabled:opacity-50 sm:p-6"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <span className="grid size-11 place-items-center rounded-xl bg-[#e7f0f4] text-[#4c7180]">
+                    <ArrowLeftRight className="size-5" />
+                  </span>
+                  <span className="text-xs font-bold text-[#7c9094] transition-colors group-hover:text-[#0d7774]">
+                    New booking
+                  </span>
+                </div>
+
+                <h3 className="mt-5 text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                  Round-trip journey
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[#71868a]">
+                  Schedule both outbound and return travel in one coordinated booking.
+                </p>
+              </button>
+            </div>
+          </section>
+        )}
+
+        <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_18px_50px_-40px_rgba(18,49,54,0.45)]">
+          <div className="flex flex-col gap-2 border-b border-[#e3ece9] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                Active transport schedule
+              </h2>
+              <p className="mt-1 text-sm text-[#72868a]">
+                Follow each request from approval through arrival and completion.
               </p>
-            </button>
+            </div>
+
+            <span className="rounded-full bg-[#edf3f1] px-3 py-1.5 text-xs font-semibold text-[#60787c]">
+              {activeRides.length} active
+            </span>
           </div>
-        </div>
-      )}
-
-      <div className="space-y-6">
-        <div>
-          <h2 className="mb-4 font-display text-xl font-bold">Transport Schedule</h2>
 
           {isLoading ? (
-            <div className="animate-pulse rounded-3xl border border-border bg-card p-12 text-center text-muted-foreground">
-              Loading transport bookings…
+            <div className="space-y-3 p-5 sm:p-6">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="flex animate-pulse items-center gap-4 rounded-xl py-3">
+                  <div className="size-12 rounded-xl bg-[#edf2f0]" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-48 rounded bg-[#e7eeec]" />
+                    <div className="h-3 w-64 max-w-full rounded bg-[#eff3f2]" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : activeRides.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-border bg-card p-14 text-center text-muted-foreground">
-              <Car className="mx-auto mb-3 size-10 opacity-30" />
-              <p className="text-base font-semibold">No active transport bookings.</p>
+            <div className="flex flex-col items-center px-6 py-16 text-center">
+              <span className="grid size-14 place-items-center rounded-2xl bg-[#e7f2ee] text-[#176f69]">
+                <Car className="size-6" />
+              </span>
+              <h3 className="mt-5 text-lg font-bold text-[#1c3b41]">
+                No active transport bookings
+              </h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-[#71868a]">
+                Upcoming and in-progress journeys will appear here.
+              </p>
               {!isChildView && (
-                <p className="mt-1 text-sm">Use the cards above to schedule a ride.</p>
+                <Button
+                  type="button"
+                  className="mt-6 h-11 rounded-xl bg-[#0d6665] px-5 text-white hover:bg-[#0a5958]"
+                  onClick={() => openNew()}
+                >
+                  <Plus className="size-4" />
+                  Book transport
+                </Button>
               )}
             </div>
           ) : (
-            <div className="divide-y divide-border overflow-hidden rounded-3xl border border-border bg-card">
+            <div className="divide-y divide-[#e7eeec]">
               {activeRides.map((ride) => (
                 <RideRow
                   key={ride.id}
@@ -835,12 +1021,26 @@ function TransportPage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {historyRides.length > 0 && (
-          <div>
-            <h2 className="mb-4 font-display text-xl font-bold text-muted-foreground">History</h2>
-            <div className="divide-y divide-border overflow-hidden rounded-3xl border border-border bg-card">
+          <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_18px_50px_-40px_rgba(18,49,54,0.45)]">
+            <div className="flex items-center justify-between gap-4 border-b border-[#e3ece9] px-5 py-5 sm:px-6">
+              <div>
+                <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">
+                  Transport history
+                </h2>
+                <p className="mt-1 text-sm text-[#72868a]">
+                  Completed and cancelled journeys remain available for reference.
+                </p>
+              </div>
+
+              <span className="rounded-full bg-[#edf3f1] px-3 py-1.5 text-xs font-semibold text-[#60787c]">
+                {historyRides.length} records
+              </span>
+            </div>
+
+            <div className="divide-y divide-[#e7eeec]">
               {historyRides.map((ride) => (
                 <RideRow
                   key={ride.id}
@@ -856,7 +1056,7 @@ function TransportPage() {
                 />
               ))}
             </div>
-          </div>
+          </section>
         )}
       </div>
 
@@ -867,9 +1067,9 @@ function TransportPage() {
           else setOpen(true);
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl sm:max-w-[560px]">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-bold">
+        <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[1.5rem] border-[#dce7e3] p-0 sm:max-w-[620px]">
+          <DialogHeader className="border-b border-[#e3ece9] px-6 py-5 text-left">
+            <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">
               {editingRide ? "Edit Transport Booking" : "Book Medical Transport"}
             </DialogTitle>
             <DialogDescription>
@@ -878,7 +1078,7 @@ function TransportPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 px-6 py-5">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="tr-trip-type">Trip Type</Label>
@@ -1099,7 +1299,7 @@ function TransportPage() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-[#e3ece9] px-6 py-5">
             <Button variant="outline" onClick={closeDialog} disabled={formPending}>
               Cancel
             </Button>
@@ -1126,9 +1326,9 @@ function TransportPage() {
           if (!value) closeDriverAssignment();
         }}
       >
-        <DialogContent className="rounded-3xl sm:max-w-[460px]">
+        <DialogContent className="rounded-[1.5rem] border-[#dce7e3] sm:max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>Assign Driver</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">Assign driver</DialogTitle>
             <DialogDescription>
               Enter the actual driver and vehicle details. These details will be visible in the ride
               card.
@@ -1209,9 +1409,9 @@ function TransportPage() {
           if (!value) closeCancellation();
         }}
       >
-        <DialogContent className="rounded-3xl sm:max-w-[460px]">
+        <DialogContent className="rounded-[1.5rem] border-[#dce7e3] sm:max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>Cancel Transport Request</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">Cancel transport request</DialogTitle>
             <DialogDescription>
               The request will remain in history, and linked family members will receive the
               cancellation update.
@@ -1315,205 +1515,316 @@ function RideRow({
                 ? ride.cancelled_at
                 : ride.created_at;
   return (
-    <div
-      className={`flex items-start gap-4 p-4 transition-colors hover:bg-stone-50/50 sm:gap-5 sm:p-5 ${
-        ride.status === "en_route" || ride.status === "driver_assigned"
-          ? "border-l-4 border-emerald-400"
-          : ""
-      } ${isUpdated ? "animate-flash" : ""}`}
+    <article
+      className={`relative px-5 py-5 transition-colors hover:bg-[#fbfdfc] sm:px-6 ${isUpdated ? "animate-flash" : ""
+        }`}
     >
-      <div
-        className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${ride.trip_type === "round_trip" ? "bg-sky-50 text-sky-600" : "bg-stone-100 text-stone-600"}`}
-      >
-        {ride.trip_type === "round_trip" ? (
-          <ArrowLeftRight className="size-5" />
-        ) : (
-          <Navigation className="size-5" />
-        )}
-      </div>
+      {(ride.status === "en_route" || ride.status === "driver_assigned") && (
+        <span className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-[#4b9b7d]" />
+      )}
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <TripTypeBadge tripType={ride.trip_type ?? "one_way"} />
-          <PurposeBadge purpose={ride.purpose ?? "checkup"} />
-          <StatusBadge status={ride.status} />
-          {ride.provider && ride.provider !== "Auto Match" && (
-            <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[10px] font-semibold text-stone-600">
-              {ride.provider}
-            </span>
-          )}
-          {isPastDue && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-              <AlertTriangle className="size-3" /> Past due
-            </span>
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+        <div
+          className={`grid size-12 shrink-0 place-items-center rounded-xl ${ride.trip_type === "round_trip"
+              ? "bg-[#e7f0f4] text-[#4c7180]"
+              : "bg-[#edf2f0] text-[#587277]"
+            }`}
+        >
+          {ride.trip_type === "round_trip" ? (
+            <ArrowLeftRight className="size-5" />
+          ) : (
+            <Navigation className="size-5" />
           )}
         </div>
 
-        <div className="mt-2 flex min-w-0 items-center gap-2 text-sm font-medium text-stone-800">
-          <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="truncate">{ride.pickup_address}</span>
-          <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="truncate">{ride.destination}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <TripTypeBadge tripType={ride.trip_type ?? "one_way"} />
+            <PurposeBadge purpose={ride.purpose ?? "checkup"} />
+            <StatusBadge status={ride.status} />
+
+            {ride.provider && ride.provider !== "Auto Match" && (
+              <span className="inline-flex items-center rounded-full border border-[#dce6e3] bg-[#f7faf9] px-2.5 py-1 text-[10px] font-semibold text-[#61777b]">
+                {ride.provider}
+              </span>
+            )}
+
+            {isPastDue && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#ebc8c4] bg-[#f8e5e3] px-2.5 py-1 text-[10px] font-semibold text-[#a84742]">
+                <AlertTriangle className="size-3" />
+                Past due
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 grid gap-3 rounded-2xl border border-[#e2ebe8] bg-[#f8fbfa] p-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#849599]">
+                Pickup
+              </p>
+              <p className="mt-1 truncate text-sm font-bold text-[#24454a]">
+                {ride.pickup_address}
+              </p>
+            </div>
+
+            <span className="hidden size-8 place-items-center rounded-full bg-white text-[#6c8286] shadow-sm sm:grid">
+              <ArrowRight className="size-3.5" />
+            </span>
+
+            <div className="min-w-0 sm:text-right">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#849599]">
+                Destination
+              </p>
+              <p className="mt-1 truncate text-sm font-bold text-[#24454a]">
+                {ride.destination}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-[#687f83]">
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="size-3.5 text-[#0d7774]" />
+              {formatDisplayDate(ride.transport_date)}
+            </span>
+
+            <span className="flex items-center gap-1.5">
+              <Clock className="size-3.5 text-[#0d7774]" />
+              {formatDisplayTime(ride.transport_time)}
+            </span>
+
+            {formatLifecycleTime(lifecycleTime) && (
+              <span className="text-[#819397]">
+                {STATUS_CONFIG[ride.status].label}: {formatLifecycleTime(lifecycleTime)}
+              </span>
+            )}
+          </div>
+
+          {ride.trip_type === "round_trip" && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-[#d2e2e7] bg-[#edf5f7] px-3 py-2.5 text-xs text-[#4c7180]">
+              <ArrowLeftRight className="size-3.5" />
+              <span className="font-bold">Return journey</span>
+              <span>{formatDisplayDate(ride.return_date)}</span>
+              <span>{formatDisplayTime(ride.return_time)}</span>
+            </div>
+          )}
+
+          {(ride.notes || ride.special_assistance) && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {ride.notes && (
+                <div className="rounded-xl border border-[#e4ebe9] bg-white px-3 py-2.5 text-xs leading-5 text-[#657b7f]">
+                  <span className="font-bold text-[#3c5a5f]">Notes: </span>
+                  {ride.notes}
+                </div>
+              )}
+
+              {ride.special_assistance && (
+                <div className="flex items-start gap-2 rounded-xl border border-[#ead8c5] bg-[#fbf6f0] px-3 py-2.5 text-xs leading-5 text-[#806247]">
+                  <UserCheck className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    <span className="font-bold">Assistance: </span>
+                    {ride.special_assistance}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {driverKnown && (ride.driver_name || driverName) && (
+            <div className="mt-3 flex flex-col gap-3 rounded-xl border border-[#ddd9e7] bg-[#f4f2f8] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#e4dfea] text-[#6f6388]">
+                  <UserCheck className="size-4" />
+                </span>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[#403c4a]">
+                    {driverName || ride.driver_name}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-[#766e84]">
+                    {[ride.provider, ride.driver_vehicle].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+              </div>
+
+              {ride.driver_phone && (
+                <a
+                  href={`tel:${ride.driver_phone}`}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[#d3cede] bg-white px-3 text-xs font-bold text-[#655b78] transition hover:bg-[#faf9fc]"
+                >
+                  <Phone className="size-3.5" />
+                  Call driver
+                </a>
+              )}
+            </div>
+          )}
+
+          {ride.status === "cancelled" && ride.cancellation_reason && (
+            <div className="mt-3 rounded-xl border border-[#ebc8c4] bg-[#fff6f5] px-3 py-2.5 text-xs leading-5 text-[#9a4d48]">
+              <span className="font-bold">Cancellation reason: </span>
+              {ride.cancellation_reason}
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#cbded8] bg-[#f0f7f4] px-3 text-xs font-bold text-[#1e7168] transition hover:bg-[#e6f2ee]"
+            >
+              <Navigation className="size-3.5" />
+              View route
+            </a>
+
+            {ride.status !== "cancelled" && ride.status !== "completed" && (
+              <>
+                {showUber && (
+                  <a
+                    href={`https://m.uber.com/ul/?action=setPickup&pickup[formatted_address]=${encodeURIComponent(ride.pickup_address)}&dropoff[formatted_address]=${encodeURIComponent(ride.destination)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-9 items-center rounded-lg bg-[#1f2628] px-3 text-xs font-bold text-white transition hover:bg-black"
+                  >
+                    Open Uber
+                  </a>
+                )}
+
+                {showOla && (
+                  <a
+                    href="https://book.olacabs.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-9 items-center rounded-lg border border-[#ddd7b8] bg-[#f5f1d9] px-3 text-xs font-bold text-[#5d5632] transition hover:bg-[#eee8c7]"
+                  >
+                    Open Ola
+                  </a>
+                )}
+
+                {workflow && (
+                  <button
+                    type="button"
+                    onClick={onWorkflow}
+                    disabled={isActionPending}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0d6665] px-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#0a5958] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {workflow.icon}
+                    {workflow.label}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <CalendarDays className="size-3.5" />
-            {formatDisplayDate(ride.transport_date)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="size-3.5" />
-            {formatDisplayTime(ride.transport_time)}
-          </span>
-        </div>
-
-        {formatLifecycleTime(lifecycleTime) && (
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {STATUS_CONFIG[ride.status].label}: {formatLifecycleTime(lifecycleTime)}
-          </p>
-        )}
-
-        {ride.trip_type === "round_trip" && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-700">
-            <span className="font-semibold">Return:</span>
-            <span>{formatDisplayDate(ride.return_date)}</span>
-            <span>{formatDisplayTime(ride.return_time)}</span>
-          </div>
-        )}
-
-        {ride.notes && (
-          <div className="mt-2 rounded-xl border border-stone-100 bg-stone-50 px-3 py-2 font-mono text-xs text-stone-600">
-            {ride.notes}
-          </div>
-        )}
-
-        {ride.special_assistance && (
-          <div className="mt-1.5 flex w-fit items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1 text-xs text-amber-700">
-            <UserCheck className="size-3" />
-            Special assistance: {ride.special_assistance}
-          </div>
-        )}
-
-        {driverKnown && (ride.driver_name || driverName) && (
-          <div className="mt-1.5 flex w-fit flex-wrap items-center gap-1.5 rounded-lg border border-violet-100 bg-violet-50 px-2.5 py-1 text-xs text-violet-700">
-            <UserCheck className="size-3" />
-            <span>Driver: {driverName || ride.driver_name}</span>
-            {ride.driver_vehicle && (
-              <span className="font-mono text-[10px] text-violet-500">({ride.driver_vehicle})</span>
-            )}
-            {ride.driver_phone && (
-              <a
-                href={`tel:${ride.driver_phone}`}
-                className="inline-flex items-center gap-1 font-semibold text-violet-700 underline-offset-2 hover:underline"
-              >
-                <Phone className="size-3" />
-                {ride.driver_phone}
-              </a>
-            )}
-          </div>
-        )}
-
-        {ride.status === "cancelled" && ride.cancellation_reason && (
-          <div className="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
-            Cancellation reason: {ride.cancellation_reason}
-          </div>
-        )}
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <a
-            href={directionsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
-          >
-            <Navigation className="size-3.5" />
-            Google Maps Route
-          </a>
-        </div>
-
-        {ride.status !== "cancelled" && ride.status !== "completed" && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {showUber && (
-              <a
-                href={`https://m.uber.com/ul/?action=setPickup&pickup[formatted_address]=${encodeURIComponent(ride.pickup_address)}&dropoff[formatted_address]=${encodeURIComponent(ride.destination)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-black px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-stone-800"
-              >
-                Open Uber
-              </a>
-            )}
-            {showOla && (
-              <a
-                href="https://book.olacabs.com/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3 py-1.5 text-xs font-bold text-black shadow-sm transition-colors hover:bg-amber-500"
-              >
-                Open Ola
-              </a>
-            )}
-
-            {workflow && (
+        {!isChildView && (
+          <div className="flex shrink-0 items-center gap-1 lg:flex-col">
+            {canEdit && (
               <button
+                id={`btn-edit-${ride.id}`}
                 type="button"
-                onClick={onWorkflow}
+                onClick={onEdit}
                 disabled={isActionPending}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="grid size-9 place-items-center rounded-lg text-[#71868a] transition hover:bg-[#edf3f1] hover:text-[#23494d] disabled:opacity-40"
+                title="Edit booking"
+                aria-label="Edit booking"
               >
-                {workflow.icon}
-                {workflow.label}
+                <Pencil className="size-4" />
+              </button>
+            )}
+
+            {canCancel && (
+              <button
+                id={`btn-cancel-${ride.id}`}
+                type="button"
+                onClick={onCancel}
+                disabled={isActionPending}
+                className="grid size-9 place-items-center rounded-lg text-[#8c7774] transition hover:bg-[#fff1ef] hover:text-[#9d4843] disabled:opacity-40"
+                title="Cancel booking"
+                aria-label="Cancel booking"
+              >
+                <XCircle className="size-4" />
+              </button>
+            )}
+
+            {canDelete && (
+              <button
+                id={`btn-delete-${ride.id}`}
+                type="button"
+                onClick={onDelete}
+                disabled={isActionPending}
+                className="grid size-9 place-items-center rounded-lg text-[#8c7774] transition hover:bg-[#fff1ef] hover:text-[#9d4843] disabled:opacity-40"
+                title="Delete booking permanently"
+                aria-label="Delete booking permanently"
+              >
+                <Trash2 className="size-4" />
               </button>
             )}
           </div>
         )}
       </div>
+    </article>
+  );
+}
 
-      {!isChildView && (
-        <div className="mt-0.5 flex shrink-0 items-center gap-1">
-          {canEdit && (
-            <button
-              id={`btn-edit-${ride.id}`}
-              type="button"
-              onClick={onEdit}
-              disabled={isActionPending}
-              className="cursor-pointer rounded-lg p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-800 disabled:opacity-40"
-              title="Edit booking"
-              aria-label="Edit booking"
-            >
-              <Pencil className="size-4" />
-            </button>
-          )}
+function SummaryMetric({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  iconBackground,
+  iconClass,
+  last = false,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: typeof Car;
+  iconBackground: string;
+  iconClass: string;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-4 px-5 py-5 sm:px-6 ${last ? "" : "border-b border-[#e2ebe8] sm:border-r lg:border-b-0"
+        }`}
+    >
+      <span
+        className={`grid size-11 shrink-0 place-items-center rounded-xl ${iconBackground} ${iconClass}`}
+      >
+        <Icon className="size-5" />
+      </span>
 
-          {canCancel && (
-            <button
-              id={`btn-cancel-${ride.id}`}
-              type="button"
-              onClick={onCancel}
-              disabled={isActionPending}
-              className="cursor-pointer rounded-lg p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-destructive disabled:opacity-40"
-              title="Cancel booking"
-              aria-label="Cancel booking"
-            >
-              <XCircle className="size-4" />
-            </button>
-          )}
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">
+          {label}
+        </p>
+        <p className="mt-1 text-xl font-bold tracking-[-0.035em] text-[#17343a]">
+          {value}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-[#768a8e]">{detail}</p>
+      </div>
+    </div>
+  );
+}
 
-          {canDelete && (
-            <button
-              id={`btn-delete-${ride.id}`}
-              type="button"
-              onClick={onDelete}
-              disabled={isActionPending}
-              className="cursor-pointer rounded-lg p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-destructive disabled:opacity-40"
-              title="Delete booking permanently"
-              aria-label="Delete booking permanently"
-            >
-              <Trash2 className="size-4" />
-            </button>
-          )}
-        </div>
-      )}
+function JourneyDetail({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof CalendarDays;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-[#e2ebe8] bg-[#f8fbfa] p-3.5">
+      <div className="flex items-center gap-2 text-[#6d8387]">
+        <Icon className="size-3.5 text-[#0d7774]" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.11em]">
+          {label}
+        </span>
+      </div>
+      <p className="mt-2 truncate text-sm font-bold text-[#29494e]">{value}</p>
     </div>
   );
 }

@@ -159,46 +159,46 @@ function getNotifIcon(type: NotifType) {
   }
 }
 function getNotifColors(type: NotifType, isRead: boolean) {
-  if (isRead) return "bg-stone-100 text-stone-400";
+  if (isRead) return "bg-[#eef2f1] text-[#899a9d]";
   switch (type) {
     case "missed_medicine":
-      return "bg-amber-100 text-amber-600";
+      return "bg-[#f5eadf] text-[#9c6637]";
     case "missed_checkin":
-      return "bg-pink-100 text-pink-600";
+      return "bg-[#f4e9ec] text-[#8d5b6c]";
     case "no_app_activity":
-      return "bg-slate-100 text-slate-600";
+      return "bg-[#e9eff2] text-[#536f79]";
     case "sos":
     case "sos_escalation":
-      return "bg-red-100 text-red-600";
+      return "bg-[#f7e7e5] text-[#a74d48]";
     case "sos_sent":
-      return "bg-orange-100 text-orange-600";
+      return "bg-[#f5eadf] text-[#9c6637]";
     case "sos_acknowledged":
-      return "bg-blue-100 text-blue-700";
+      return "bg-[#e7eef5] text-[#4f6f8d]";
     case "sos_resolved":
-      return "bg-emerald-100 text-emerald-600";
+      return "bg-[#e4f1ec] text-[#19705f]";
     case "appointment_reminder":
-      return "bg-blue-100 text-blue-600";
+      return "bg-[#e7eef5] text-[#4f6f8d]";
     case "missed_appointment":
-      return "bg-rose-100 text-rose-600";
+      return "bg-[#f7e7e5] text-[#a74d48]";
     case "caregiver_alert":
     case "caregiver_booking":
-      return "bg-teal-100 text-teal-600";
+      return "bg-[#e4f1ed] text-[#176f69]";
     case "video_consult":
-      return "bg-indigo-100 text-indigo-600";
+      return "bg-[#e9edf4] text-[#596c88]";
     case "transport_alert":
-      return "bg-sky-100 text-sky-700";
+      return "bg-[#e5eff3] text-[#4f7280]";
     case "health_risk_high":
-      return "bg-rose-100 text-rose-700";
+      return "bg-[#f7e7e5] text-[#a74d48]";
     case "companion_emergency":
-      return "bg-red-100 text-red-700";
+      return "bg-[#f7e7e5] text-[#a74d48]";
     case "push_test":
-      return "bg-violet-100 text-violet-700";
+      return "bg-[#eeeaf2] text-[#6c5d7b]";
     case "reminder":
-      return "bg-purple-100 text-purple-600";
+      return "bg-[#eeeaf2] text-[#6c5d7b]";
     case "call":
-      return "bg-cyan-100 text-cyan-600";
+      return "bg-[#e4f1ed] text-[#176f69]";
     default:
-      return "bg-primary/10 text-primary";
+      return "bg-[#e8f2ef] text-[#176f69]";
   }
 }
 function getNotifTitle(type: NotifType) {
@@ -318,9 +318,9 @@ function MetaBadges({
       {badges.map((b) => (
         <span
           key={b.label}
-          className="text-[11px] font-medium bg-stone-100 text-stone-600 rounded-full px-2 py-0.5 border border-stone-200"
+          className="rounded-full border border-[#dfe8e5] bg-[#f6f9f8] px-2.5 py-1 text-[11px] font-semibold text-[#5f777b]"
         >
-          <span className="text-stone-400">{b.label}: </span>
+          <span className="text-[#87999c]">{b.label}: </span>
           {b.value}
         </span>
       ))}
@@ -497,57 +497,76 @@ function NotificationsPage() {
   }
   return (
     <AppShell>
-      <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
-        <div>
-          <h1 className="font-display text-4xl font-bold italic flex items-center gap-3">
-            <Bell className="size-9 text-primary" />
-            Notifications
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {unreadCount > 0
-              ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
-              : "All caught up!"}
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={() => refetch()}>
-            <RefreshCw className="size-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-xl"
-            onClick={() => markAllRead.mutate()}
-            disabled={unreadCount === 0 || markAllRead.isPending}
-          >
-            <CheckCheck className="size-4 mr-2" />
-            Mark all read
-          </Button>
-          {notifications && notifications.length > 0 && (
+      <div className="mb-6 overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)]">
+        <div className="flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#e8f3ef] px-3 py-1.5 text-xs font-bold text-[#176f69]">
+              <Bell className="size-3.5" />
+              Care activity centre
+            </div>
+            <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">
+              Notifications
+            </h1>
+            <p className="mt-2 text-sm text-[#667d82] sm:text-base">
+              {unreadCount > 0
+                ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
+                : "All caught up!"}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" className="h-11 rounded-xl border-[#d7e3df] bg-white px-4 text-[#49666b] hover:bg-[#f3f8f6]" onClick={() => refetch()}>
+              <RefreshCw className="size-4 mr-2" />
+              Refresh
+            </Button>
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl text-destructive hover:bg-destructive/5 hover:text-destructive border-destructive/20"
-              onClick={() => {
-                if (
-                  confirm(
-                    "Are you sure you want to delete ALL notifications? This action cannot be undone.",
-                  )
-                ) {
-                  clearAll.mutate();
-                }
-              }}
-              disabled={clearAll.isPending}
+              className="h-11 rounded-xl border-[#d7e3df] bg-white px-4 text-[#49666b] hover:bg-[#f3f8f6]"
+              onClick={() => markAllRead.mutate()}
+              disabled={unreadCount === 0 || markAllRead.isPending}
             >
-              <Trash2 className="size-4 mr-2" />
-              Delete All
+              <CheckCheck className="size-4 mr-2" />
+              Mark all read
             </Button>
-          )}
+            {notifications && notifications.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-11 rounded-xl border-[#e2c7c3] bg-white px-4 text-[#a44f49] hover:bg-[#fff4f2] hover:text-[#913f3a]"
+                onClick={() => {
+                  if (
+                    confirm(
+                      "Are you sure you want to delete ALL notifications? This action cannot be undone.",
+                    )
+                  ) {
+                    clearAll.mutate();
+                  }
+                }}
+                disabled={clearAll.isPending}
+              >
+                <Trash2 className="size-4 mr-2" />
+                Delete All
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="grid border-t border-[#e2ece9] bg-[#f7faf9] sm:grid-cols-3">
+          <div className="border-b border-[#e2ebe8] px-5 py-4 sm:border-b-0 sm:border-r">
+            <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">Total</p>
+            <p className="mt-1 text-xl font-bold text-[#17343a]">{notifications.length}</p>
+          </div>
+          <div className="border-b border-[#e2ebe8] px-5 py-4 sm:border-b-0 sm:border-r">
+            <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">Unread</p>
+            <p className="mt-1 text-xl font-bold text-[#17343a]">{unreadCount}</p>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">Status</p>
+            <p className="mt-1 text-sm font-semibold text-[#176f69]">{unreadCount === 0 ? "Up to date" : "Review required"}</p>
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+      <div className="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-[#dfe8e5] bg-white p-2 shadow-[0_12px_30px_-28px_rgba(18,49,54,0.35)]">
         {TYPE_TABS.map((tab) => {
           const count =
             tab.key === "all"
@@ -555,28 +574,26 @@ function NotificationsPage() {
               : tab.key === "unread"
                 ? unreadCount
                 : notifications.filter((n) => {
-                    const et = n.notification_type ?? n.type;
-                    return getEffectiveTabKey(et) === tab.key;
-                  }).length;
+                  const et = n.notification_type ?? n.type;
+                  return getEffectiveTabKey(et) === tab.key;
+                }).length;
           if (count === 0 && tab.key !== "all" && tab.key !== "unread") return null;
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                activeTab === tab.key
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "bg-stone-100 text-muted-foreground hover:bg-stone-200"
-              }`}
+              className={`flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition-all ${activeTab === tab.key
+                  ? "bg-[#0d6665] text-white shadow-[0_10px_22px_-14px_rgba(13,102,101,0.8)]"
+                  : "text-[#60787c] hover:bg-[#eef5f2] hover:text-[#155f5c]"
+                }`}
             >
               {tab.label}
               {count > 0 && (
                 <span
-                  className={`text-xs rounded-full px-1.5 py-0.5 font-mono ${
-                    activeTab === tab.key
-                      ? "bg-white/20 text-white"
-                      : "bg-stone-200 text-muted-foreground"
-                  }`}
+                  className={`text-xs rounded-full px-1.5 py-0.5 font-mono ${activeTab === tab.key
+                      ? "bg-white/15 text-white"
+                      : "bg-[#e5ece9] text-[#60787c]"
+                    }`}
                 >
                   {count}
                 </span>
@@ -589,12 +606,12 @@ function NotificationsPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-card border border-border rounded-2xl p-5 animate-pulse">
+            <div key={i} className="animate-pulse rounded-2xl border border-[#e0e9e6] bg-white p-5">
               <div className="flex gap-4">
-                <div className="size-11 rounded-xl bg-stone-100" />
+                <div className="size-11 rounded-xl bg-[#e9efed]" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-stone-100 rounded w-1/4" />
-                  <div className="h-3 bg-stone-100 rounded w-3/4" />
+                  <div className="h-4 w-1/4 rounded bg-[#e7eeeb]" />
+                  <div className="h-3 w-3/4 rounded bg-[#f0f4f3]" />
                 </div>
               </div>
             </div>
@@ -615,14 +632,13 @@ function NotificationsPage() {
                 tabIndex={0}
                 onClick={() => handleNotifClick(notif)}
                 onKeyDown={(e) => e.key === "Enter" && handleNotifClick(notif)}
-                className={`group relative bg-card border rounded-2xl p-5 flex items-start gap-4 transition-all cursor-pointer hover:shadow-md active:scale-[0.99] ${
-                  notif.is_read
-                    ? "border-border opacity-70"
-                    : "border-primary/20 shadow-sm ring-1 ring-primary/5"
-                }`}
+                className={`group relative flex cursor-pointer items-start gap-4 rounded-2xl border bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_42px_-34px_rgba(18,49,54,0.38)] active:scale-[0.995] ${notif.is_read
+                    ? "border-[#e3ebe8] opacity-75"
+                    : "border-[#b9d4cc] shadow-[0_14px_34px_-30px_rgba(13,102,101,0.55)]"
+                  }`}
               >
                 {!notif.is_read && (
-                  <div className="absolute top-4 right-4 size-2.5 rounded-full bg-primary animate-pulse" />
+                  <div className="absolute right-4 top-4 size-2.5 rounded-full bg-[#0d7774]" />
                 )}
 
                 <div
@@ -634,25 +650,25 @@ function NotificationsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <p
-                      className={`text-sm font-semibold ${notif.is_read ? "text-muted-foreground" : "text-foreground"}`}
+                      className={`text-sm font-semibold ${notif.is_read ? "text-[#72868a]" : "text-[#234349]"}`}
                     >
                       {getNotifTitle(effectiveType)}
                     </p>
                     {!notif.is_read && (
-                      <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-1.5 py-0.5 uppercase tracking-wide">
+                      <span className="rounded-full bg-[#e3f1ec] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#176f69]">
                         New
                       </span>
                     )}
                   </div>
                   <p
-                    className={`text-sm leading-snug ${notif.is_read ? "text-muted-foreground" : "text-foreground/80"}`}
+                    className={`text-sm leading-snug ${notif.is_read ? "text-[#788b8f]" : "text-[#50696e]"}`}
                   >
                     {notif.message}
                   </p>
 
                   <MetaBadges type={effectiveType} metadata={notif.metadata} />
 
-                  <p className="text-xs text-muted-foreground mt-2 font-mono">
+                  <p className="mt-2 text-xs text-[#819397]">
                     {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                     {" · "}
                     {format(new Date(notif.created_at), "MMM d, h:mm a")}
@@ -661,11 +677,10 @@ function NotificationsPage() {
                 {isNavigable && (
                   <div className="flex items-center gap-2 shrink-0 self-center z-10">
                     <ChevronRight
-                      className={`size-4 transition-colors ${
-                        notif.is_read
-                          ? "text-stone-300"
-                          : "text-muted-foreground group-hover:text-primary"
-                      }`}
+                      className={`size-4 transition-colors ${notif.is_read
+                          ? "text-[#c2cdca]"
+                          : "text-[#819397] group-hover:text-[#0d7774]"
+                        }`}
                     />
                   </div>
                 )}
@@ -676,7 +691,7 @@ function NotificationsPage() {
                     deleteNotification.mutate(notif.id);
                   }}
                   disabled={deleteNotification.isPending}
-                  className="shrink-0 self-center z-10 p-1.5 rounded-lg text-stone-300 hover:text-destructive hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                  className="z-10 shrink-0 self-center rounded-xl p-2 text-[#b9c5c2] opacity-100 transition-colors hover:bg-[#fff1ef] hover:text-[#9b4843] sm:opacity-0 sm:group-hover:opacity-100"
                   title="Delete notification"
                 >
                   <Trash2 className="size-4" />
@@ -743,12 +758,12 @@ function EmptyState({ tab }: { tab: TabKey }) {
   };
   const { title, sub } = messages[tab] ?? messages["all"];
   return (
-    <div className="bg-card border border-border rounded-3xl p-16 text-center">
-      <div className="size-16 rounded-2xl bg-stone-100 mx-auto grid place-items-center mb-5">
-        <BellOff className="size-7 text-muted-foreground" />
+    <div className="rounded-[1.75rem] border border-[#dce8e4] bg-white px-6 py-16 text-center shadow-[0_18px_50px_-40px_rgba(18,49,54,0.45)]">
+      <div className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-[#e8f2ef]">
+        <BellOff className="size-7 text-[#176f69]" />
       </div>
-      <h3 className="font-display text-xl font-bold mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm max-w-sm mx-auto">{sub}</p>
+      <h3 className="mb-2 text-xl font-bold tracking-[-0.025em] text-[#1c3b41]">{title}</h3>
+      <p className="mx-auto max-w-sm text-sm leading-6 text-[#71868a]">{sub}</p>
     </div>
   );
 }

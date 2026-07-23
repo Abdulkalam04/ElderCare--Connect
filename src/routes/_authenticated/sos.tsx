@@ -309,7 +309,7 @@ function SOSPage() {
     return (
       <AppShell>
         <div className="grid min-h-[45vh] place-items-center">
-          <Loader2 className="size-7 animate-spin text-primary" />
+          <Loader2 className="size-7 animate-spin text-[#0d7774]" />
         </div>
       </AppShell>
     );
@@ -317,10 +317,10 @@ function SOSPage() {
   if (!activeParent || !activeParentId || !profile) {
     return (
       <AppShell>
-        <div className="rounded-3xl border border-border bg-card p-12 text-center">
-          <ShieldAlert className="mx-auto mb-4 size-10 text-muted-foreground" />
-          <h1 className="font-display text-2xl font-bold">No care-recipient account selected</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+        <div className="rounded-[1.5rem] border border-[#dce7e3] bg-white p-12 text-center">
+          <ShieldAlert className="mx-auto mb-4 size-10 text-[#6f8388]" />
+          <h1 className="text-2xl font-bold">No care-recipient account selected</h1>
+          <p className="mt-2 text-sm text-[#6f8388]">
             Connect or select a care-recipient account before opening SOS monitoring.
           </p>
         </div>
@@ -329,46 +329,54 @@ function SOSPage() {
   }
   return (
     <AppShell>
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">Emergency SOS</h1>
-          <p className="mt-1 text-muted-foreground">
-            {isChildView
-              ? `Emergency monitoring for ${activeParent.full_name || "the care recipient"}`
-              : "Activate an emergency alert and contact your support network"}
-          </p>
-        </div>
+      <section className="mb-7 overflow-hidden rounded-[1.75rem] border border-[#e3d6d3] bg-white shadow-[0_20px_55px_-42px_rgba(74,32,29,0.4)]">
+        <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-7">
+          <div className="max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#f9e9e7] px-3 py-1.5 text-xs font-bold text-[#a74742]">
+              <Siren className="size-3.5" />
+              Emergency response
+            </div>
+            <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">
+              SOS Control
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#667d82] sm:text-base">
+              {isChildView
+                ? `Monitor and respond to emergencies for ${activeParent.full_name || "the care recipient"}.`
+                : "Activate an emergency alert, share available location details and notify the configured support network."}
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetchAlerts()}
-            disabled={alertsFetching}
-            className="rounded-xl"
-          >
-            <RefreshCw className={`mr-2 size-4 ${alertsFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-
-          {isChildView && isPushSupported() && (
-            <Button variant="outline" size="sm" onClick={togglePush} className="rounded-xl">
-              {pushState === "granted" ? (
-                <>
-                  <BellOff className="mr-2 size-4" /> Disable SOS push
-                </>
-              ) : (
-                <>
-                  <Bell className="mr-2 size-4" /> Enable SOS push
-                </>
-              )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchAlerts()}
+              disabled={alertsFetching}
+              className="rounded-xl"
+            >
+              <RefreshCw className={`mr-2 size-4 ${alertsFetching ? "animate-spin" : ""}`} />
+              Refresh
             </Button>
-          )}
+
+            {isChildView && isPushSupported() && (
+              <Button variant="outline" size="sm" onClick={togglePush} className="rounded-xl">
+                {pushState === "granted" ? (
+                  <>
+                    <BellOff className="mr-2 size-4" /> Disable SOS push
+                  </>
+                ) : (
+                  <>
+                    <Bell className="mr-2 size-4" /> Enable SOS push
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {alertsFailed && (
-        <div className="mb-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        <div className="mb-6 rounded-xl border border-[#e9c9c6] bg-[#fff5f4] p-4 text-sm text-[#a74742]">
           Could not load SOS alerts:{" "}
           {alertsError instanceof Error ? alertsError.message : "Unknown error"}
         </div>
@@ -378,7 +386,7 @@ function SOSPage() {
         {!isChildView && (
           <section className="space-y-5 lg:col-span-12">
             {sosActions.linkedChildren.length === 0 && sosActions.automatedRecipientCount === 0 && (
-              <div className="flex items-start gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+              <div className="flex items-start gap-4 rounded-[1.5rem] border border-[#ead8c4] bg-[#fbf7f0] p-5 text-[#6f563e]">
                 <ShieldAlert className="mt-0.5 size-5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold">No automatic SOS recipient is configured</p>
@@ -392,7 +400,7 @@ function SOSPage() {
             )}
 
             {sosActions.linkedChildren.length === 0 && sosActions.automatedRecipientCount > 0 && (
-              <div className="flex items-start gap-4 rounded-3xl border border-blue-200 bg-blue-50 p-5 text-blue-900">
+              <div className="flex items-start gap-4 rounded-[1.5rem] border border-[#cfe1dc] bg-[#f0f6f5] p-5 text-[#31575c]">
                 <ShieldAlert className="mt-0.5 size-5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold">No linked family account</p>
@@ -408,18 +416,13 @@ function SOSPage() {
               type="button"
               onClick={() => sosActions.trigger.mutate()}
               disabled={sosActions.trigger.isPending || sosActions.cooldown > 0}
-              className={`relative w-full select-none overflow-hidden rounded-3xl p-8 text-white shadow-2xl transition-all sm:p-14 ${
-                sosActions.cooldown > 0
-                  ? "cursor-not-allowed bg-stone-500 shadow-stone-500/10"
+              className={`relative w-full select-none overflow-hidden rounded-[1.75rem] border border-white/10 p-8 text-white shadow-[0_28px_65px_-28px_rgba(132,35,31,0.75)] transition-all sm:p-12 ${sosActions.cooldown > 0
+                  ? "cursor-not-allowed bg-[#f8faf9]0 shadow-stone-500/10"
                   : activeAlerts.length > 0
-                    ? "cursor-pointer bg-orange-600 shadow-orange-600/30 hover:scale-[1.01] active:scale-[0.99]"
-                    : "cursor-pointer bg-red-600 shadow-red-600/30 hover:scale-[1.01] active:scale-[0.99]"
-              }`}
-              style={
-                sosActions.cooldown === 0 && activeAlerts.length === 0
-                  ? { animation: "siren-pulse 2s infinite ease-in-out" }
-                  : undefined
-              }
+                    ? "cursor-pointer bg-orange-600 shadow-orange-600/30 hover:brightness-105 active:brightness-95"
+                    : "cursor-pointer bg-red-600 shadow-red-600/30 hover:brightness-105 active:brightness-95"
+                }`}
+
             >
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
                 <div className="grid size-16 shrink-0 place-items-center rounded-full border-4 border-white/30 sm:size-24">
@@ -430,7 +433,7 @@ function SOSPage() {
                   )}
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="font-display text-3xl font-black uppercase tracking-tight sm:text-5xl">
+                  <p className="text-3xl font-extrabold tracking-[-0.04em] sm:text-5xl">
                     {sosActions.cooldown > 0
                       ? `Please wait ${sosActions.cooldown}s`
                       : sosActions.trigger.isPending
@@ -451,7 +454,7 @@ function SOSPage() {
             </button>
 
             {sosActions.delivery.isPending && (
-              <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 rounded-xl border border-[#dce7e3] bg-white px-4 py-3 text-sm text-[#6f8388]">
                 <Loader2 className="size-4 animate-spin" />
                 Delivering in-app, email, and push notifications through the configured channels…
               </div>
@@ -461,18 +464,18 @@ function SOSPage() {
 
         <section className="space-y-5 lg:col-span-12">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-2 font-display text-2xl font-bold">
+            <h2 className="flex items-center gap-2 text-2xl font-bold">
               <Siren
-                className={`size-6 ${activeAlerts.length > 0 ? "animate-pulse text-destructive" : "text-muted-foreground"}`}
+                className={`size-6 ${activeAlerts.length > 0 ? "animate-pulse text-[#a74742]" : "text-[#6f8388]"}`}
               />
               Current emergency status
             </h2>
-            {alertsLoading && <Loader2 className="size-5 animate-spin text-muted-foreground" />}
+            {alertsLoading && <Loader2 className="size-5 animate-spin text-[#6f8388]" />}
           </div>
 
           {activeAlerts.length === 0 ? (
-            <div className="flex items-center gap-4 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
-              <CheckCircle2 className="size-6 shrink-0 text-emerald-600" />
+            <div className="flex items-center gap-4 rounded-[1.5rem] border border-[#c6e1d8] bg-[#edf7f3] p-6 text-[#185d50]">
+              <CheckCircle2 className="size-6 shrink-0 text-[#2c8772]" />
               <div>
                 <h3 className="font-semibold">All clear</h3>
                 <p className="mt-0.5 text-sm">There is no active emergency alert.</p>
@@ -483,61 +486,60 @@ function SOSPage() {
               {activeAlerts.map((alert) => (
                 <article
                   key={alert.id}
-                  className="relative overflow-hidden rounded-3xl border-2 border-red-200 bg-red-50/60 p-6 shadow-lg shadow-red-500/5"
+                  className="relative overflow-hidden rounded-[1.5rem] border-2 border-[#ebc2bf] bg-[#fff3f2]/60 p-6 shadow-lg shadow-red-500/5"
                 >
-                  <div className="absolute right-0 top-0 grid size-24 place-items-center rounded-bl-full bg-red-100 opacity-50">
-                    <Siren className="size-10 text-red-500" />
+                  <div className="absolute right-0 top-0 grid size-24 place-items-center rounded-bl-full bg-[#fbe3e1] opacity-50">
+                    <Siren className="size-10 text-[#be5c56]" />
                   </div>
 
                   <div className="relative space-y-4">
                     <div>
-                      <span className="block font-mono text-[10px] font-semibold uppercase tracking-widest text-red-600">
+                      <span className="block font-mono text-[10px] font-semibold uppercase tracking-widest text-[#b14c47]">
                         Care recipient
                       </span>
-                      <h3 className="mt-1 text-xl font-bold text-stone-900">
+                      <h3 className="mt-1 text-xl font-bold text-[#17343a]">
                         {alert.parent_name || activeParent.full_name || "Care recipient"}
                       </h3>
-                      <p className="mt-1 text-sm text-stone-600">
+                      <p className="mt-1 text-sm text-[#5f7479]">
                         {alert.message || "Emergency assistance requested"}
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-stone-500">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#71868a]">
                           Activated
                         </span>
                         <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold">
-                          <CalendarDays className="size-4 text-stone-500" />
+                          <CalendarDays className="size-4 text-[#71868a]" />
                           {format(new Date(alert.created_at), "MMM d, yyyy")}
                         </p>
                         <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold">
-                          <Clock className="size-4 text-stone-500" />
+                          <Clock className="size-4 text-[#71868a]" />
                           {format(new Date(alert.created_at), "h:mm a")}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-[#71868a]">
                           {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
                         </p>
                       </div>
 
                       <div>
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-stone-500">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#71868a]">
                           Status
                         </span>
                         <span
-                          className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
-                            alert.status === "active"
-                              ? "animate-pulse bg-red-100 text-red-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
+                          className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${alert.status === "active"
+                              ? "animate-pulse bg-[#fbe3e1] text-[#a14843]"
+                              : "bg-amber-100 text-[#8d6137]"
+                            }`}
                         >
                           <span
-                            className={`size-1.5 rounded-full ${alert.status === "active" ? "bg-red-600" : "bg-amber-500"}`}
+                            className={`size-1.5 rounded-full ${alert.status === "active" ? "bg-red-600" : "bg-[#fbf7f0]0"}`}
                           />
                           {alert.status}
                         </span>
                         {alert.live_location_enabled && alert.location_updated_at && (
-                          <p className="mt-2 text-[11px] font-medium text-emerald-700">
+                          <p className="mt-2 text-[11px] font-medium text-[#1b6a5b]">
                             ● Live location updated{" "}
                             {formatDistanceToNow(new Date(alert.location_updated_at), {
                               addSuffix: true,
@@ -551,13 +553,13 @@ function SOSPage() {
                     </div>
 
                     <div>
-                      <span className="font-mono text-[10px] uppercase tracking-widest text-stone-500">
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-[#71868a]">
                         Location
                       </span>
                       {alert.latitude != null && alert.longitude != null ? (
                         <div className="mt-1 space-y-2">
                           <p className="flex items-start gap-2 rounded-xl border border-red-100 bg-white/80 p-2.5 text-sm font-medium text-stone-800">
-                            <MapPin className="mt-0.5 size-4 shrink-0 text-red-500" />
+                            <MapPin className="mt-0.5 size-4 shrink-0 text-[#be5c56]" />
                             <span>
                               {alert.address ||
                                 `${alert.latitude.toFixed(5)}, ${alert.longitude.toFixed(5)}`}
@@ -567,14 +569,14 @@ function SOSPage() {
                             href={mapsLink(alert.latitude, alert.longitude)}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-2 text-xs font-semibold text-red-600 hover:underline"
+                            className="inline-flex items-center gap-2 text-xs font-semibold text-[#b14c47] hover:underline"
                           >
                             Open location in Maps →
                           </a>
                         </div>
                       ) : (
-                        <p className="mt-1 flex items-center gap-2 rounded-xl bg-white/60 p-2.5 text-sm font-medium italic text-stone-500">
-                          <ShieldAlert className="size-4 shrink-0 text-stone-400" />
+                        <p className="mt-1 flex items-center gap-2 rounded-xl bg-white/60 p-2.5 text-sm font-medium text-[#71868a]">
+                          <ShieldAlert className="size-4 shrink-0 text-[#899a9d]" />
                           {sosActions.settings.sos_share_location
                             ? "Location was unavailable when the SOS was activated."
                             : "Location sharing is disabled in Settings."}
@@ -583,7 +585,7 @@ function SOSPage() {
                     </div>
 
                     {alert.status === "acknowledged" && alert.acknowledged_at && (
-                      <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
+                      <div className="flex items-center gap-2 rounded-xl border border-[#ead8c4] bg-[#fbf7f0]/70 p-3 text-xs text-[#6f563e]">
                         <Eye className="size-4 shrink-0 text-amber-600" />
                         <span>
                           Acknowledged by <strong>{getActorName(alert.acknowledged_by)}</strong> at{" "}
@@ -597,7 +599,7 @@ function SOSPage() {
                         <Button
                           onClick={() => acknowledge.mutate(alert)}
                           disabled={acknowledge.isPending}
-                          className="flex-1 rounded-xl bg-amber-500 text-white hover:bg-amber-600"
+                          className="flex-1 rounded-xl bg-[#fbf7f0]0 text-white hover:bg-amber-600"
                         >
                           {acknowledge.isPending ? (
                             <Loader2 className="mr-2 size-4 animate-spin" />
@@ -613,7 +615,7 @@ function SOSPage() {
                           variant="outline"
                           onClick={() => sosActions.resend.mutate(alert.id)}
                           disabled={sosActions.resend.isPending || sosActions.cooldown > 0}
-                          className="flex-1 rounded-xl border-orange-300 text-orange-700 hover:bg-orange-50"
+                          className="flex-1 rounded-xl border-[#e7bf9f] text-[#a45c2f] hover:bg-[#fff7ef]"
                         >
                           {sosActions.resend.isPending ? (
                             <Loader2 className="mr-2 size-4 animate-spin" />
@@ -627,7 +629,7 @@ function SOSPage() {
                       <Button
                         onClick={() => resolve.mutate(alert)}
                         disabled={resolve.isPending}
-                        className="flex-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                        className="flex-1 rounded-xl bg-[#237866] text-white hover:bg-[#1b6556]"
                       >
                         {resolve.isPending ? (
                           <Loader2 className="mr-2 size-4 animate-spin" />
@@ -683,17 +685,17 @@ function SOSPage() {
             parentProfile={
               isChildView
                 ? {
-                    name: activeParent.full_name,
-                    phone: activeParent.phone,
-                    email: activeParent.email,
-                  }
+                  name: activeParent.full_name,
+                  phone: activeParent.phone,
+                  email: activeParent.email,
+                }
                 : null
             }
             emergencySubjectName={activeParent.full_name || "The care recipient"}
           />
 
           {!hasManualContact && sosActions.linkedChildren.length === 0 && (
-            <p className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <p className="mt-3 rounded-xl border border-[#f0e2d3] bg-[#fbf7f0] px-3 py-2 text-xs text-[#7c5c3b]">
               Add at least one callable or emailable emergency contact so a manual backup action is
               available when automatic delivery fails.
             </p>
@@ -702,7 +704,7 @@ function SOSPage() {
 
         <section className="lg:col-span-12">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-2xl font-bold italic">
+            <h2 className="text-2xl font-bold">
               {isChildView
                 ? `Emergency history for ${activeParent.full_name || "care recipient"}`
                 : "My emergency history"}
@@ -722,7 +724,7 @@ function SOSPage() {
                   }
                 }}
                 disabled={clearHistory.isPending}
-                className="rounded-xl border-destructive/20 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                className="rounded-xl border-[#edcfcc] text-[#a74742] hover:bg-[#fff5f4] hover:text-[#a74742]"
               >
                 {clearHistory.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                 Clear resolved history
@@ -730,9 +732,9 @@ function SOSPage() {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+          <div className="overflow-hidden rounded-[1.5rem] border border-[#dce7e3] bg-white shadow-[0_18px_45px_-38px_rgba(16,49,54,0.45)]">
             {resolvedAlerts.length === 0 ? (
-              <div className="p-12 text-center text-sm font-medium text-muted-foreground">
+              <div className="p-12 text-center text-sm font-medium text-[#6f8388]">
                 No resolved SOS alerts found.
               </div>
             ) : (
@@ -740,22 +742,22 @@ function SOSPage() {
                 {resolvedAlerts.map((alert) => (
                   <article
                     key={alert.id}
-                    className="flex flex-col justify-between gap-4 p-6 transition-colors hover:bg-stone-50/50 md:flex-row md:items-center"
+                    className="flex flex-col justify-between gap-4 p-6 transition-colors hover:bg-[#f8faf9]/50 md:flex-row md:items-center"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-2xl bg-stone-100 text-stone-500">
+                      <div className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-xl bg-[#edf2f0] text-[#71868a]">
                         <Siren className="size-5" />
                       </div>
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-stone-900">
+                          <p className="font-semibold text-[#17343a]">
                             {alert.parent_name || activeParent.full_name || "Care recipient"}
                           </p>
-                          <span className="rounded bg-stone-100 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-stone-600">
+                          <span className="rounded bg-[#edf2f0] px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-[#5f7479]">
                             Resolved
                           </span>
                         </div>
-                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <p className="flex items-center gap-1.5 text-xs text-[#6f8388]">
                           <CalendarDays className="size-3.5" />
                           {format(new Date(alert.created_at), "MMM d, yyyy")}
                           <Clock className="ml-1.5 size-3.5" />
@@ -766,9 +768,9 @@ function SOSPage() {
                             href={mapsLink(alert.latitude, alert.longitude)}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-start gap-1 text-xs text-stone-600 hover:text-primary hover:underline"
+                            className="flex items-start gap-1 text-xs text-[#5f7479] hover:text-[#0d7774] hover:underline"
                           >
-                            <MapPin className="mt-0.5 size-3.5 shrink-0 text-stone-400" />
+                            <MapPin className="mt-0.5 size-3.5 shrink-0 text-[#899a9d]" />
                             <span>
                               {alert.address ||
                                 `${alert.latitude.toFixed(5)}, ${alert.longitude.toFixed(5)}`}
@@ -779,7 +781,7 @@ function SOSPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="min-w-0 flex-1 rounded-2xl border border-stone-100 bg-stone-50 p-3 text-left text-xs text-stone-500 md:min-w-[280px] md:text-right">
+                      <div className="min-w-0 flex-1 rounded-xl border border-[#e6eeeb] bg-[#f8faf9] p-3 text-left text-xs text-[#71868a] md:min-w-[280px] md:text-right">
                         {alert.acknowledged_by && alert.acknowledged_at && (
                           <p className="mb-1">
                             Acknowledged by <strong>{getActorName(alert.acknowledged_by)}</strong>{" "}
@@ -806,7 +808,7 @@ function SOSPage() {
                             }
                           }}
                           disabled={deleteResolved.isPending}
-                          className="shrink-0 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          className="shrink-0 rounded-xl text-[#a74742] hover:bg-[#fdebea] hover:text-[#a74742]"
                           aria-label="Delete SOS history item"
                           title="Delete this history item"
                         >

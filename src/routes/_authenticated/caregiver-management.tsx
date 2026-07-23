@@ -109,26 +109,26 @@ const SERVICE_CONFIG: Record<
   nurse: {
     label: "Nurse",
     icon: Stethoscope,
-    color: "text-blue-600",
-    background: "bg-blue-50",
+    color: "text-[#456f91]",
+    background: "bg-[#e7eff5]",
   },
   physiotherapist: {
     label: "Physiotherapist",
     icon: Activity,
-    color: "text-emerald-600",
-    background: "bg-emerald-50",
+    color: "text-[#26755f]",
+    background: "bg-[#e5f2ed]",
   },
   companion: {
     label: "Companion",
     icon: Users,
-    color: "text-violet-600",
-    background: "bg-violet-50",
+    color: "text-[#6c6289]",
+    background: "bg-[#eeebf4]",
   },
   caretaker: {
     label: "Caretaker",
     icon: HeartPulse,
-    color: "text-rose-600",
-    background: "bg-rose-50",
+    color: "text-[#9f5752]",
+    background: "bg-[#f7e9e7]",
   },
 };
 const STATUS_CONFIG: Record<
@@ -141,33 +141,33 @@ const STATUS_CONFIG: Record<
 > = {
   pending: {
     label: "Pending",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
-    dot: "bg-amber-400",
+    className: "border-[#ead6bd] bg-[#fbf5ec] text-[#95602f]",
+    dot: "bg-[#bb7c41]",
   },
   confirmed: {
     label: "Confirmed",
-    className: "bg-blue-50 text-blue-700 border-blue-200",
-    dot: "bg-blue-500",
+    className: "border-[#cbdce8] bg-[#eef4f8] text-[#456f91]",
+    dot: "bg-[#5f89a7]",
   },
   assigned: {
     label: "Assigned",
-    className: "bg-violet-50 text-violet-700 border-violet-200",
-    dot: "bg-violet-500",
+    className: "border-[#d9d3e6] bg-[#f2eff6] text-[#6c6289]",
+    dot: "bg-[#81759d]",
   },
   in_progress: {
-    label: "In Progress",
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    dot: "bg-emerald-500",
+    label: "In progress",
+    className: "border-[#c8e0d6] bg-[#eaf5f0] text-[#26755f]",
+    dot: "bg-[#3e9275]",
   },
   completed: {
     label: "Completed",
-    className: "bg-stone-100 text-stone-600 border-stone-200",
-    dot: "bg-stone-400",
+    className: "border-[#dce5e2] bg-[#f2f6f4] text-[#5f7478]",
+    dot: "bg-[#7c9093]",
   },
   cancelled: {
     label: "Cancelled",
-    className: "bg-red-50 text-red-600 border-red-200",
-    dot: "bg-red-400",
+    className: "border-[#e8ceca] bg-[#fbefed] text-[#a04e49]",
+    dot: "bg-[#b96560]",
   },
 };
 const WORKFLOW_STEPS: BookingStatus[] = [
@@ -522,349 +522,450 @@ function CaregiverManagementPage() {
   }
   return (
     <AppShell>
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
-            <ListChecks className="size-4" />
-            Internal service workflow
+      <div className="space-y-6 pb-10">
+        <section className="overflow-hidden rounded-[1.75rem] border border-[#dce8e4] bg-white shadow-[0_20px_55px_-42px_rgba(22,55,60,0.45)]">
+          <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-7">
+            <div className="max-w-2xl">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#e8f3ef] px-3 py-1.5 text-xs font-bold text-[#176f69]">
+                <ListChecks className="size-3.5" />
+                Service operations
+              </div>
+
+              <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#122f35] sm:text-4xl">
+                Caregiver workflow
+              </h1>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[#667d82] sm:text-base">
+                Confirm, assign, monitor and review caregiver services for{" "}
+                <span className="font-semibold text-[#294b50]">
+                  {activeParent?.full_name ?? "the selected profile"}
+                </span>
+                .
+              </p>
+            </div>
+
+            <Button variant="outline" asChild className="h-11 rounded-xl border-[#d6e2de] bg-white px-5">
+              <Link to="/caregivers">
+                <ArrowLeft className="size-4" />
+                Back to caregivers
+              </Link>
+            </Button>
           </div>
-          <h1 className="font-display text-3xl font-bold italic sm:text-4xl">
-            Caregiver Booking Management
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Confirm, assign, track, and review caregiver services for{" "}
-            {activeParent?.full_name ?? "the selected parent"}.
-          </p>
-        </div>
 
-        <Button variant="outline" asChild className="rounded-xl">
-          <Link to="/caregivers">
-            <ArrowLeft className="mr-2 size-4" />
-            Back to Caregivers
-          </Link>
-        </Button>
-      </div>
-
-      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-        This free workflow coordinates caregivers saved in your own trusted directory. It does not
-        automatically contact a commercial agency, verify qualifications, or process payments.
-      </div>
-
-      {isChildView && (
-        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          <ShieldAlert className="size-4 shrink-0" />
-          Children can view the workflow and reviews, but only the parent can make changes.
-        </div>
-      )}
-
-      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-5">
-        {WORKFLOW_STEPS.map((status) => {
-          const config = STATUS_CONFIG[status];
-          const count = bookings.filter((booking) => booking.status === status).length;
-          return (
-            <button
-              key={status}
-              type="button"
-              onClick={() => setStatusFilter(status)}
-              className={`rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${statusFilter === status ? config.className : "border-border bg-card"}`}
-            >
-              <span className="text-[10px] font-mono uppercase tracking-widest">
-                {config.label}
-              </span>
-              <p className="mt-1 text-2xl font-bold">{count}</p>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search service, caregiver, contact, date, notes, or review..."
-            className="h-11 rounded-xl pl-9"
-          />
-        </div>
-
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as StatusFilter)}
-        >
-          <SelectTrigger className="h-11 w-full rounded-xl sm:w-52">
-            <SelectValue placeholder="Filter status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-              <SelectItem key={status} value={status}>
-                {config.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {(statusFilter !== "all" || search) && (
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-11 rounded-xl"
-            onClick={() => {
-              setStatusFilter("all");
-              setSearch("");
-            }}
-          >
-            Clear filters
-          </Button>
-        )}
-      </div>
-
-      {isLoading || caregiversLoading ? (
-        <div className="rounded-3xl border border-border bg-card p-12 text-center text-muted-foreground animate-pulse">
-          Loading caregiver workflow…
-        </div>
-      ) : !activeParentId ? (
-        <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center text-muted-foreground">
-          No parent profile is selected.
-        </div>
-      ) : filteredBookings.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center text-muted-foreground">
-          <ListChecks className="mx-auto mb-3 size-10 opacity-30" />
-          <p className="font-semibold">No bookings match the selected filters.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredBookings.map((booking) => (
-            <WorkflowCard
-              key={booking.id}
-              booking={booking}
-              caregiver={
-                booking.trusted_caregiver_id
-                  ? (caregiverById.get(booking.trusted_caregiver_id) ?? null)
-                  : null
-              }
-              isChildView={isChildView}
-              isUpdating={
-                updateStatus.isPending && updateStatus.variables?.booking.id === booking.id
-              }
-              onConfirm={() => confirmBooking(booking)}
-              onAssign={() => openAssignDialog(booking)}
-              onStart={() => startService(booking)}
-              onComplete={() => completeService(booking)}
-              onCancel={() => cancelBooking(booking)}
-              onReview={() => openReviewDialog(booking)}
+          <div className="grid border-t border-[#e2ece9] bg-[#f7faf9] sm:grid-cols-2 xl:grid-cols-4">
+            <WorkflowMetric
+              label="Open requests"
+              value={String(bookings.filter((booking) => !["completed", "cancelled"].includes(booking.status)).length)}
+              detail="Awaiting or receiving service"
+              icon={ListChecks}
+              iconClass="text-[#176f69]"
+              iconBackground="bg-[#e5f2ed]"
             />
-          ))}
+            <WorkflowMetric
+              label="Available caregivers"
+              value={String(caregivers.filter((caregiver) => caregiver.available).length)}
+              detail={`${caregivers.length} saved in directory`}
+              icon={UserCheck}
+              iconClass="text-[#456f91]"
+              iconBackground="bg-[#e7eff5]"
+            />
+            <WorkflowMetric
+              label="In service"
+              value={String(bookings.filter((booking) => booking.status === "in_progress").length)}
+              detail="Currently in progress"
+              icon={Play}
+              iconClass="text-[#26755f]"
+              iconBackground="bg-[#e5f2ed]"
+            />
+            <WorkflowMetric
+              label="Completed"
+              value={String(bookings.filter((booking) => booking.status === "completed").length)}
+              detail="Finished caregiver sessions"
+              icon={CheckCircle2}
+              iconClass="text-[#6c6289]"
+              iconBackground="bg-[#eeebf4]"
+              last
+            />
+          </div>
+        </section>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="flex items-start gap-3 rounded-2xl border border-[#d7e6e1] bg-[#f4f9f7] p-4 text-sm leading-6 text-[#60797d]">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-[#176f69]" />
+            This workflow coordinates caregivers saved in your trusted directory. It does not verify qualifications, contact commercial agencies or process payments.
+          </div>
+
+          {isChildView && (
+            <div className="flex items-start gap-3 rounded-2xl border border-[#ead9c9] bg-[#fbf7f2] p-4 text-sm leading-6 text-[#80664f]">
+              <ShieldAlert className="mt-0.5 size-4 shrink-0 text-[#9b6339]" />
+              Family members can view services and reviews, but only the parent account can change workflow status.
+            </div>
+          )}
         </div>
-      )}
 
-      <Dialog
-        open={!!assigningBooking}
-        onOpenChange={(open) => {
-          if (!open && !updateStatus.isPending) {
-            setAssigningBooking(null);
-            setSelectedCaregiverId("");
-          }
-        }}
-      >
-        <DialogContent className="rounded-3xl sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-bold">
-              Assign Saved Caregiver
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {assigningBooking && (
-              <div className="rounded-2xl border border-violet-100 bg-violet-50 p-4 text-sm text-violet-800">
-                Select an available caregiver for the{" "}
-                {SERVICE_CONFIG[assigningBooking.caregiver_type].label.toLowerCase()} booking on{" "}
-                {formatBookingDate(assigningBooking.booking_date)} at{" "}
-                {formatBookingTime(assigningBooking.booking_time)}.
-              </div>
-            )}
-
-            {eligibleCaregivers.length === 0 ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                <p className="font-semibold">No matching caregiver is available.</p>
-                <p className="mt-1">
-                  Add a caregiver of the correct type or update their available days and times in
-                  the trusted caregiver directory.
-                </p>
-                <Button variant="outline" asChild className="mt-3 rounded-xl bg-white">
-                  <Link to="/caregivers">Open caregiver directory</Link>
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="trusted-caregiver-select">
-                    Available caregiver <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={selectedCaregiverId} onValueChange={setSelectedCaregiverId}>
-                    <SelectTrigger id="trusted-caregiver-select">
-                      <SelectValue placeholder="Select caregiver" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {eligibleCaregivers.map((caregiver) => (
-                        <SelectItem key={caregiver.id} value={caregiver.id}>
-                          {caregiver.name}
-                          {caregiver.experience_years > 0
-                            ? ` · ${caregiver.experience_years}y experience`
-                            : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {selectedCaregiver && (
-                  <div className="space-y-2 rounded-2xl border border-border bg-stone-50 p-4 text-sm">
-                    <p className="font-semibold">{selectedCaregiver.name}</p>
-
-                    {selectedCaregiver.qualification && (
-                      <p className="flex items-start gap-2 text-muted-foreground">
-                        <Award className="mt-0.5 size-4 shrink-0" />
-                        {selectedCaregiver.qualification}
-                      </p>
-                    )}
-
-                    {selectedCaregiver.phone && (
-                      <a
-                        href={`tel:${selectedCaregiver.phone}`}
-                        className="flex items-center gap-2 hover:text-primary"
-                      >
-                        <Phone className="size-4" />
-                        {selectedCaregiver.phone}
-                      </a>
-                    )}
-
-                    {selectedCaregiver.email && (
-                      <a
-                        href={`mailto:${selectedCaregiver.email}`}
-                        className="flex items-center gap-2 hover:text-primary"
-                      >
-                        <Mail className="size-4" />
-                        {selectedCaregiver.email}
-                      </a>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">Workflow overview</h2>
+            <p className="mt-1 text-sm text-[#71868a]">Select a status to filter the booking list.</p>
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={updateStatus.isPending}
-              onClick={() => {
-                setAssigningBooking(null);
-                setSelectedCaregiverId("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={
-                updateStatus.isPending || eligibleCaregivers.length === 0 || !selectedCaregiverId
-              }
-              onClick={assignCaregiver}
-            >
-              <UserCheck className="mr-2 size-4" />
-              {updateStatus.isPending ? "Assigning…" : "Assign Caregiver"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+            {WORKFLOW_STEPS.map((status) => {
+              const config = STATUS_CONFIG[status];
+              const count = bookings.filter((booking) => booking.status === status).length;
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setStatusFilter(status)}
+                  className={`rounded-2xl border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-32px_rgba(18,49,54,0.38)] ${statusFilter === status ? config.className : "border-[#dce7e3] bg-white text-[#4f696e]"}`}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em]">
+                    {config.label}
+                  </span>
+                  <p className="mt-1 text-2xl font-bold tracking-[-0.035em]">{count}</p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-      <Dialog
-        open={!!reviewingBooking}
-        onOpenChange={(open) => {
-          if (!open && !saveReview.isPending) {
-            setReviewingBooking(null);
-            setReviewRating(0);
-            setReviewComment("");
-          }
-        }}
-      >
-        <DialogContent className="rounded-3xl sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-bold">
-              Review Completed Service
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-5 py-2">
-            {reviewingBooking && (
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
-                Review {reviewingBooking.caregiver_name ?? "the caregiver"} for the{" "}
-                {SERVICE_CONFIG[reviewingBooking.caregiver_type].label.toLowerCase()} service.
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Rating *</Label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setReviewRating(value)}
-                    className="rounded-lg p-1 transition-transform hover:scale-110"
-                    aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
-                  >
-                    <Star
-                      className={`size-8 ${value <= reviewRating ? "fill-amber-400 text-amber-400" : "text-stone-300"}`}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="caregiver-review-comment">Comment</Label>
-              <Textarea
-                id="caregiver-review-comment"
-                value={reviewComment}
-                onChange={(event) => setReviewComment(event.target.value)}
-                placeholder="Describe punctuality, care quality, communication, or other feedback"
-                maxLength={500}
-                rows={4}
+        <section className="rounded-[1.5rem] border border-[#dce8e4] bg-white p-5 shadow-[0_18px_45px_-40px_rgba(18,49,54,0.45)] sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#789094]" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search service, caregiver, contact, date, notes, or review..."
+                className="h-11 rounded-xl border-[#d8e4e0] bg-[#fbfdfc] pl-10"
               />
-              <p className="text-right text-xs text-muted-foreground">{reviewComment.length}/500</p>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saveReview.isPending}
-              onClick={() => {
-                setReviewingBooking(null);
-                setReviewRating(0);
-                setReviewComment("");
-              }}
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as StatusFilter)}
             >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={saveReview.isPending || reviewRating === 0}
-              onClick={() => saveReview.mutate()}
-            >
-              {saveReview.isPending ? "Saving…" : "Save Review"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <SelectTrigger className="h-11 w-full rounded-xl border-[#d8e4e0] bg-[#fbfdfc] sm:w-52">
+                <SelectValue placeholder="Filter status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                  <SelectItem key={status} value={status}>
+                    {config.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(statusFilter !== "all" || search) && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-11 rounded-xl text-[#60787d] hover:bg-[#edf5f2] hover:text-[#0d6665]"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setSearch("");
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
+        </section>
+
+        {isLoading || caregiversLoading ? (
+          <div className="rounded-[1.5rem] border border-[#dce8e4] bg-white p-12 text-center text-[#71868a] shadow-[0_18px_45px_-40px_rgba(18,49,54,0.45)] animate-pulse">
+            Loading caregiver workflow…
+          </div>
+        ) : !activeParentId ? (
+          <div className="rounded-[1.5rem] border border-dashed border-[#cfdeda] bg-[#f8fbfa] p-12 text-center text-[#71868a]">
+            No parent profile is selected.
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="rounded-[1.5rem] border border-dashed border-[#cfdeda] bg-[#f8fbfa] p-12 text-center text-[#71868a]">
+            <ListChecks className="mx-auto mb-4 size-10 text-[#9cb3ad]" />
+            <p className="font-semibold text-[#29484e]">No bookings match the selected filters.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredBookings.map((booking) => (
+              <WorkflowCard
+                key={booking.id}
+                booking={booking}
+                caregiver={
+                  booking.trusted_caregiver_id
+                    ? (caregiverById.get(booking.trusted_caregiver_id) ?? null)
+                    : null
+                }
+                isChildView={isChildView}
+                isUpdating={
+                  updateStatus.isPending && updateStatus.variables?.booking.id === booking.id
+                }
+                onConfirm={() => confirmBooking(booking)}
+                onAssign={() => openAssignDialog(booking)}
+                onStart={() => startService(booking)}
+                onComplete={() => completeService(booking)}
+                onCancel={() => cancelBooking(booking)}
+                onReview={() => openReviewDialog(booking)}
+              />
+            ))}
+          </div>
+        )}
+
+        <Dialog
+          open={!!assigningBooking}
+          onOpenChange={(open) => {
+            if (!open && !updateStatus.isPending) {
+              setAssigningBooking(null);
+              setSelectedCaregiverId("");
+            }
+          }}
+        >
+          <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[1.5rem] border-[#dce7e3] p-0 sm:max-w-lg">
+            <DialogHeader className="border-b border-[#e3ece9] px-6 py-5 text-left">
+              <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">
+                Assign Saved Caregiver
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 px-6 py-5">
+              {assigningBooking && (
+                <div className="rounded-2xl border border-[#d9d3e6] bg-[#f2eff6] p-4 text-sm leading-6 text-[#655c80]">
+                  Select an available caregiver for the{" "}
+                  {SERVICE_CONFIG[assigningBooking.caregiver_type].label.toLowerCase()} booking on{" "}
+                  {formatBookingDate(assigningBooking.booking_date)} at{" "}
+                  {formatBookingTime(assigningBooking.booking_time)}.
+                </div>
+              )}
+
+              {eligibleCaregivers.length === 0 ? (
+                <div className="rounded-2xl border border-[#ead9c9] bg-[#fbf7f2] p-4 text-sm leading-6 text-[#80664f]">
+                  <p className="font-semibold text-[#29484e]">No matching caregiver is available.</p>
+                  <p className="mt-1">
+                    Add a caregiver of the correct type or update their available days and times in
+                    the trusted caregiver directory.
+                  </p>
+                  <Button variant="outline" asChild className="mt-3 h-10 rounded-xl border-[#d6e2de] bg-white">
+                    <Link to="/caregivers">Open caregiver directory</Link>
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="trusted-caregiver-select">
+                      Available caregiver <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={selectedCaregiverId} onValueChange={setSelectedCaregiverId}>
+                      <SelectTrigger id="trusted-caregiver-select">
+                        <SelectValue placeholder="Select caregiver" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {eligibleCaregivers.map((caregiver) => (
+                          <SelectItem key={caregiver.id} value={caregiver.id}>
+                            {caregiver.name}
+                            {caregiver.experience_years > 0
+                              ? ` · ${caregiver.experience_years}y experience`
+                              : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {selectedCaregiver && (
+                    <div className="space-y-2 rounded-2xl border border-[#dfe8e5] bg-[#f8fbfa] p-4 text-sm">
+                      <p className="font-semibold text-[#29484e]">{selectedCaregiver.name}</p>
+
+                      {selectedCaregiver.qualification && (
+                        <p className="flex items-start gap-2 text-[#667d82]">
+                          <Award className="mt-0.5 size-4 shrink-0" />
+                          {selectedCaregiver.qualification}
+                        </p>
+                      )}
+
+                      {selectedCaregiver.phone && (
+                        <a
+                          href={`tel:${selectedCaregiver.phone}`}
+                          className="flex items-center gap-2 font-medium text-[#48666b] hover:text-[#0d7774]"
+                        >
+                          <Phone className="size-4" />
+                          {selectedCaregiver.phone}
+                        </a>
+                      )}
+
+                      {selectedCaregiver.email && (
+                        <a
+                          href={`mailto:${selectedCaregiver.email}`}
+                          className="flex items-center gap-2 font-medium text-[#48666b] hover:text-[#0d7774]"
+                        >
+                          <Mail className="size-4" />
+                          {selectedCaregiver.email}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <DialogFooter className="border-t border-[#e5ecea] px-6 py-5">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={updateStatus.isPending}
+                onClick={() => {
+                  setAssigningBooking(null);
+                  setSelectedCaregiverId("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={
+                  updateStatus.isPending || eligibleCaregivers.length === 0 || !selectedCaregiverId
+                }
+                onClick={assignCaregiver}
+              >
+                <UserCheck className="mr-2 size-4" />
+                {updateStatus.isPending ? "Assigning…" : "Assign Caregiver"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={!!reviewingBooking}
+          onOpenChange={(open) => {
+            if (!open && !saveReview.isPending) {
+              setReviewingBooking(null);
+              setReviewRating(0);
+              setReviewComment("");
+            }
+          }}
+        >
+          <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[1.5rem] border-[#dce7e3] p-0 sm:max-w-lg">
+            <DialogHeader className="border-b border-[#e3ece9] px-6 py-5 text-left">
+              <DialogTitle className="text-xl font-bold tracking-[-0.03em] text-[#17343a]">
+                Review Completed Service
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-5 px-6 py-5">
+              {reviewingBooking && (
+                <div className="rounded-2xl border border-[#c8e0d6] bg-[#eaf5f0] p-4 text-sm leading-6 text-[#26755f]">
+                  Review {reviewingBooking.caregiver_name ?? "the caregiver"} for the{" "}
+                  {SERVICE_CONFIG[reviewingBooking.caregiver_type].label.toLowerCase()} service.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Rating *</Label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setReviewRating(value)}
+                      className="rounded-lg p-1 transition hover:bg-[#fbf4e9] hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b17b45]/25"
+                      aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
+                    >
+                      <Star
+                        className={`size-8 ${value <= reviewRating ? "fill-amber-400 text-amber-400" : "text-stone-300"}`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="caregiver-review-comment">Comment</Label>
+                <Textarea
+                  id="caregiver-review-comment"
+                  value={reviewComment}
+                  onChange={(event) => setReviewComment(event.target.value)}
+                  placeholder="Describe punctuality, care quality, communication, or other feedback"
+                  maxLength={500}
+                  rows={4}
+                />
+                <p className="text-right text-xs text-[#7d9094]">{reviewComment.length}/500</p>
+              </div>
+            </div>
+
+            <DialogFooter className="border-t border-[#e5ecea] px-6 py-5">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saveReview.isPending}
+                onClick={() => {
+                  setReviewingBooking(null);
+                  setReviewRating(0);
+                  setReviewComment("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={saveReview.isPending || reviewRating === 0}
+                onClick={() => saveReview.mutate()}
+              >
+                {saveReview.isPending ? "Saving…" : "Save Review"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </AppShell>
   );
 }
+function WorkflowMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  iconClass,
+  iconBackground,
+  last = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  detail: string;
+  iconClass: string;
+  iconBackground: string;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-4 px-5 py-5 sm:px-6 ${last
+          ? ""
+          : "border-b border-[#e2ebe8] sm:border-r xl:border-b-0"
+        }`}
+    >
+      <span
+        className={`grid size-11 shrink-0 place-items-center rounded-xl ${iconBackground} ${iconClass}`}
+      >
+        <Icon className="size-5" />
+      </span>
+
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold uppercase tracking-[0.11em] text-[#7b8f93]">
+          {label}
+        </p>
+        <p className="mt-1 text-xl font-bold tracking-[-0.035em] text-[#17343a]">
+          {value}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-[#768a8e]">
+          {detail}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function WorkflowCard({
   booking,
   caregiver,
@@ -900,7 +1001,7 @@ function WorkflowCard({
     { label: "Cancelled", value: booking.cancelled_at },
   ].filter((item) => item.value);
   return (
-    <article className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
+    <article className="rounded-[1.5rem] border border-[#dce8e4] bg-white p-5 shadow-[0_18px_45px_-38px_rgba(18,49,54,0.45)] sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 items-start gap-4">
           <div
@@ -911,11 +1012,11 @@ function WorkflowCard({
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-display text-lg font-bold">{service.label}</h2>
+              <h2 className="text-lg font-bold tracking-[-0.025em] text-[#17343a]">{service.label}</h2>
               <StatusBadge status={booking.status} />
             </div>
 
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#71868a]">
               <span className="flex items-center gap-1.5">
                 <CalendarDays className="size-3.5" />
                 {formatBookingDate(booking.booking_date)}
@@ -926,7 +1027,7 @@ function WorkflowCard({
               </span>
               <span>{booking.duration_hours}h session</span>
               {booking.caregiver_name && (
-                <span className="flex items-center gap-1.5 font-medium text-violet-600">
+                <span className="flex items-center gap-1.5 font-semibold text-[#6c6289]">
                   <UserCheck className="size-3.5" />
                   {booking.caregiver_name}
                 </span>
@@ -934,7 +1035,7 @@ function WorkflowCard({
             </div>
 
             {caregiver && (
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs text-violet-800">
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 rounded-xl border border-[#d9d3e6] bg-[#f5f2f8] px-3 py-2 text-xs text-[#665d80]">
                 {caregiver.qualification && (
                   <span className="flex items-center gap-1.5">
                     <Award className="size-3.5" />
@@ -963,15 +1064,15 @@ function WorkflowCard({
             )}
 
             {booking.notes && (
-              <p className="mt-3 rounded-xl border border-stone-100 bg-stone-50 px-3 py-2 text-xs italic text-stone-600">
+              <p className="mt-3 rounded-xl border border-[#e4ece9] bg-[#f8fbfa] px-3 py-2 text-xs leading-5 text-[#667c81]">
                 {booking.notes}
               </p>
             )}
 
             {lifecycle.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+              <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-[#71868a]">
                 {lifecycle.map((item) => (
-                  <span key={item.label} className="rounded-full bg-muted px-2 py-1">
+                  <span key={item.label} className="rounded-full bg-[#eef3f1] px-2 py-1">
                     {item.label}: {formatTimestamp(item.value)}
                   </span>
                 ))}
@@ -979,15 +1080,15 @@ function WorkflowCard({
             )}
 
             {booking.review_rating && (
-              <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-3">
+              <div className="mt-4 rounded-2xl border border-[#ead6bd] bg-[#fbf5ec] p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <RatingStars rating={booking.review_rating} />
-                  <span className="text-xs font-semibold text-amber-800">
+                  <span className="text-xs font-semibold text-[#95602f]">
                     {booking.review_rating}/5
                   </span>
                 </div>
                 {booking.review_comment && (
-                  <p className="mt-2 text-xs text-amber-900">{booking.review_comment}</p>
+                  <p className="mt-2 text-xs leading-5 text-[#7b5b3c]">{booking.review_comment}</p>
                 )}
               </div>
             )}
@@ -1040,7 +1141,7 @@ function WorkflowCard({
                 variant="outline"
                 disabled={isUpdating}
                 onClick={onCancel}
-                className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                className="rounded-xl border-[#e8ceca] text-[#a04e49] hover:bg-[#fbefed] hover:text-[#913f3b]"
               >
                 <XCircle className="mr-2 size-4" />
                 Cancel
@@ -1052,7 +1153,7 @@ function WorkflowCard({
                 type="button"
                 variant="outline"
                 onClick={onReview}
-                className="rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50"
+                className="rounded-xl border-[#ead6bd] text-[#95602f] hover:bg-[#fbf5ec]"
               >
                 <Star className="mr-2 size-4" />
                 {booking.review_rating ? "Edit Review" : "Review Service"}
@@ -1063,7 +1164,7 @@ function WorkflowCard({
       </div>
 
       {booking.status !== "cancelled" && (
-        <div className="mt-6 border-t border-border pt-5">
+        <div className="mt-6 border-t border-[#e5ecea] pt-5">
           <div className="grid grid-cols-5 gap-1 sm:gap-2">
             {WORKFLOW_STEPS.map((step, index) => {
               const reached = currentStep >= index;
@@ -1072,14 +1173,13 @@ function WorkflowCard({
                 <div key={step} className="min-w-0 text-center">
                   <div className="mb-2 flex items-center">
                     {index > 0 && (
-                      <span className={`h-0.5 flex-1 ${reached ? "bg-primary" : "bg-stone-200"}`} />
+                      <span className={`h-0.5 flex-1 ${reached ? "bg-[#0d7774]" : "bg-[#dfe8e5]"}`} />
                     )}
                     <span
-                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${
-                        reached
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-stone-300 bg-white text-stone-400"
-                      } ${active ? "ring-4 ring-primary/10" : ""}`}
+                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${reached
+                          ? "border-[#0d7774] bg-[#0d7774] text-white"
+                          : "border-[#cfdeda] bg-white text-[#8ca09f]"
+                        } ${active ? "ring-4 ring-[#0d7774]/10" : ""}`}
                     >
                       {reached && index < currentStep ? (
                         <CheckCircle2 className="size-3.5" />
@@ -1089,12 +1189,12 @@ function WorkflowCard({
                     </span>
                     {index < WORKFLOW_STEPS.length - 1 && (
                       <span
-                        className={`h-0.5 flex-1 ${currentStep > index ? "bg-primary" : "bg-stone-200"}`}
+                        className={`h-0.5 flex-1 ${currentStep > index ? "bg-[#0d7774]" : "bg-[#dfe8e5]"}`}
                       />
                     )}
                   </div>
                   <p
-                    className={`truncate text-[9px] font-medium sm:text-[10px] ${reached ? "text-foreground" : "text-muted-foreground"}`}
+                    className={`truncate text-[9px] font-medium sm:text-[10px] ${reached ? "text-[#29484e]" : "text-[#87989b]"}`}
                   >
                     {STATUS_CONFIG[step].label}
                   </p>
